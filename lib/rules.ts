@@ -1,4 +1,4 @@
-import type { FieldDescriptor } from './extract';
+import type { FieldDescriptor, ScannedField } from './extract';
 import type { FieldKey } from './fieldKeys';
 import type { Hints } from './types';
 import { hasFullDigit, hasHalfKana, hasHiragana, norm } from './japanese';
@@ -10,11 +10,35 @@ export interface Classification {
 }
 
 type Category =
-  | 'emailConfirm' | 'email' | 'kana' | 'roman' | 'birth' | 'gender' | 'postal' | 'phone'
-  | 'prefecture' | 'city' | 'building' | 'address' | 'graduation' | 'department' | 'faculty'
-  | 'school' | 'name';
+  | 'emailConfirm' | 'emailSub' | 'email' | 'relation' | 'station' | 'age' | 'nationality'
+  | 'schoolType' | 'schoolInitial' | 'bunri' | 'graduationStatus' | 'fieldCategory' | 'degree' | 'researchTheme' | 'lab'
+  | 'highSchool' | 'admission' | 'educationHistory'
+  | 'license' | 'toeic' | 'toefl' | 'eiken' | 'otherLanguage' | 'qualifications' | 'pcSkills'
+  | 'club' | 'studyAbroad' | 'partTime' | 'hobbies' | 'specialSkills' | 'github' | 'portfolio'
+  | 'desiredLocation' | 'desiredJob' | 'personalRequest'
+  | 'desiredSalary' | 'currentSalary' | 'availableDate' | 'employmentType' | 'workHistory' | 'currentJobType' | 'currentCompany'
+  | 'roman' | 'birth' | 'gender' | 'postal' | 'phone' | 'prefecture' | 'city' | 'building' | 'address'
+  | 'graduation' | 'department' | 'faculty' | 'school' | 'name';
 
-const CONF = { autocomplete: 0.98, near: 0.95, context: 0.9, position: 0.9, attr: 0.8 } as const;
+const CONF = { autocomplete: 0.98, near: 0.95, context: 0.9, position: 0.9, section: 0.85, attr: 0.8 } as const;
+
+const PREFECTURE_RE = /^(北海道|(東京)都|(京都|大阪)府|.{2,3}県)$/;
+
+/** 選択肢の中身からカテゴリを決める */
+function optionCategory(d: FieldDescriptor): Category | null {
+  if (d.kind !== 'select' && d.kind !== 'radio') return null;
+  const opts = d.options.map((o) => o.normalize('NFKC').replace(/\s/g, '')).filter(Boolean);
+  if (opts.length < 2) return null;
+  if (opts.filter((o) => PREFECTURE_RE.test(o)).length >= 7) return 'prefecture';
+  // あ・か・さ… の五十音（学校名の頭文字など）
+  if (opts.length >= 20 && opts.filter((o) => /^[ぁ-んァ-ン]$/.test(o)).length >= opts.length * 0.8) return 'schoolInitial';
+  if (opts.some((o) => /^大学$|^大学\(|学部/.test(o)) && opts.some((o) => /大学院|短期大学|短大|高専|高等専門学校|専門学校/.test(o))) {
+    return 'schoolType';
+  }
+  if (opts.some((o) => /文系/.test(o)) && opts.some((o) => /理系/.test(o))) return 'bunri';
+  if (opts.some((o) => /^男(性)?$/.test(o)) && opts.some((o) => /^女(性)?$/.test(o))) return 'gender';
+  return null;
+}
 
 const AUTOCOMPLETE: Record<string, FieldKey> = {
   name: 'fullName',
@@ -34,22 +58,65 @@ const AUTOCOMPLETE: Record<string, FieldKey> = {
   'bday-month': 'birthMonth',
   'bday-day': 'birthDay',
   sex: 'gender',
+  organization: 'school',
+  url: 'portfolioUrl',
 };
 
-/** 表示テキスト用。上から順に評価するので、より具体的なものを先に置く */
+/**
+ * 表示テキスト用のカテゴリ。上から順に評価するので、より具体的なものを先に置く。
+ * フリガナ・帰省先・緊急連絡先は「修飾」として別に判定するので、ここには入れない。
+ */
 const TEXT_RULES: [Category, RegExp][] = [
   ['emailConfirm', /(メール|e-?mail|mail).*(確認|再入力|もう一度|confirm)|(確認|confirm).*(メール|e-?mail)/],
+  ['emailSub', /(予備|サブ|携帯|第2|2つ目|セカンド|個人).{0,4}(メール|mail)|(メール|mail).{0,6}(予備|サブ|2)/],
   ['email', /メール|e-?mail|mail/],
-  ['kana', /フリガナ|ふりがな|カナ|かな|kana|furigana|^セイ|^メイ/],
+  ['relation', /続柄|間柄|ご関係/],
+  ['station', /最寄|沿線|路線|駅/],
+  ['age', /年齢|^age$/],
+  ['nationality', /国籍|nationality/],
+  ['schoolType', /学校区分|学校種別|学校の種類|学校種類|在籍区分|学歴区分|最終学歴/],
+  ['bunri', /文理|文系.{0,3}理系/],
+  ['graduationStatus', /卒業区分|卒業状況|見込.{0,2}区分|新卒.{0,3}既卒|卒業見込.{0,4}(区分|有無)/],
+  ['fieldCategory', /学科系統|専攻分野|系統/],
+  ['degree', /学位|課程/],
+  ['researchTheme', /研究テーマ|研究内容|研究課題|卒業論文|卒論|卒業研究|修士論文|修論/],
+  ['lab', /研究室|ゼミ|指導教員|指導教官|指導教授/],
+  ['highSchool', /高校|高等学校/],
+  ['admission', /入学/],
+  ['educationHistory', /学歴/],
+  ['license', /運転免許|自動車免許|普通免許|車の免許/],
+  ['toeic', /toeic/],
+  ['toefl', /toefl/],
+  ['eiken', /英検|英語検定|実用英語技能/],
+  ['otherLanguage', /語学|外国語|英語以外/],
+  ['qualifications', /資格|免許/],
+  ['pcSkills', /pcスキル|パソコン|itスキル|プログラミング|oaスキル|使用(可能|できる).{0,6}(ソフト|ツール|言語)/],
+  ['club', /部活|クラブ|サークル|課外活動/],
+  ['studyAbroad', /留学/],
+  ['partTime', /アルバイト|バイト/],
+  ['hobbies', /趣味/],
+  ['specialSkills', /特技/],
+  ['github', /github/],
+  ['portfolio', /ポートフォリオ|作品|portfolio|^url|ホームページ|webサイト|ウェブサイト/],
+  ['desiredLocation', /希望勤務地|勤務希望地|希望.{0,4}勤務地|勤務地.{0,4}希望/],
+  ['desiredJob', /希望職種|志望職種|希望.{0,4}職種|職種.{0,4}希望|希望部署|希望部門|^職種/],
+  ['personalRequest', /本人希望|希望記入|その他.{0,2}希望|ご希望/],
+  ['desiredSalary', /希望年収|希望給与|希望収入/],
+  ['currentSalary', /年収/],
+  ['availableDate', /入社可能|就業可能|入社希望|入社予定|勤務開始可能|入社時期/],
+  ['employmentType', /雇用形態/],
+  ['workHistory', /職務経歴|職歴/],
+  ['currentJobType', /現在の職種|現職.{0,3}職種/],
+  ['currentCompany', /現在の勤務先|現勤務先|在籍企業|現職|勤務先|会社名/],
   ['roman', /ローマ字|英字|アルファベット|roman|english name/],
   ['birth', /生年月日|誕生日|birth|bday|date of birth/],
   ['gender', /性別|gender|^sex/],
   ['postal', /郵便番号|〒|postal|zip/],
   ['phone', /電話|携帯|^tel|phone|mobile/],
   ['prefecture', /都道府県|prefecture/],
-  ['city', /市区町村|市町村|^city/],
+  ['city', /市区町村|市町村|市区郡|市区|^city/],
   ['building', /建物|マンション|アパート|building|apartment/],
-  ['address', /住所|番地|address/],
+  ['address', /住所|番地|所在地|address/],
   ['graduation', /卒業|修了|graduat/],
   ['department', /学科|専攻|コース|department|major/],
   ['faculty', /学部|研究科|faculty/],
@@ -60,8 +127,25 @@ const TEXT_RULES: [Category, RegExp][] = [
 /** name / id 属性用 */
 const ATTR_RULES: [Category, RegExp][] = [
   ['emailConfirm', /mail.*(conf|check|again|re\b)|re_?mail|confirm.*mail/],
+  ['emailSub', /(sub|mobile|keitai|second|2)_?mail|mail_?(sub|2)/],
   ['email', /mail/],
-  ['kana', /kana|furi|yomi/],
+  ['station', /station|eki/],
+  ['age', /(^|[^a-z])age([^a-z]|$)|nenrei/],
+  ['nationality', /nationality|kokuseki/],
+  ['schoolType', /school_?type|gakko_?kubun/],
+  ['bunri', /bunri/],
+  ['lab', /(^|[^a-z])(lab|zemi|seminar)/],
+  ['highSchool', /high_?school|koko/],
+  ['admission', /admission|enroll|nyugaku/],
+  ['license', /license|menkyo/],
+  ['toeic', /toeic/],
+  ['toefl', /toefl/],
+  ['eiken', /eiken/],
+  ['qualifications', /qualif|certif|shikaku/],
+  ['club', /club|circle|bukatsu/],
+  ['hobbies', /hobby|hobbies|shumi/],
+  ['github', /github/],
+  ['portfolio', /portfolio|website|(^|[^a-z])url/],
   ['roman', /roma|alpha|eng/],
   ['birth', /birth|bday|dob|seinen/],
   ['gender', /gender|\bsex\b|seibetsu/],
@@ -78,29 +162,65 @@ const ATTR_RULES: [Category, RegExp][] = [
   ['name', /(^|[^a-z])(name|sei|mei|shimei|namae)([^a-z]|$)|lastname|firstname|familyname|givenname|lname|fname/],
 ];
 
+const KANA_TEXT = /フリガナ|ふりがな|よみがな|カナ|かな|kana|furigana/g;
+const KANA_ATTR = /kana|furi|yomi/;
+const KISEI = /帰省|休暇中|実家|kisei/;
+const EMERGENCY = /緊急|emergency|kinkyu/;
+const PHOTO = /写真|photo|画像|顔/;
+
 function firstMatch(rules: [Category, RegExp][], text: string): Category | null {
   if (!text) return null;
   for (const [cat, re] of rules) if (re.test(text)) return cat;
   return null;
 }
 
+/** 修飾（フリガナ・帰省先・緊急連絡先）を除いたテキストでカテゴリを決める */
+function stripModifiers(text: string) {
+  return text
+    .replace(/^\s*(セイ|メイ)(?![ァ-ヶ])/, (m) => (m.includes('セイ') ? '姓' : '名'))
+    .replace(KANA_TEXT, ' ')
+    .trim();
+}
+
 export function classify(d: FieldDescriptor): Classification {
   const ac = d.autocomplete.toLowerCase().split(/\s+/).pop() ?? '';
-  if (AUTOCOMPLETE[ac]) return { key: AUTOCOMPLETE[ac], confidence: CONF.autocomplete, source: 'rule' };
+  if (AUTOCOMPLETE[ac] && d.kind !== 'file') return { key: AUTOCOMPLETE[ac], confidence: CONF.autocomplete, source: 'rule' };
 
   const nearRaw = [d.label, d.prefix, d.placeholder].join(' ');
   const near = norm(nearRaw);
   const ctx = norm(d.context);
+  const section = norm(d.section);
   const attrs = norm(`${d.name} ${d.htmlId}`);
+  const result = (key: FieldKey | null, c: number): Classification => ({ key, confidence: key ? c : 0, source: 'rule' });
 
-  let cat: Category | null = null;
-  let conf = 0;
-  for (const [text, c, rules] of [
-    [near, CONF.near, TEXT_RULES],
-    [ctx, CONF.context, TEXT_RULES],
-    [attrs, CONF.attr, ATTR_RULES],
+  if (d.kind === 'checkbox') {
+    // 抽出の時点で「現住所と同じ」系のチェックボックスだけに絞っている
+    return result('kiseiSameCheck', CONF.near);
+  }
+
+  if (d.kind === 'file') {
+    // 履歴書 PDF などのアップロード欄には入れない
+    const all = `${near} ${ctx} ${attrs}`;
+    if (/履歴書|resume|cv|pdf|書類|成績/.test(all)) return result(null, 0);
+    if (PHOTO.test(all)) return result('photo', PHOTO.test(near) ? CONF.near : CONF.context);
+    if (/image/.test(d.accept)) return result('photo', CONF.attr);
+    return result(null, 0);
+  }
+
+  // フリガナは、カテゴリが見つかった段階かそれより手前（欄に近い側）で出てきたものだけを採用する
+  // プルダウン・ラジオは、選択肢の中身（都道府県が47個並んでいる、など）がいちばん確かな手がかり
+  let cat: Category | null = optionCategory(d);
+  let conf: number = cat ? CONF.context : 0;
+  let kana = false;
+  for (const [text, c, rules, isAttr] of [
+    [near, CONF.near, TEXT_RULES, false],
+    [ctx, CONF.context, TEXT_RULES, false],
+    [section, CONF.section, TEXT_RULES, false],
+    [attrs, CONF.attr, ATTR_RULES, true],
   ] as const) {
-    cat = firstMatch(rules, text);
+    if (cat) break;
+    kana ||= isAttr ? KANA_ATTR.test(text) : /フリガナ|ふりがな|よみがな|カナ|かな|kana|furigana|^セイ(?![ァ-ヶ])|^メイ(?![ァ-ヶ])/.test(text);
+    cat = firstMatch(rules, isAttr ? text : stripModifiers(text));
     if (cat) {
       conf = c;
       break;
@@ -108,58 +228,174 @@ export function classify(d: FieldDescriptor): Classification {
   }
   if (!cat && d.kind === 'email') [cat, conf] = ['email', CONF.near];
   if (!cat && d.kind === 'tel') [cat, conf] = ['phone', CONF.near];
-  if (!cat) return { key: null, confidence: 0, source: 'rule' };
+  if (!cat && kana) [cat, conf] = ['name', CONF.context];
+  if (!cat) return result(null, 0);
 
-  const result = (key: FieldKey, c = conf): Classification => ({ key, confidence: c, source: 'rule' });
+  const scopeText = `${near} ${ctx} ${section} ${attrs}`;
+  const kisei = KISEI.test(scopeText) && !/現住所/.test(`${near} ${ctx}`);
+  const emergency = EMERGENCY.test(scopeText);
   const byPosition = Math.min(conf, CONF.position);
+  const r = (key: FieldKey, c = conf) => result(key, c);
+  const has = (re: RegExp) => re.test(near) || re.test(ctx);
 
   switch (cat) {
     case 'name':
-    case 'kana':
     case 'roman': {
-      const keys = {
-        name: ['fullName', 'lastName', 'firstName'],
-        kana: ['fullNameKana', 'lastNameKana', 'firstNameKana'],
-        roman: ['fullNameRoman', 'lastNameRoman', 'firstNameRoman'],
-      }[cat] as [FieldKey, FieldKey, FieldKey];
+      if (emergency && !kana) return r('emergencyName');
+      const keys = (
+        cat === 'roman'
+          ? ['fullNameRoman', 'lastNameRoman', 'firstNameRoman']
+          : kana
+            ? ['fullNameKana', 'lastNameKana', 'firstNameKana']
+            : ['fullName', 'lastName', 'firstName']
+      ) as [FieldKey, FieldKey, FieldKey];
       const part = namePart(nearRaw, attrs);
-      if (part) return result(part === 'last' ? keys[1] : keys[2]);
-      if (d.groupSize === 2) return result(d.groupIndex === 0 ? keys[1] : keys[2], byPosition);
-      return result(keys[0]);
+      if (part) return r(part === 'last' ? keys[1] : keys[2]);
+      if (d.groupSize === 2) return r(d.groupIndex === 0 ? keys[1] : keys[2], byPosition);
+      return r(keys[0]);
     }
     case 'birth':
-    case 'graduation': {
-      const [full, y, m, dd] = (
-        cat === 'birth'
-          ? ['birthDate', 'birthYear', 'birthMonth', 'birthDay']
-          : ['graduation', 'graduationYear', 'graduationMonth', null]
-      ) as [FieldKey, FieldKey, FieldKey, FieldKey | null];
-      if (d.kind === 'date' || d.kind === 'month') return result(full);
-      const part = datePart(d, attrs);
-      if (part === 'year') return result(y);
-      if (part === 'month') return result(m);
-      if (part === 'day' && dd) return result(dd);
-      if (d.groupSize === 3 && dd) return result([y, m, dd][d.groupIndex]!, byPosition);
-      if (d.groupSize === 2 && !dd) return result([y, m][d.groupIndex]!, byPosition);
-      return result(full);
+      return dateKey(d, attrs, conf, ['birthDate', 'birthYear', 'birthMonth', 'birthDay']);
+    case 'graduation':
+      return dateKey(d, attrs, conf, ['graduation', 'graduationYear', 'graduationMonth', null]);
+    case 'admission':
+      return dateKey(d, attrs, conf, ['admission', 'admissionYear', 'admissionMonth', null]);
+    case 'phone': {
+      if (emergency) return r('emergencyPhone');
+      if (kisei) {
+        if (d.groupSize === 3) return r((['kiseiPhone1', 'kiseiPhone2', 'kiseiPhone3'] as const)[d.groupIndex]!, byPosition);
+        return r('kiseiPhone');
+      }
+      const landline = has(/自宅|固定|家の電話|home/) && !has(/携帯|モバイル|mobile/);
+      if (d.groupSize === 3) {
+        const parts = landline ? (['landline1', 'landline2', 'landline3'] as const) : (['phone1', 'phone2', 'phone3'] as const);
+        return r(parts[d.groupIndex]!, byPosition);
+      }
+      return r(landline ? 'landline' : 'phone');
     }
-    case 'phone':
-      if (d.groupSize === 3) return result((['phone1', 'phone2', 'phone3'] as const)[d.groupIndex]!, byPosition);
-      return result('phone');
-    case 'postal':
-      if (d.groupSize === 2) return result(d.groupIndex === 0 ? 'postalCode1' : 'postalCode2', byPosition);
-      return result('postalCode');
-    case 'address':
-      if (/番地|町名|丁目|住所\s*1|address ?(line ?)?1/.test(near || ctx)) return result('addressLine');
-      if (/住所\s*2|address ?(line ?)?2/.test(near || ctx)) return result('building');
-      return result('fullAddress');
+    case 'postal': {
+      const [full, a, b] = (
+        kisei ? ['kiseiPostalCode', 'kiseiPostalCode1', 'kiseiPostalCode2'] : ['postalCode', 'postalCode1', 'postalCode2']
+      ) as [FieldKey, FieldKey, FieldKey];
+      if (d.groupSize === 2) return r(d.groupIndex === 0 ? a : b, byPosition);
+      return r(full);
+    }
+    case 'prefecture':
+      if (has(/高校|高等学校/) && !has(/住所/)) return r('highSchoolPrefecture');
+      if (has(/学校|大学|所在地/) && !has(/住所/)) return r('schoolPrefecture');
+      return r(kana ? 'prefectureKana' : kisei ? 'kiseiPrefecture' : 'prefecture');
+    case 'city':
+      // 「市区郡・地名・番地」のように番地までまとめて入れる欄
+      if (!kana && has(/番地|地名|町名|丁目/)) return r(kisei ? 'kiseiCityAddressLine' : 'cityAddressLine');
+      return r(kana ? 'cityKana' : kisei ? 'kiseiCity' : 'city');
+    case 'building':
+      return r(kana ? 'buildingKana' : kisei ? 'kiseiBuilding' : 'building');
+    case 'address': {
+      const line = /番地|町名|丁目|住所\s*1|address ?(line ?)?1/.test(near || ctx);
+      const second = /住所\s*2|address ?(line ?)?2/.test(near || ctx);
+      if (kana) return r(line ? 'addressLineKana' : second ? 'buildingKana' : 'fullAddressKana');
+      if (kisei) return r(line ? 'kiseiAddressLine' : second ? 'kiseiBuilding' : 'kiseiFullAddress');
+      return r(line ? 'addressLine' : second ? 'building' : 'fullAddress');
+    }
+    case 'email':
+    case 'emailConfirm': {
+      // ［taro］@［example.com］のように @ の前後で分かれた欄
+      // 「メールアドレス」と「確認用」が同じ見出しに並ぶこともあるので、@ が欄の間にあるときだけ分ける
+      if (/[@＠]$/.test(d.prefix.trim())) return r('emailDomain', byPosition);
+      if (/^[@＠]/.test(d.suffix.trim())) return r('emailLocal', byPosition);
+      return r(cat);
+    }
+    case 'relation':
+      return r('emergencyRelation');
+    case 'station':
+      if (/線$/.test(d.suffix.trim()) || has(/路線|沿線|線名/)) return r('nearestLine');
+      if (d.groupSize === 2 && !/駅$/.test(d.suffix.trim())) return r(d.groupIndex === 0 ? 'nearestLine' : 'nearestStation', byPosition);
+      return r('nearestStation');
+    case 'highSchool': {
+      // 高卒認定試験は高校を卒業していない人向けの質問なので触らない
+      if (has(/認定試験|高認|大検/)) return result(null, 0);
+      if (isYesNo(d)) return r(has(/卒業/) ? 'highSchoolGraduated' : 'highSchool', has(/卒業/) ? conf : 0);
+      const dateLike = isDateLike(d, near) || d.kind === 'select';
+      if (dateLike && has(/入学/)) return r('highSchoolAdmission');
+      if (dateLike && has(/卒業/)) return r('highSchoolGraduation');
+      return r('highSchool');
+    }
+    case 'educationHistory':
+      if (d.kind === 'textarea') return r('educationHistory');
+      if (d.kind === 'select' || d.kind === 'radio') return r('schoolType');
+      return r('school', Math.min(conf, 0.85));
+    case 'lab':
+      return r(has(/教員|教官|教授|先生/) ? 'advisor' : 'lab');
+    case 'license':
+      return r(isDateLike(d, near) ? 'driverLicenseDate' : 'driverLicense');
+    case 'toeic':
+      return r(isDateLike(d, near) ? 'toeicDate' : 'toeic');
+    case 'club':
+      return r(has(/役職|役割|ポジション/) ? 'clubRole' : 'club');
+    case 'hobbies':
+      return r(has(/特技/) ? 'hobbiesAndSkills' : 'hobbies');
+    case 'github':
+      return r('githubUrl');
+    case 'portfolio':
+      return r('portfolioUrl');
+    case 'desiredLocation': {
+      const m = /第\s*([1-3])/.exec(norm(`${near} ${d.prefix}`)) ?? /([1-3])$/.exec(attrs.trim());
+      const n = m ? Number(m[1]) : d.groupSize > 1 ? d.groupIndex + 1 : 1;
+      if (n > 3) return result(null, 0);
+      return r(`desiredLocation${n}` as FieldKey, m ? conf : byPosition);
+    }
     default:
-      return result(cat);
+      return r(cat);
   }
 }
 
+const MOBILE = /携帯|モバイル|mobile|keitai|cell/;
+const PHONE_TO_LANDLINE: Partial<Record<FieldKey, FieldKey>> = {
+  phone: 'landline',
+  phone1: 'landline1',
+  phone2: 'landline2',
+  phone3: 'landline3',
+};
+
+/**
+ * フォーム全体を見て判定を調整する。
+ * 「電話番号」と「携帯電話番号」が両方あるときは、ただの「電話番号」を自宅の電話として扱う。
+ */
+export function adjustForForm(fields: ScannedField[], classes: Classification[]): Classification[] {
+  const isPhone = (c: Classification) => !!c.key && c.key in PHONE_TO_LANDLINE;
+  const mentionsMobile = (d: FieldDescriptor) => MOBILE.test(norm(`${d.label} ${d.prefix} ${d.context} ${d.name} ${d.htmlId}`));
+  // 同じ <form> の中だけで比べる（form がなければページ全体）
+  const formOf = (f: ScannedField) => (f.elements[0] as HTMLInputElement).form ?? null;
+  const forms = new Map<HTMLFormElement | null, { mobile: boolean; plain: boolean }>();
+  fields.forEach((f, i) => {
+    if (!isPhone(classes[i]!)) return;
+    const s = forms.get(formOf(f)) ?? { mobile: false, plain: false };
+    if (mentionsMobile(f.desc)) s.mobile = true;
+    else s.plain = true;
+    forms.set(formOf(f), s);
+  });
+  // 学校区分・頭文字と同じフォームにあり、住所の欄がない都道府県は「学校の所在地」
+  const schoolForms = new Set<HTMLFormElement | null>();
+  const addressForms = new Set<HTMLFormElement | null>();
+  fields.forEach((f, i) => {
+    const key = classes[i]!.key;
+    if (key === 'schoolType' || key === 'schoolInitial') schoolForms.add(formOf(f));
+    if (key && /^(postalCode|city|addressLine|fullAddress|cityAddressLine)/.test(key)) addressForms.add(formOf(f));
+  });
+
+  return classes.map((c, i) => {
+    const f = fields[i]!;
+    if (c.key === 'prefecture' && schoolForms.has(formOf(f)) && !addressForms.has(formOf(f))) {
+      return { ...c, key: 'schoolPrefecture' };
+    }
+    const s = forms.get(formOf(f));
+    if (!isPhone(c) || !s?.mobile || !s.plain || mentionsMobile(f.desc)) return c;
+    return { ...c, key: PHONE_TO_LANDLINE[c.key!]! };
+  });
+}
+
 function namePart(nearRaw: string, attrs: string): 'last' | 'first' | null {
-  const t = nearRaw.replace(/氏名|姓名|お名前|名前|フリガナ|ふりがな|ローマ字/g, '');
+  const t = nearRaw.replace(/氏名|姓名|お名前|名前|フリガナ|ふりがな|ローマ字|緊急連絡先/g, '');
   if (/姓|せい|セイ|ｾｲ|苗字|名字|last|family|surname/i.test(t)) return 'last';
   if (/名|めい|メイ|ﾒｲ|first|given/i.test(t)) return 'first';
   if (/last|family|(^|[^a-z])sei([^a-z]|$)|lname/.test(attrs)) return 'last';
@@ -167,9 +403,45 @@ function namePart(nearRaw: string, attrs: string): 'last' | 'first' | null {
   return null;
 }
 
-function datePart(d: FieldDescriptor, attrs: string): 'year' | 'month' | 'day' | null {
+const YES = /^(はい|あり|有り?|yes|ある|いる|している)$/i;
+const NO = /^(いいえ|なし|無し?|no|ない|いない|していない)$/i;
+
+/** 「はい／いいえ」「あり／なし」で答える欄か */
+export function isYesNo(d: FieldDescriptor): boolean {
+  if (d.kind !== 'radio' && d.kind !== 'select') return false;
+  const opts = d.options.map((o) => o.normalize('NFKC').replace(/\s/g, '')).filter((o) => o && !/^[-▼―ー\s]*$|選択/.test(o));
+  return opts.length >= 2 && opts.length <= 3 && opts.some((o) => YES.test(o)) && opts.some((o) => NO.test(o));
+}
+
+/** 「取得年月」「受験日」など、資格そのものではなく日付を聞いている欄か */
+function isDateLike(d: FieldDescriptor, near: string): boolean {
+  if (d.kind === 'date' || d.kind === 'month') return true;
+  return /取得|受験|年月|時期|日付/.test(near) || d.options.some((o) => /^(19|20)\d\d/.test(o));
+}
+
+function dateKey(
+  d: FieldDescriptor,
+  attrs: string,
+  conf: number,
+  [full, y, m, dd]: [FieldKey, FieldKey, FieldKey, FieldKey | null],
+): Classification {
+  const r = (key: FieldKey, c = conf): Classification => ({ key, confidence: c, source: 'rule' });
+  const byPosition = Math.min(conf, CONF.position);
+  if (d.kind === 'date' || d.kind === 'month') return r(full);
+  const part = datePart(d, attrs);
+  if (part === 'era') return full === 'birthDate' ? r('birthEra') : { key: null, confidence: 0, source: 'rule' };
+  if (part === 'year') return r(y);
+  if (part === 'month') return r(m);
+  if (part === 'day' && dd) return r(dd);
+  if (d.groupSize === 3 && dd) return r([y, m, dd][d.groupIndex]!, byPosition);
+  if (d.groupSize === 4 && full === 'birthDate') return r((['birthEra', y, m, dd!] as FieldKey[])[d.groupIndex]!, byPosition);
+  if (d.groupSize === 2 && !dd) return r([y, m][d.groupIndex]!, byPosition);
+  return r(full);
+}
+
+function datePart(d: FieldDescriptor, attrs: string): 'era' | 'year' | 'month' | 'day' | null {
   const unit = (s: string) => {
-    const t = s.replace(/生年月日|誕生日|卒業予定年月|卒業年月日?|年月日|年月/g, '');
+    const t = s.replace(/生年月日|誕生日|卒業予定年月|卒業年月日?|入学年月日?|年月日|年月/g, '');
     if (/年|year|yyyy/i.test(t)) return 'year';
     if (/月|month/i.test(t)) return 'month';
     if (/日|day/i.test(t)) return 'day';
@@ -180,6 +452,8 @@ function datePart(d: FieldDescriptor, attrs: string): 'year' | 'month' | 'day' |
   if (fromSuffix) return fromSuffix;
 
   if (d.options.length) {
+    // 元号だけの選択肢（［昭和／平成／令和］）
+    if (d.options.some((o) => /平成|昭和|令和/.test(o)) && !d.options.some((o) => /\d/.test(o.normalize('NFKC')))) return 'era';
     if (d.options.some((o) => /平成|昭和|令和/.test(o))) return 'year';
     const nums = d.options.map((o) => parseInt(norm(o).replace(/[^\d]/g, ''), 10)).filter(Number.isFinite);
     if (nums.filter((n) => n >= 1900).length >= 5) return 'year';
@@ -216,7 +490,7 @@ export function computeHints(d: FieldDescriptor): Hints {
   else if ((hasSeireki && !hasWareki) || /西暦/.test(text)) era = 'seireki';
 
   let hyphen: Hints['hyphen'] = null;
-  if (/ハイフン(なし|無し|不要|を除|は不要|抜き|を入れず)|ハイフンを?入れないで|[-ー]なし/.test(text)) hyphen = false;
+  if (/ハイフン(なし|無し|不要|を除|は不要|抜き|を入れず)|ハイフンを?入れないで|[-ー]なし|数字のみ|\d+桁/.test(text)) hyphen = false;
   else if (/ハイフン(あり|有り|を含|付き|を入れて)/.test(text)) hyphen = true;
   else if (/\d[-‐ー－]\d/.test(d.placeholder)) hyphen = true;
   else if (/^\d{7,11}$/.test(norm(d.placeholder).replace(/^例[:：)）]?\s*/, ''))) hyphen = false;

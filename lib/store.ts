@@ -1,5 +1,8 @@
 import { storage } from '#imports';
 import { DEFAULT_SETTINGS, type Profile, type Settings } from './types';
+import { emptyProfile, normalizeProfile } from './profile';
+
+export { emptyProfile, normalizeProfile };
 
 export const profilesItem = storage.defineItem<Profile[]>('local:profiles', { fallback: [] });
 export const activeProfileIdItem = storage.defineItem<string>('local:activeProfileId', { fallback: '' });
@@ -9,33 +12,12 @@ export async function getSettings(): Promise<Settings> {
   return { ...DEFAULT_SETTINGS, ...(await settingsItem.getValue()) };
 }
 
-export async function getActiveProfile(): Promise<Profile | undefined> {
-  const [profiles, activeId] = await Promise.all([profilesItem.getValue(), activeProfileIdItem.getValue()]);
-  return profiles.find((p) => p.id === activeId) ?? profiles[0];
+/** 古いバージョンで保存したプロフィールにも新しい項目の初期値を補う */
+export async function getProfiles(): Promise<Profile[]> {
+  return (await profilesItem.getValue()).map(normalizeProfile);
 }
 
-export function emptyProfile(label = '新しいプロフィール'): Profile {
-  return {
-    id: crypto.randomUUID(),
-    label,
-    lastName: '',
-    firstName: '',
-    lastNameKana: '',
-    firstNameKana: '',
-    lastNameRoman: '',
-    firstNameRoman: '',
-    birthDate: '',
-    gender: '',
-    email: '',
-    phone: '',
-    postalCode: '',
-    prefecture: '',
-    city: '',
-    addressLine: '',
-    building: '',
-    school: '',
-    faculty: '',
-    department: '',
-    graduation: '',
-  };
+export async function getActiveProfile(): Promise<Profile | undefined> {
+  const [profiles, activeId] = await Promise.all([getProfiles(), activeProfileIdItem.getValue()]);
+  return profiles.find((p) => p.id === activeId) ?? profiles[0];
 }

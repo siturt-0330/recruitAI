@@ -1,13 +1,18 @@
 import type { ScannedField } from './extract';
 import { norm } from './japanese';
 
-export type Snapshot = { kind: 'value'; value: string } | { kind: 'index'; index: number } | { kind: 'checked'; checked: boolean[] };
+export type Snapshot =
+  | { kind: 'value'; value: string }
+  | { kind: 'index'; index: number }
+  | { kind: 'checked'; checked: boolean[] }
+  | { kind: 'files'; files: File[] };
 
 export function takeSnapshot(field: ScannedField): Snapshot {
   const el = field.elements[0]!;
-  if (field.desc.kind === 'radio') {
+  if (field.desc.kind === 'radio' || field.desc.kind === 'checkbox') {
     return { kind: 'checked', checked: field.elements.map((r) => (r as HTMLInputElement).checked) };
   }
+  if (field.desc.kind === 'file') return { kind: 'files', files: Array.from((el as HTMLInputElement).files ?? []) };
   if (el instanceof HTMLSelectElement) return { kind: 'index', index: el.selectedIndex };
   return { kind: 'value', value: (el as HTMLInputElement).value };
 }
@@ -19,15 +24,31 @@ export function restoreSnapshot(field: ScannedField, snap: Snapshot) {
     field.elements.forEach(dispatch);
     return;
   }
-  if (snap.kind === 'index') (el as HTMLSelectElement).selectedIndex = snap.index;
+  if (snap.kind === 'files') (el as HTMLInputElement).files = toFileList(snap.files);
+  else if (snap.kind === 'index') (el as HTMLSelectElement).selectedIndex = snap.index;
   else (el as HTMLInputElement).value = snap.value;
   dispatch(el);
+}
+
+function toFileList(files: File[]): FileList {
+  const dt = new DataTransfer();
+  files.forEach((f) => dt.items.add(f));
+  return dt.files;
+}
+
+function dataUrlToFile(dataUrl: string, name: string): File | null {
+  const m = /^data:([^;,]+)(;base64)?,(.*)$/.exec(dataUrl);
+  if (!m) return null;
+  const bytes = m[2] ? Uint8Array.from(atob(m[3]!), (c) => c.charCodeAt(0)) : new TextEncoder().encode(decodeURIComponent(m[3]!));
+  return new File([bytes], name, { type: m[1] });
 }
 
 /** 既にユーザーが値を入れている欄かどうか（テキスト系のみ。select は初期値が入っていることが多いので見ない） */
 export function hasUserValue(field: ScannedField): boolean {
   const el = field.elements[0]!;
-  if (el instanceof HTMLInputElement && el.type !== 'radio') return el.value.trim() !== '';
+  if (el instanceof HTMLInputElement && el.type === 'file') return (el.files?.length ?? 0) > 0;
+  if (el instanceof HTMLInputElement && (el.type === 'radio' || el.type === 'checkbox')) return false;
+  if (el instanceof HTMLInputElement) return el.value.trim() !== '';
   if (el instanceof HTMLTextAreaElement) return el.value.trim() !== '';
   return false;
 }
@@ -69,6 +90,17 @@ export function applyValue(field: ScannedField, variants: string[]): string | nu
   if (!variants.length) return null;
   const el = field.elements[0]!;
 
+  if (field.desc.kind === 'checkbox') {
+    const box = el as HTMLInputElement;
+    const want = variants[0] === 'checked';
+    if (box.checked !== want) box.click();
+    if (box.checked !== want) {
+      box.checked = want;
+      dispatch(box);
+    }
+    return want ? 'チェックあり' : 'チェックなし';
+  }
+
   if (field.desc.kind === 'radio') {
     const i = pickOption(field.desc.options, variants);
     if (i < 0) return null;
@@ -79,6 +111,15 @@ export function applyValue(field: ScannedField, variants: string[]): string | nu
       dispatch(radio);
     }
     return field.desc.options[i] ?? null;
+  }
+
+  if (field.desc.kind === 'file') {
+    const ext = /^data:image\/(\w+)/.exec(variants[0] ?? '')?.[1] ?? 'jpg';
+    const file = dataUrlToFile(variants[0] ?? '', `photo.${ext === 'jpeg' ? 'jpg' : ext}`);
+    if (!file) return null;
+    (el as HTMLInputElement).files = toFileList([file]);
+    dispatch(el);
+    return '顔写真';
   }
 
   if (el instanceof HTMLSelectElement) {
@@ -93,17 +134,43 @@ export function applyValue(field: ScannedField, variants: string[]): string | nu
   }
 
   const input = el as HTMLInputElement | HTMLTextAreaElement;
-  const max = input.maxLength > 0 ? input.maxLength : Infinity;
-  const value = variants.find((v) => v.length <= max);
+  const value = pickTextValue(input, variants);
   if (value == null) return null;
   input.value = value;
+  // type="number" などは不正な値を代入すると黙って空になるので、入ったか確かめる
+  if (input.value !== value) return null;
   dispatch(input);
   return value;
 }
 
+/** maxlength・type="number"・pattern 属性に合う候補を選ぶ */
+function pickTextValue(input: HTMLInputElement | HTMLTextAreaElement, variants: string[]): string | null {
+  const max = input.maxLength > 0 ? input.maxLength : Infinity;
+  let candidates = variants.filter((v) => v.length <= max);
+  if (input instanceof HTMLInputElement && input.type === 'number') {
+    candidates = candidates.map((v) => v.normalize('NFKC').replace(/[^\d.]/g, '')).filter((v) => /^\d+(\.\d+)?$/.test(v));
+  }
+  const pattern = input instanceof HTMLInputElement ? input.pattern : '';
+  if (pattern) {
+    try {
+      const re = new RegExp(`^(?:${pattern})$`, 'v');
+      const matched = candidates.find((v) => re.test(v));
+      if (matched) return matched;
+    } catch {
+      // ページ側の pattern が壊れていても入力は続ける
+    }
+  }
+  return candidates[0] ?? null;
+}
+
 /** オーバーレイの枠を付ける要素。非表示のラジオはラベルに付ける */
 export function markTarget(field: ScannedField): HTMLElement {
-  if (field.desc.kind !== 'radio') return field.elements[0]!;
+  if (field.desc.kind === 'file') {
+    const input = field.elements[0] as HTMLInputElement;
+    if (input.getClientRects().length) return input;
+    return Array.from(input.labels ?? []).find((l) => l.getClientRects().length) ?? input;
+  }
+  if (field.desc.kind !== 'radio' && field.desc.kind !== 'checkbox') return field.elements[0]!;
   const radios = field.elements as HTMLInputElement[];
   const chosen = radios.find((r) => r.checked) ?? radios[0]!;
   if (chosen.getClientRects().length) return chosen;

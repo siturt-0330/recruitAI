@@ -31,6 +31,11 @@ const status = (action: string): FrameStatus => {
     detected: 12,
     filled: 11,
     warn: 1,
+    missing: [
+      { key: 'cityKana', label: '市区町村（フリガナ）' },
+      { key: 'toeic', label: 'TOEIC スコア' },
+      { key: 'photo', label: '顔写真' },
+    ],
     reviews: [
       {
         id: 'f3',
@@ -46,9 +51,15 @@ const status = (action: string): FrameStatus => {
 };
 
 export const browser = {
-  tabs: { query: async () => [{ id: 1 }] },
+  tabs: {
+    query: async () => [{ id: 1 }],
+    create: async ({ url }: { url: string }) => window.open(url.replace('/options.html', '/test/options.html'), '_blank'),
+  },
   commands: { getAll: async () => [{ name: 'fill-page', shortcut: 'Alt+Shift+F' }] },
-  runtime: { openOptionsPage: async () => window.open("/test/options.html", "_blank") },
+  runtime: {
+    openOptionsPage: async () => window.open('/test/options.html', '_blank'),
+    getURL: (path: string) => path,
+  },
   scripting: {
     executeScript: async (opts: { files?: string[]; args?: [string, unknown] }) => {
       if (opts.files) return [];

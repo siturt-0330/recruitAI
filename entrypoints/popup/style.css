@@ -342,3 +342,61 @@ body {
   color: var(--text-2);
   margin: 0 0 16px;
 }
+
+.missing {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--accent-bg);
+  color: var(--accent-text);
+}
+
+.missing-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.missing-head span:nth-child(2) {
+  flex: 1;
+}
+
+.missing-count {
+  font-weight: 400;
+  font-size: 11px;
+}
+
+.missing .chips {
+  margin-top: 8px;
+}
+
+.missing .chip {
+  background: var(--surface);
+  border-color: transparent;
+  color: var(--text);
+}
+
+.missing .chip:hover {
+  border-color: var(--accent);
+}
+
+.more-chip {
+  font-size: 11px;
+  align-self: center;
+}
+
+.add-btn {
+  margin-top: 10px;
+  background: var(--surface);
+  border-color: transparent;
+  color: var(--accent-text);
+  font-weight: 500;
+}
+
+.missing-note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  opacity: 0.85;
+}
