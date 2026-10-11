@@ -183,7 +183,7 @@ const STEPS: Step[] = [
     body: (
       <p>
         このページの下にある <strong>API キー</strong> 欄に貼り付けて <strong>保存</strong> を押し、判定エンジンを{' '}
-        <strong>ルール + OpenAI</strong> に切り替えれば完了です。
+        <strong>ルール + Sophon</strong> に切り替えれば完了です。
       </p>
     ),
     figure: (
@@ -203,7 +203,7 @@ const STEPS: Step[] = [
         <MockLabel>判定エンジン</MockLabel>
         <div className="mock-seg">
           <span>ルールのみ</span>
-          <span className="on target-soft">ルール + OpenAI</span>
+          <span className="on target-soft">ルール + Sophon</span>
         </div>
       </div>
     ),

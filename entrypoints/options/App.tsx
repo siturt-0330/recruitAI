@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Copy, Eye, EyeOff, ImagePlus, KeyRound, Loader2, Plus, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, Copy, Eye, EyeOff, Loader2, MoreHorizontal, Plus, Trash2, X } from 'lucide-react';
+import { ProfileAvatar } from '@/components/ProfileAvatar';
+import { essentialProgress } from '@/lib/essentials';
 import { PREFECTURES } from '@/lib/prefectures';
 import { activeProfileIdItem, emptyProfile, getProfiles, getSettings, profilesItem, settingsItem } from '@/lib/store';
 import { DEFAULT_SETTINGS, type Profile, type Settings } from '@/lib/types';
@@ -12,6 +14,8 @@ const readHash = (): PageId => {
   const h = location.hash.slice(1);
   return h === 'ai' || PAGES.some((p) => p.id === h) ? (h as PageId) : 'basic';
 };
+
+const isEssential = (key: string) => (ESSENTIALS as readonly string[]).includes(key);
 
 export default function App() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -104,45 +108,51 @@ export default function App() {
 
   if (!profile) return null;
 
-  const essentialsDone = ESSENTIALS.filter((k) => !!profile[k]).length;
+  const essentials = essentialProgress(profile);
+  const pageIndex = PAGES.findIndex((p) => p.id === page);
+  const nextPage = PAGES[pageIndex + 1];
 
   return (
     <div className="layout">
       <aside className="side">
-        <div className="brand">RecruitAI</div>
-
-        <div className="profile-switch">
-          <div className="avatar">{(profile.lastName || profile.label).slice(0, 1)}</div>
-          <div className="ps-text">
-            <span className="ps-name">{`${profile.lastName} ${profile.firstName}`.trim() || '名前未登録'}</span>
-            <span className="ps-label">
-              {profile.label}
-              <ChevronDown size={12} />
-            </span>
+        <div className="me">
+          <ProfileAvatar profile={profile} size={60} progress={essentials.ratio} />
+          <div className="me-pct">{Math.round(essentials.ratio * 100)}% 完成</div>
+          <div className="me-left">
+            {essentials.done < essentials.total ? `よく使う項目 あと${essentials.total - essentials.done}つ` : 'よく使う項目はすべて入力済み'}
           </div>
-          <select aria-label="プロフィールを切り替え" value={activeId} onChange={(e) => switchProfile(e.target.value)}>
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="ps-actions">
-          <button className="mini" onClick={() => addProfile()}>
-            <Plus size={13} />
-            追加
-          </button>
-          <button className="mini" onClick={() => addProfile(profile)}>
-            <Copy size={13} />
-            複製
-          </button>
-          {profiles.length > 1 && (
-            <button className="mini danger" onClick={removeProfile}>
-              <Trash2 size={13} />
-              削除
-            </button>
-          )}
+          <div className="me-switch">
+            <span>@{profile.label}</span>
+            <ChevronDown size={14} />
+            <select aria-label="プロフィールを切り替え" value={activeId} onChange={(e) => switchProfile(e.target.value)}>
+              {profiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <details className="menu">
+            <summary aria-label="プロフィールの操作">
+              <MoreHorizontal size={18} />
+            </summary>
+            <div className="menu-pop">
+              <button onClick={() => addProfile()}>
+                <Plus size={15} />
+                新しいプロフィール
+              </button>
+              <button onClick={() => addProfile(profile)}>
+                <Copy size={15} />
+                このプロフィールを複製
+              </button>
+              {profiles.length > 1 && (
+                <button className="danger" onClick={removeProfile}>
+                  <Trash2 size={15} />
+                  削除
+                </button>
+              )}
+            </div>
+          </details>
         </div>
 
         <nav>
@@ -151,18 +161,15 @@ export default function App() {
             const Icon = p.icon;
             return (
               <button key={p.id} className={page === p.id ? 'nav on' : 'nav'} onClick={() => go(p.id)}>
-                <Icon size={16} />
+                <Icon size={20} strokeWidth={page === p.id ? 2.4 : 1.8} />
                 <span className="nav-label">{p.label}</span>
-                <span className={filled === total ? 'count done' : 'count'}>
-                  {filled === total ? <Check size={12} /> : `${filled}/${total}`}
-                </span>
+                <span className="count">{filled === total ? <Check size={14} /> : `${filled}/${total}`}</span>
               </button>
             );
           })}
-          <div className="nav-sep" />
           <button className={page === 'ai' ? 'nav on' : 'nav'} onClick={() => go('ai')}>
-            <KeyRound size={16} />
-            <span className="nav-label">AI 設定</span>
+            <span className="orb" style={{ width: 22, height: 22, ['--ring' as string]: '1.2px', ['--glow' as string]: '3px' }} />
+            <span className="nav-label">Sophon</span>
           </button>
         </nav>
       </aside>
@@ -170,14 +177,14 @@ export default function App() {
       <main className="main">
         <div className="topbar">
           <input
-            className="title-input"
+            className="label-input"
             value={profile.label}
             onChange={(e) => update({ label: e.target.value })}
             aria-label="プロフィール名"
           />
           <span className={`save-state ${saveState}`}>
-            {saveState === 'saving' ? <Loader2 size={13} className="spin" /> : <Check size={13} />}
-            {saveState === 'saving' ? '保存中…' : '自動保存済み'}
+            {saveState === 'saving' ? <Loader2 size={14} className="spin" /> : <Check size={14} />}
+            {saveState === 'saving' ? '保存中…' : '保存済み'}
           </span>
         </div>
 
@@ -185,23 +192,18 @@ export default function App() {
           <AiSettings settings={settings} onSave={saveSettings} />
         ) : (
           <PageView
-            page={PAGES.find((p) => p.id === page)!}
+            page={PAGES[pageIndex]!}
             profile={profile}
             update={update}
-            essentials={page === 'basic' ? { done: essentialsDone, total: ESSENTIALS.length } : undefined}
-            onNext={(() => {
-              const i = PAGES.findIndex((p) => p.id === page);
-              const next = PAGES[i + 1];
-              return next ? () => go(next.id) : undefined;
-            })()}
-            nextLabel={PAGES[PAGES.findIndex((p) => p.id === page) + 1]?.label}
+            essentials={page === 'basic' ? essentials : undefined}
+            next={nextPage ? { label: nextPage.label, go: () => go(nextPage.id) } : undefined}
           />
         )}
       </main>
 
       {toast && (
         <div className="toast" role="status">
-          <Check size={14} />
+          <Check size={15} />
           {toast}
         </div>
       )}
@@ -214,8 +216,7 @@ function PageView(props: {
   profile: Profile;
   update(patch: Partial<Profile>): void;
   essentials?: { done: number; total: number };
-  onNext?: () => void;
-  nextLabel?: string;
+  next?: { label: string; go(): void };
 }) {
   const { page, profile, update, essentials } = props;
   const { filled, total } = pageProgress(page, profile);
@@ -223,23 +224,23 @@ function PageView(props: {
   return (
     <>
       <header className="page-head">
-        <h1>{page.label}</h1>
-        <p>{page.description}</p>
-        <div className="progress" aria-label={`${filled} / ${total} 項目入力済み`}>
-          <div className="progress-bar" style={{ width: `${(filled / total) * 100}%` }} />
+        <div className="page-title">
+          <h1>{page.label}</h1>
+          <span className="page-count">
+            {filled} / {total}
+          </span>
         </div>
-        <span className="progress-text">
-          {filled} / {total} 項目
-        </span>
+        <p>{page.description}</p>
       </header>
 
       {essentials && essentials.done < essentials.total && (
-        <div className="hint-card">
-          <div className="hint-title">まずは「よく使う」項目だけで大丈夫です</div>
-          <p>
-            氏名・連絡先・学校など <strong>{essentials.total}</strong> 項目を埋めれば、多くの応募フォームに対応できます（あと
-            {essentials.total - essentials.done} 項目）。それ以外は、応募フォームで必要になったときにポップアップでお知らせします。
-          </p>
+        <div className="hint">
+          <div className="hint-text">
+            <strong>まずは「よく使う」項目だけで大丈夫</strong>
+            <span>
+              残りは、応募フォームで必要になったときにポップアップでお知らせします。あと {essentials.total - essentials.done} 項目。
+            </span>
+          </div>
           <div className="hint-bar">
             <div style={{ width: `${(essentials.done / essentials.total) * 100}%` }} />
           </div>
@@ -256,42 +257,55 @@ function PageView(props: {
               ))}
             </div>
           )}
-          {s.detail && (
-            <details className="more" open={s.fields.length === 0 ? undefined : s.detail.some((f) => isFilled(f, profile)) || undefined}>
-              <summary>
-                <span>{s.fields.length ? '詳細を入力' : '入力する'}</span>
-                <span className="more-label">{s.detailLabel}</span>
-                <span className="more-count">
-                  {s.detail.filter((f) => isFilled(f, profile)).length}/{s.detail.length}
-                </span>
-                <ChevronDown size={16} className="chev" />
-              </summary>
-              <div className="grid">
-                {s.detail.map((f) => (
-                  <FieldView key={fieldId(f)} field={f} profile={profile} update={update} />
-                ))}
-              </div>
-            </details>
-          )}
+          {s.detail && <More section={s} profile={profile} update={update} />}
         </section>
       ))}
 
-      {props.onNext && (
-        <button className="next" onClick={props.onNext}>
-          次へ：{props.nextLabel}
-        </button>
+      {props.next && (
+        <div className="next-row">
+          <button className="btn btn-primary" onClick={props.next.go}>
+            次へ：{props.next.label}
+          </button>
+        </div>
       )}
     </>
   );
 }
 
+/** X の「さらに表示」のように、細かい項目を開閉する */
+function More({ section, profile, update }: { section: PageDef['sections'][number]; profile: Profile; update(patch: Partial<Profile>): void }) {
+  const detail = section.detail ?? [];
+  const filledCount = detail.filter((f) => isFilled(f, profile)).length;
+  const [open, setOpen] = useState(filledCount > 0 || section.fields.length === 0);
+  return (
+    <div className={section.fields.length ? 'more' : 'more only'}>
+      <button className="more-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span className="more-link">{open ? '表示を減らす' : section.fields.length ? 'さらに表示' : '入力する'}</span>
+        <span className="more-label">{section.detailLabel}</span>
+        <span className="more-count">
+          {filledCount}/{detail.length}
+        </span>
+      </button>
+      {open && (
+        <div className="grid more-body">
+          {detail.map((f) => (
+            <FieldView key={fieldId(f)} field={f} profile={profile} update={update} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const fieldId = (f: FieldDef) => (f.key === 'custom' ? f.render : f.key);
+
+/** 選択肢が少ないプルダウンは、押すだけで選べるピル型のボタンにする */
+const CHIP_LIMIT = 5;
 
 function FieldView({ field, profile, update }: { field: FieldDef; profile: Profile; update(patch: Partial<Profile>): void }) {
   if (field.key === 'custom') {
     return (
       <div className="field wide">
-        <span className="field-label">{field.label}</span>
         {field.render === 'kisei' && <KiseiEditor profile={profile} update={update} />}
         {field.render === 'qualifications' && <QualificationsEditor profile={profile} update={update} />}
         {field.render === 'locations' && <LocationsEditor profile={profile} update={update} />}
@@ -302,38 +316,78 @@ function FieldView({ field, profile, update }: { field: FieldDef; profile: Profi
 
   const key = field.key;
   const value = profile[key];
-  const essential = ESSENTIALS.includes(key);
   const set = (v: string) => update({ [key]: v } as Partial<Profile>);
+  const essential = isEssential(key);
+
+  if (field.type === 'select') {
+    const options = field.options.map((o): [string, string] => (Array.isArray(o) ? o : [o, o]));
+    if (options.filter(([v]) => v !== '').length <= CHIP_LIMIT) {
+      return (
+        <div className={field.wide ? 'field wide' : 'field'}>
+          <div className="field-title">
+            {field.label}
+            {essential && <i className="dot" title="よく使う項目" />}
+          </div>
+          <div className="seg">
+            {options
+              .filter(([v]) => v !== '')
+              .map(([v, l]) => (
+                <button key={v} aria-pressed={value === v} onClick={() => set(value === v ? '' : v)}>
+                  {l}
+                </button>
+              ))}
+          </div>
+          {field.hint && <small>{field.hint}</small>}
+        </div>
+      );
+    }
+    return (
+      <label className={field.wide ? 'field wide' : 'field'}>
+        <span className={value ? 'fl filled' : 'fl'}>
+          <span className="fl-label">
+            {field.label}
+            {essential && <i className="dot" title="よく使う項目" />}
+          </span>
+          <select value={value} onChange={(e) => set(e.target.value)}>
+            {options.map(([v, l]) => (
+              <option key={v} value={v}>
+                {v === '' ? '' : l}
+              </option>
+            ))}
+          </select>
+          <ChevronDown size={16} className="fl-chev" />
+        </span>
+        {field.hint && <small>{field.hint}</small>}
+      </label>
+    );
+  }
 
   return (
     <label className={field.wide ? 'field wide' : 'field'}>
-      <span className="field-label">
-        {field.label}
-        {essential && <span className="badge">よく使う</span>}
+      <span className={value || field.type === 'date' || field.type === 'month' ? 'fl filled' : 'fl'}>
+        <span className="fl-label">
+          {field.label}
+          {essential && <i className="dot" title="よく使う項目" />}
+        </span>
+        {field.type === 'textarea' ? (
+          <textarea rows={3} value={value} placeholder={field.placeholder} onChange={(e) => set(e.target.value)} />
+        ) : (
+          <input type={field.type ?? 'text'} value={value} placeholder={field.placeholder} onChange={(e) => set(e.target.value)} />
+        )}
       </span>
-      {field.type === 'select' ? (
-        <select className="input" value={value} onChange={(e) => set(e.target.value)}>
-          {field.options.map((o) => {
-            const [v, l] = Array.isArray(o) ? o : [o, o];
-            return (
-              <option key={v} value={v}>
-                {l}
-              </option>
-            );
-          })}
-        </select>
-      ) : field.type === 'textarea' ? (
-        <textarea className="input textarea" rows={3} value={value} placeholder={field.placeholder} onChange={(e) => set(e.target.value)} />
-      ) : (
-        <input
-          className="input"
-          type={field.type ?? 'text'}
-          value={value}
-          placeholder={field.placeholder}
-          onChange={(e) => set(e.target.value)}
-        />
-      )}
       {field.hint && <small>{field.hint}</small>}
+    </label>
+  );
+}
+
+/** 枠の中に項目名を小さく出す入力欄（X の入力欄の形） */
+function Float(props: { label: string; value: string; onChange(v: string): void; type?: string; placeholder?: string }) {
+  return (
+    <label className="field">
+      <span className={props.value || props.type === 'month' ? 'fl filled' : 'fl'}>
+        <span className="fl-label">{props.label}</span>
+        <input type={props.type ?? 'text'} value={props.value} placeholder={props.placeholder} onChange={(e) => props.onChange(e.target.value)} />
+      </span>
     </label>
   );
 }
@@ -343,41 +397,32 @@ type EditorProps = { profile: Profile; update(patch: Partial<Profile>): void };
 function KiseiEditor({ profile, update }: EditorProps) {
   return (
     <div className="sub">
-      <label className="check">
-        <input type="checkbox" checked={profile.kiseiSame} onChange={(e) => update({ kiseiSame: e.target.checked })} />
-        帰省先（休暇中の連絡先）は現住所と同じ
+      <label className="switch-row">
+        <span>
+          <strong>帰省先は現住所と同じ</strong>
+          <small>休暇中の連絡先として、現住所をそのまま使います</small>
+        </span>
+        <input type="checkbox" role="switch" checked={profile.kiseiSame} onChange={(e) => update({ kiseiSame: e.target.checked })} />
       </label>
       {!profile.kiseiSame && (
         <div className="grid">
+          <Float label="郵便番号" value={profile.kiseiPostalCode} placeholder="976-0053" onChange={(v) => update({ kiseiPostalCode: v })} />
           <label className="field">
-            <span className="field-label">郵便番号</span>
-            <input className="input" value={profile.kiseiPostalCode} placeholder="976-0053" onChange={(e) => update({ kiseiPostalCode: e.target.value })} />
+            <span className={profile.kiseiPrefecture ? 'fl filled' : 'fl'}>
+              <span className="fl-label">都道府県</span>
+              <select value={profile.kiseiPrefecture} onChange={(e) => update({ kiseiPrefecture: e.target.value })}>
+                <option value="" />
+                {PREFECTURES.map((p) => (
+                  <option key={p}>{p}</option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="fl-chev" />
+            </span>
           </label>
-          <label className="field">
-            <span className="field-label">都道府県</span>
-            <select className="input" value={profile.kiseiPrefecture} onChange={(e) => update({ kiseiPrefecture: e.target.value })}>
-              <option value="">選択してください</option>
-              {PREFECTURES.map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span className="field-label">市区町村</span>
-            <input className="input" value={profile.kiseiCity} onChange={(e) => update({ kiseiCity: e.target.value })} />
-          </label>
-          <label className="field">
-            <span className="field-label">町名・番地</span>
-            <input className="input" value={profile.kiseiAddressLine} onChange={(e) => update({ kiseiAddressLine: e.target.value })} />
-          </label>
-          <label className="field">
-            <span className="field-label">建物名</span>
-            <input className="input" value={profile.kiseiBuilding} onChange={(e) => update({ kiseiBuilding: e.target.value })} />
-          </label>
-          <label className="field">
-            <span className="field-label">電話番号</span>
-            <input className="input" type="tel" value={profile.kiseiPhone} placeholder="0244-12-3456" onChange={(e) => update({ kiseiPhone: e.target.value })} />
-          </label>
+          <Float label="市区町村" value={profile.kiseiCity} onChange={(v) => update({ kiseiCity: v })} />
+          <Float label="町名・番地" value={profile.kiseiAddressLine} onChange={(v) => update({ kiseiAddressLine: v })} />
+          <Float label="建物名" value={profile.kiseiBuilding} onChange={(v) => update({ kiseiBuilding: v })} />
+          <Float label="電話番号" type="tel" value={profile.kiseiPhone} placeholder="0244-12-3456" onChange={(v) => update({ kiseiPhone: v })} />
         </div>
       )}
     </div>
@@ -390,20 +435,21 @@ function QualificationsEditor({ profile, update }: EditorProps) {
     update({ qualifications: items.map((q, j) => (j === i ? { ...q, ...patch } : q)) });
   return (
     <div className="sub">
+      <div className="field-title">その他の資格</div>
       {items.map((q, i) => (
         <div className="row-item" key={i}>
-          <input className="input" value={q.name} placeholder="日商簿記検定2級 合格" onChange={(e) => set(i, { name: e.target.value })} />
-          <input className="input month" type="month" value={q.date} onChange={(e) => set(i, { date: e.target.value })} aria-label="取得年月" />
-          <button className="icon" aria-label="削除" onClick={() => update({ qualifications: items.filter((_, j) => j !== i) })}>
-            <X size={14} />
+          <Float label="資格名" value={q.name} placeholder="日商簿記検定2級 合格" onChange={(v) => set(i, { name: v })} />
+          <Float label="取得年月" type="month" value={q.date} onChange={(v) => set(i, { date: v })} />
+          <button className="icon-round" aria-label="削除" onClick={() => update({ qualifications: items.filter((_, j) => j !== i) })}>
+            <X size={16} />
           </button>
         </div>
       ))}
-      <button className="mini" onClick={() => update({ qualifications: [...items, { name: '', date: '' }] })}>
-        <Plus size={13} />
+      <button className="text-btn" onClick={() => update({ qualifications: [...items, { name: '', date: '' }] })}>
+        <Plus size={15} />
         資格を追加
       </button>
-      <small>運転免許・TOEIC・英検は上の欄から自動で一覧に入ります</small>
+      <small>運転免許・TOEIC・英検は、上の欄から自動で一覧に入ります</small>
     </div>
   );
 }
@@ -411,13 +457,18 @@ function QualificationsEditor({ profile, update }: EditorProps) {
 function LocationsEditor({ profile, update }: EditorProps) {
   const set = (i: number, v: string) => update({ desiredLocations: profile.desiredLocations.map((l, j) => (j === i ? v : l)) });
   return (
-    <div className="locations">
-      {['第1希望', '第2希望', '第3希望'].map((label, i) => (
-        <label className="field" key={label}>
-          <span className="field-label">{label}</span>
-          <input className="input" list="prefectures" value={profile.desiredLocations[i] ?? ''} onChange={(e) => set(i, e.target.value)} placeholder={['東京都', '大阪府', '全国'][i]} />
-        </label>
-      ))}
+    <div className="sub">
+      <div className="field-title">希望勤務地</div>
+      <div className="locations">
+        {['第1希望', '第2希望', '第3希望'].map((label, i) => (
+          <label className="field" key={label}>
+            <span className={profile.desiredLocations[i] ? 'fl filled' : 'fl'}>
+              <span className="fl-label">{label}</span>
+              <input list="prefectures" value={profile.desiredLocations[i] ?? ''} onChange={(e) => set(i, e.target.value)} placeholder={['東京都', '大阪府', '全国'][i]} />
+            </span>
+          </label>
+        ))}
+      </div>
       <datalist id="prefectures">
         {['全国', '首都圏', '関西', ...PREFECTURES].map((p) => (
           <option key={p} value={p} />
@@ -438,43 +489,39 @@ async function resizePhoto(file: File): Promise<string> {
   return canvas.toDataURL('image/jpeg', 0.88);
 }
 
+/** Instagram の「写真を追加」と同じ形 */
 function PhotoEditor({ profile, update }: EditorProps) {
   const [error, setError] = useState('');
   return (
     <div className="photo">
-      {profile.photo ? (
-        <img src={profile.photo} alt="顔写真" />
-      ) : (
-        <div className="photo-empty">
-          <ImagePlus size={22} />
+      <span className="avatar photo-thumb">{profile.photo ? <img src={profile.photo} alt="顔写真" /> : (profile.lastName || '?').slice(0, 1)}</span>
+      <div className="photo-text">
+        <strong>顔写真</strong>
+        <div className="photo-actions">
+          <label className="text-link">
+            {profile.photo ? '写真を変更' : '写真を追加'}
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  update({ photo: await resizePhoto(file) });
+                  setError('');
+                } catch {
+                  setError('画像を読み込めませんでした。JPEG か PNG を選んでください。');
+                }
+              }}
+            />
+          </label>
+          {profile.photo && (
+            <button className="text-link danger" onClick={() => update({ photo: '' })}>
+              削除
+            </button>
+          )}
         </div>
-      )}
-      <div className="photo-actions">
-        <label className="mini">
-          <ImagePlus size={13} />
-          {profile.photo ? '写真を変更' : '写真を選ぶ'}
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              try {
-                update({ photo: await resizePhoto(file) });
-                setError('');
-              } catch {
-                setError('画像を読み込めませんでした。JPEG か PNG を選んでください。');
-              }
-            }}
-          />
-        </label>
-        {profile.photo && (
-          <button className="mini danger" onClick={() => update({ photo: '' })}>
-            <Trash2 size={13} />
-            削除
-          </button>
-        )}
         <small>{error || '写真はこの端末の中にだけ保存されます'}</small>
       </div>
     </div>
@@ -485,25 +532,42 @@ function AiSettings({ settings, onSave }: { settings: Settings; onSave(patch: Pa
   const [key, setKey] = useState(settings.openaiApiKey);
   const [show, setShow] = useState(false);
   useEffect(() => setKey(settings.openaiApiKey), [settings.openaiApiKey]);
+  const connected = !!settings.openaiApiKey;
 
   return (
     <>
-      <header className="page-head">
-        <h1>AI 設定</h1>
-        <p>
-          ルールで判定できなかった欄を OpenAI の Decisions API（gpt-6-luna）で判定します。
-          送信するのはフォームのラベルや name 属性などの構造だけで、プロフィールの内容は送りません。
-        </p>
-      </header>
-      <ApiKeyGuide defaultOpen={!settings.openaiApiKey} />
+      {/* Sophon の部屋：白黒の画面の中で、ここだけ濃紺にする */}
+      <section className="sophon-hero">
+        <span className="orb live hero-orb" />
+        <div className="hero-body">
+          <div className="hero-kicker">POWERED BY</div>
+          <div className="hero-name">Sophon</div>
+          <div className="hero-row">
+            <span className={connected ? 'hero-status on' : 'hero-status'}>
+              <i />
+              {connected ? '接続済み' : '未接続'}
+            </span>
+            <div className="hero-seg">
+              <button aria-pressed={settings.engine === 'rules'} onClick={() => onSave({ engine: 'rules' })}>
+                ルールのみ
+              </button>
+              <button aria-pressed={settings.engine === 'openai'} onClick={() => onSave({ engine: 'openai' })}>
+                ルール + Sophon
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <ApiKeyGuide defaultOpen={!connected} />
+
       <section className="section">
-        <h2>OpenAI Decisions API</h2>
-        <div className="grid">
-          <label className="field wide">
-            <span className="field-label">API キー</span>
-            <div className="key-row">
+        <h2>API キー</h2>
+        <div className="key-row">
+          <label className="field grow">
+            <span className={key ? 'fl filled' : 'fl'}>
+              <span className="fl-label">OpenAI の API キー</span>
               <input
-                className="input"
                 type={show ? 'text' : 'password'}
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
@@ -511,27 +575,18 @@ function AiSettings({ settings, onSave }: { settings: Settings; onSave(patch: Pa
                 autoComplete="off"
                 spellCheck={false}
               />
-              <button className="btn" type="button" onClick={() => setShow((s) => !s)} aria-label={show ? '隠す' : '表示'}>
-                {show ? <EyeOff size={14} /> : <Eye size={14} />}
-              </button>
-              <button className="btn btn-primary" type="button" onClick={() => onSave({ openaiApiKey: key.trim() })}>
-                保存
-              </button>
-            </div>
-            <small>キーはこのブラウザの拡張機能ストレージにだけ保存されます。</small>
+            </span>
           </label>
-          <div className="field wide">
-            <span className="field-label">判定エンジン</span>
-            <div className="seg narrow">
-              <button aria-pressed={settings.engine === 'rules'} onClick={() => onSave({ engine: 'rules' })}>
-                ルールのみ
-              </button>
-              <button aria-pressed={settings.engine === 'openai'} onClick={() => onSave({ engine: 'openai' })}>
-                ルール + OpenAI
-              </button>
-            </div>
-          </div>
+          <button className="icon-round" type="button" onClick={() => setShow((s) => !s)} aria-label={show ? '隠す' : '表示'}>
+            {show ? <EyeOff size={17} /> : <Eye size={17} />}
+          </button>
+          <button className="btn btn-primary" type="button" onClick={() => onSave({ openaiApiKey: key.trim() })}>
+            保存
+          </button>
         </div>
+        <small className="note">
+          キーはこのブラウザの拡張機能ストレージにだけ保存されます。Sophon は OpenAI の Decisions API（gpt-6-luna）を使って判定します。
+        </small>
       </section>
     </>
   );

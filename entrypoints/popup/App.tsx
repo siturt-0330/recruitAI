@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { browser } from '#imports';
-import { AlertTriangle, ChevronDown, CirclePlus, Settings as SettingsIcon, ShieldCheck, SlidersHorizontal, Sparkles, Undo2, UserPlus } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronRight, Settings as SettingsIcon, ShieldCheck, SlidersHorizontal } from 'lucide-react';
+import { ProfileAvatar } from '@/components/ProfileAvatar';
+import { essentialProgress } from '@/lib/essentials';
 import { FIELD_KEYS, isFieldKey } from '@/lib/fieldKeys';
 import { activeProfileIdItem, getProfiles, getSettings, settingsItem } from '@/lib/store';
 import { activeTabId, runInTab, type Action, type FrameResult } from '@/lib/tab';
 import type { Engine, Profile, Settings } from '@/lib/types';
 import { DEFAULT_SETTINGS } from '@/lib/types';
-
-const RING = 2 * Math.PI * 38;
 
 type Phase = 'idle' | 'filling' | 'done';
 
@@ -76,9 +76,7 @@ export default function App() {
     if (tabId == null) return;
     try {
       const res = await runInTab(tabId, action, payload, frameIds);
-      setFrames((prev) =>
-        frameIds ? prev.map((f) => res.find((r) => r.frameId === f.frameId) ?? f) : res,
-      );
+      setFrames((prev) => (frameIds ? prev.map((f) => res.find((r) => r.frameId === f.frameId) ?? f) : res));
       return res;
     } catch {
       setPageError('このページでは使えません');
@@ -110,7 +108,7 @@ export default function App() {
   const openOptions = () => browser.runtime.openOptionsPage();
   /** 設定画面を、未登録の項目があるページで開く */
   const openOptionsAt = (key: string) => {
-    const page = isFieldKey(key) ? FIELD_KEYS[key].page : 'basic';
+    const page = key === 'ai' ? 'ai' : isFieldKey(key) ? FIELD_KEYS[key].page : 'basic';
     browser.tabs.create({ url: `${browser.runtime.getURL('/options.html')}#${page}` });
   };
 
@@ -120,12 +118,10 @@ export default function App() {
     return (
       <div className="popup">
         <div className="empty">
-          <div className="empty-icon">
-            <UserPlus size={22} />
-          </div>
-          <h1>プロフィールを登録しましょう</h1>
+          <ProfileAvatar size={64} progress={0} />
+          <h1>プロフィールを作りましょう</h1>
           <p>氏名や生年月日を一度登録すると、応募フォームにワンクリックで入力できます。</p>
-          <button className="btn btn-primary wide" onClick={openOptions}>
+          <button className="btn btn-primary wide tall" onClick={openOptions}>
             プロフィールを作成
           </button>
         </div>
@@ -136,16 +132,17 @@ export default function App() {
 
   const progress = summary.detected ? summary.filled / summary.detected : 0;
   const fullName = profile ? `${profile.lastName} ${profile.firstName}`.trim() : '';
+  const completeness = profile ? essentialProgress(profile) : { ratio: 0 };
 
   return (
     <div className="popup">
       <header className="head">
-        <div className="avatar">{(profile?.lastName || profile?.label || '?').slice(0, 1)}</div>
+        <ProfileAvatar profile={profile} size={44} progress={completeness.ratio} />
         <div className="who">
           <div className="name">{fullName || '名前未登録'}</div>
-          <div className="profile-pick">
-            {profile?.label}
-            <ChevronDown size={14} />
+          <div className="handle">
+            @{profile?.label}
+            <ChevronDown size={13} />
             <select aria-label="プロフィールを切り替え" value={activeId} onChange={(e) => changeProfile(e.target.value)}>
               {profiles.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -156,7 +153,7 @@ export default function App() {
           </div>
         </div>
         <button className="icon-btn" aria-label="プロフィールと設定" onClick={openOptions}>
-          <SettingsIcon size={18} />
+          <SettingsIcon size={19} />
         </button>
       </header>
 
@@ -164,108 +161,98 @@ export default function App() {
         <div className="notice">{pageError}</div>
       ) : (
         <>
-          <section className="stats">
-            <svg width="92" height="92" viewBox="0 0 92 92" role="img" aria-label={`入力率 ${Math.round(progress * 100)}%`}>
-              <circle cx="46" cy="46" r="38" fill="none" stroke="var(--surface-1)" strokeWidth="8" />
-              <circle
-                cx="46"
-                cy="46"
-                r="38"
-                fill="none"
-                stroke="var(--ok)"
-                strokeWidth="8"
-                strokeLinecap="round"
-                strokeDasharray={RING}
-                strokeDashoffset={RING * (1 - progress)}
-                transform="rotate(-90 46 46)"
-                className="ring"
-              />
-              <text x="46" y="51" textAnchor="middle" className="ring-text">
-                {Math.round(progress * 100)}%
-              </text>
-            </svg>
-            <dl>
-              <div>
-                <dt>検出した欄</dt>
-                <dd>{summary.detected}</dd>
-              </div>
-              <div>
-                <dt>入力済み</dt>
-                <dd className="ok">{summary.filled}</dd>
-              </div>
-              <div>
-                <dt>要確認</dt>
-                <dd className="warn">{summary.warn}</dd>
-              </div>
-            </dl>
+          <section className="stats" aria-label="このページの入力状況">
+            <div>
+              <strong>{summary.detected}</strong>
+              <span>検出</span>
+            </div>
+            <div>
+              <strong>{summary.filled}</strong>
+              <span>入力済み</span>
+            </div>
+            <div>
+              <strong className={summary.warn ? 'warn' : ''}>{summary.warn}</strong>
+              <span>要確認</span>
+            </div>
           </section>
+          <div className="bar" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
+            <div style={{ width: `${progress * 100}%` }} />
+          </div>
 
-          <button className="fill-btn" onClick={fill} disabled={phase === 'filling'}>
-            <Sparkles size={16} />
-            <span>{phase === 'filling' ? '入力中…' : phase === 'done' ? 'もう一度入力' : 'このページに入力'}</span>
-            {shortcut && <kbd>{shortcut}</kbd>}
-          </button>
-          {phase === 'done' && summary.filled > 0 && (
-            <button className="btn btn-ghost wide undo" onClick={undo}>
-              <Undo2 size={14} />
-              元に戻す
+          {phase === 'filling' ? (
+            <button className="btn btn-primary wide tall thinking" disabled>
+              <span className="orb live" style={{ width: 32, height: 32, ['--ring' as string]: '1.5px', ['--glow' as string]: '5px' }} />
+              <span>Sophon がフォームを読んでいます…</span>
+            </button>
+          ) : (
+            <button className="btn btn-primary wide tall" onClick={fill}>
+              {phase === 'done' ? 'もう一度入力' : 'このページに入力'}
             </button>
           )}
-
-          {phase === 'done' && summary.missing.length > 0 && (
-            <section className="missing">
-              <div className="missing-head">
-                <CirclePlus size={14} />
-                <span>このページで使える未登録の項目</span>
-                <span className="missing-count">{summary.missing.length}件</span>
-              </div>
-              <div className="chips">
-                {summary.missing.slice(0, 6).map((m) => (
-                  <button key={m.key} className="chip" onClick={() => openOptionsAt(m.key)}>
-                    {m.label}
-                  </button>
-                ))}
-                {summary.missing.length > 6 && <span className="more-chip">ほか{summary.missing.length - 6}件</span>}
-              </div>
-              <button className="btn wide add-btn" onClick={() => openOptionsAt(summary.missing[0]!.key)}>
-                プロフィールに追加する
+          <div className="sub-actions">
+            {phase === 'done' && summary.filled > 0 && (
+              <button className="btn grow" onClick={undo}>
+                元に戻す
               </button>
-              <p className="missing-note">登録すると、次に入力したときから自動で入ります。</p>
-            </section>
-          )}
+            )}
+            {shortcut && <span className="kbd">{shortcut}</span>}
+          </div>
 
           {summary.aiError && (
             <div className="notice error">
               <AlertTriangle size={14} />
-              <span>AI判定に失敗したため、ルールだけで入力しました（{summary.aiError}）</span>
+              <span>Sophon の判定に失敗したので、ルールだけで入力しました（{summary.aiError}）</span>
             </div>
           )}
 
           {summary.reviews.length > 0 && (
-            <section className="reviews">
-              <h2>確認が必要な項目</h2>
+            <section className="block">
+              <h2>確認してください</h2>
               {summary.reviews.map((r) => (
-                <div className="review" key={`${r.frameId}:${r.id}`}>
-                  <div className="review-head">
-                    <span className="review-title">{r.keyLabel}</span>
-                    <span className="review-conf">
-                      {r.source === 'ai' ? 'AI ' : ''}確信度 {Math.round(r.confidence * 100)}%
-                    </span>
-                  </div>
-                  {r.label && <div className="review-label">欄: {r.label}</div>}
-                  <div className="chips">
+                <div className="review sophon-msg" key={`${r.frameId}:${r.id}`}>
+                  <span className="orb" style={{ width: 34, height: 34, ['--ring' as string]: '1.5px', ['--glow' as string]: '4px' }} />
+                  <div className="msg">
+                    <div className="msg-head">
+                      <b>Sophon</b>
+                      <span> · 確信度 {Math.round(r.confidence * 100)}%</span>
+                    </div>
+                    <p className="msg-text">{reviewMessage(r)}</p>
+                    {r.label && r.label !== r.keyLabel && <div className="review-label">欄の見出し：{r.label}</div>}
+                    <div className="chips">
                     {[r.current, ...r.alternatives].map((v, i) => (
                       <button
                         key={v}
-                        className={i === 0 ? 'chip current' : 'chip'}
+                        className="chip"
+                        aria-pressed={i === 0}
                         onClick={() => run('resolve', { id: r.id, value: v }, [r.frameId])}
                       >
                         {v}
                       </button>
                     ))}
+                    </div>
                   </div>
                 </div>
               ))}
+            </section>
+          )}
+
+          {phase === 'done' && summary.missing.length > 0 && (
+            <section className="block">
+              <h2>
+                未登録の項目 <span className="count">{summary.missing.length}</span>
+              </h2>
+              <p className="block-note">登録すると、次から自動で入ります。</p>
+              <ul className="list">
+                {summary.missing.slice(0, 6).map((m) => (
+                  <li key={m.key}>
+                    <button onClick={() => openOptionsAt(m.key)}>
+                      <span>{m.label}</span>
+                      <ChevronRight size={16} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {summary.missing.length > 6 && <p className="block-note">ほか {summary.missing.length - 6} 件</p>}
             </section>
           )}
         </>
@@ -273,8 +260,9 @@ export default function App() {
 
       <details className="advanced">
         <summary>
-          <SlidersHorizontal size={14} />
+          <SlidersHorizontal size={15} />
           詳細設定
+          <ChevronDown size={15} className="chev" />
         </summary>
         <div className="advanced-body">
           <div className="label">判定エンジン</div>
@@ -282,7 +270,7 @@ export default function App() {
             {(
               [
                 ['rules', 'ルールのみ'],
-                ['openai', 'ルール + OpenAI'],
+                ['openai', 'ルール + Sophon'],
               ] as [Engine, string][]
             ).map(([value, label]) => (
               <button key={value} aria-pressed={settings.engine === value} onClick={() => updateSettings({ engine: value })}>
@@ -291,8 +279,8 @@ export default function App() {
             ))}
           </div>
           {settings.engine === 'openai' && !settings.openaiApiKey && (
-            <button className="link" onClick={openOptions}>
-              OpenAI の API キーを設定してください
+            <button className="link" onClick={() => openOptionsAt('ai')}>
+              Sophon を接続する（API キーの設定）
             </button>
           )}
           <div className="label">
@@ -309,13 +297,20 @@ export default function App() {
           <button className="btn wide diag" onClick={copyDiagnosis} disabled={tabId == null || !!pageError}>
             {diagState === 'copied' ? '診断情報をコピーしました' : diagState === 'error' ? 'コピーできませんでした' : '診断情報をコピー'}
           </button>
-          <p className="diag-note">うまく入らないときに送ってください。各欄の見出しと判定結果だけで、入力した値は含まれません。</p>
+          <p className="block-note">うまく入らないときに送ってください。見出しと判定結果だけで、入力した値は含まれません。</p>
         </div>
       </details>
 
       <Footer />
     </div>
   );
+}
+
+/** 要確認の項目を、Sophon からの問いかけの文にする */
+function reviewMessage(r: { keyLabel: string; current: string; alternatives: string[]; source: 'rule' | 'ai' }): string {
+  const choice = r.alternatives.length ? `ほかに「${r.alternatives.join('」「')}」の可能性もあります。` : '';
+  const how = r.source === 'ai' ? 'フォームの見出しから判断して、' : '';
+  return `「${r.keyLabel}」は、${how}「${r.current}」と入れました。${choice}合っていますか？`;
 }
 
 function Footer() {

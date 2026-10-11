@@ -4,29 +4,35 @@ export interface Mark {
   ai: boolean;
 }
 
+/* 入力した欄には朱色の「済」の判子、要確認は山吹色の角判を押す */
 const CSS = `
 :host { all: initial; }
-.box { position: absolute; box-sizing: border-box; border: 2px solid; border-radius: 8px; pointer-events: none; transition: opacity .2s; }
-.box.ok { border-color: #1d9e75; }
-.box.warn { border-color: #d48a1c; }
-.badge { position: absolute; top: -9px; right: -6px; font: 500 10px/1 system-ui, "Hiragino Sans", "Yu Gothic UI", sans-serif; padding: 3px 6px; border-radius: 999px; white-space: nowrap; display: flex; align-items: center; gap: 2px; }
-.ok .badge { background: #e1f5ee; color: #0f6e56; }
-.warn .badge { background: #faeeda; color: #854f0b; }
-.bar { position: fixed; right: 20px; bottom: 20px; display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 14px; border-radius: 999px;
-  background: #fff; color: #1f1e1c; border: 1px solid rgba(31,30,28,.14); box-shadow: 0 8px 24px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.08);
-  font: 13px/1.4 system-ui, "Hiragino Sans", "Yu Gothic UI", sans-serif; pointer-events: auto; animation: rise .25s ease-out; }
-.bar .dot { width: 8px; height: 8px; border-radius: 50%; background: #1d9e75; }
-.bar .dot.warn { background: #d48a1c; }
-.bar button { all: unset; cursor: pointer; font-size: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(31,30,28,.18); }
-.bar button:hover { background: #f1efe8; }
-.bar button.icon { padding: 6px 9px; border-color: transparent; color: #5f5e5a; }
+.box { position: absolute; box-sizing: border-box; border-radius: 6px; pointer-events: none; transition: opacity .2s; }
+.box.ok { box-shadow: 0 0 0 2px rgba(194, 65, 45, .22); }
+.box.warn { box-shadow: 0 0 0 2px rgba(184, 134, 43, .45); }
+.stamp { position: absolute; top: -11px; right: -9px; width: 22px; height: 22px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; background: #fbf8f2;
+  font: 600 11px/1 "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  border: 1.5px solid #c2412d; color: #c2412d; border-radius: 50%; transform: rotate(-12deg);
+  animation: press .28s cubic-bezier(.2, 1.6, .4, 1) both; }
+.warn .stamp { width: auto; padding: 0 4px; border-radius: 3px; border-color: #b8862b; color: #9a6c17; font-size: 10px; }
+@keyframes press { from { transform: rotate(-12deg) scale(1.8); opacity: 0; } }
+.bar { position: fixed; right: 20px; bottom: 20px; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 18px;
+  border-radius: 999px; background: #0f1419; color: #fff; pointer-events: auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25), 0 2px 6px rgba(0,0,0,.15);
+  font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif; animation: rise .25s ease-out; }
+.bar { padding-left: 6px; }
+.bar b { font-weight: 700; }
+.orb { position: relative; width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 50%, #34386a 0%, #23264a 28%, #121322 52%, #0a0a0f 72%); }
+.orb::after { content: ''; width: 42%; height: 42%; border-radius: 50%; background: #0a0a0f;
+  box-shadow: 0 0 0 1.3px #b9bde8, 0 0 4px 1.3px rgba(185, 189, 232, .55); }
+.bar .warn { color: #ffc53d; }
+.bar button { all: unset; cursor: pointer; font-size: 13px; font-weight: 700; padding: 7px 14px; border-radius: 999px; background: #fff; color: #0f1419; }
+.bar button:hover { background: #e7e9ea; }
+.bar button.icon { padding: 7px 10px; background: transparent; color: #8b98a5; font-weight: 400; }
+.bar button.icon:hover { background: rgba(255,255,255,.1); color: #fff; }
 @keyframes rise { from { transform: translateY(8px); opacity: 0; } }
-@media (prefers-color-scheme: dark) {
-  .bar { background: #2c2c2a; color: #f1efe8; border-color: rgba(255,255,255,.14); }
-  .bar button { border-color: rgba(255,255,255,.2); }
-  .bar button:hover { background: #444441; }
-  .bar button.icon { color: #b4b2a9; }
-}
 `;
 
 /** ページ上に入力結果の枠・バッジ・フローティングバーを描く。ページの CSS と干渉しないよう Shadow DOM に閉じ込める */
@@ -53,10 +59,11 @@ export class Overlay {
     for (const mark of marks) {
       const box = this.doc.createElement('div');
       box.className = `box ${mark.status}`;
-      const badge = this.doc.createElement('span');
-      badge.className = 'badge';
-      badge.textContent = mark.status === 'warn' ? '要確認' : mark.ai ? '✓ AI' : '✓';
-      box.append(badge);
+      const stamp = this.doc.createElement('span');
+      stamp.className = 'stamp';
+      stamp.textContent = mark.status === 'warn' ? '確認' : '済';
+      if (mark.ai) stamp.title = 'AI が判定しました';
+      box.append(stamp);
       this.layer!.append(box);
       this.boxes.push({ mark, box });
     }
@@ -83,10 +90,17 @@ export class Overlay {
   private makeBar({ filled, warn }: { filled: number; warn: number }) {
     const bar = this.doc.createElement('div');
     bar.className = 'bar';
-    const dot = this.doc.createElement('span');
-    dot.className = warn ? 'dot warn' : 'dot';
     const text = this.doc.createElement('span');
-    text.textContent = `${filled}件入力しました` + (warn ? ` ・ ${warn}件は確認してください` : '');
+    const count = (n: number, label: string, cls = '') => {
+      const s = this.doc.createElement('span');
+      if (cls) s.className = cls;
+      const b = this.doc.createElement('b');
+      b.textContent = String(n);
+      s.append(b, label);
+      return s;
+    };
+    text.append(count(filled, ' 件入力'));
+    if (warn) text.append(' · ', count(warn, ' 件要確認', 'warn'));
     const undo = this.doc.createElement('button');
     undo.textContent = '元に戻す';
     undo.onclick = () => this.handlers.onUndo();
@@ -95,7 +109,10 @@ export class Overlay {
     close.textContent = '✕';
     close.setAttribute('aria-label', '閉じる');
     close.onclick = () => this.handlers.onClose();
-    bar.append(dot, text, undo, close);
+    const orb = this.doc.createElement('span');
+    orb.className = 'orb';
+    orb.title = 'Sophon';
+    bar.append(orb, text, undo, close);
     return bar;
   }
 
