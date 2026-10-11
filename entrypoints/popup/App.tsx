@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { browser } from '#imports';
-import { AlertTriangle, ChevronDown, Settings as SettingsIcon, ShieldCheck, SlidersHorizontal, Sparkles, Undo2, UserPlus } from 'lucide-react';
-import { activeProfileIdItem, getSettings, profilesItem, settingsItem } from '@/lib/store';
+import { AlertTriangle, ChevronDown, CirclePlus, Settings as SettingsIcon, ShieldCheck, SlidersHorizontal, Sparkles, Undo2, UserPlus } from 'lucide-react';
+import { FIELD_KEYS, isFieldKey } from '@/lib/fieldKeys';
+import { activeProfileIdItem, getProfiles, getSettings, settingsItem } from '@/lib/store';
 import { activeTabId, runInTab, type Action, type FrameResult } from '@/lib/tab';
 import type { Engine, Profile, Settings } from '@/lib/types';
 import { DEFAULT_SETTINGS } from '@/lib/types';
@@ -23,7 +24,7 @@ export default function App() {
   useEffect(() => {
     (async () => {
       const [ps, id, s, tab, commands] = await Promise.all([
-        profilesItem.getValue(),
+        getProfiles(),
         activeProfileIdItem.getValue(),
         getSettings(),
         activeTabId(),
@@ -54,6 +55,7 @@ export default function App() {
       warn: sum('warn'),
       reviews: frames.flatMap((f) => f.result.reviews.map((r) => ({ ...r, frameId: f.frameId }))),
       aiError: frames.find((f) => f.result.aiError)?.result.aiError,
+      missing: [...new Map(frames.flatMap((f) => f.result.missing ?? []).map((m) => [m.key, m])).values()],
     };
   }, [frames]);
 
@@ -93,6 +95,11 @@ export default function App() {
   };
 
   const openOptions = () => browser.runtime.openOptionsPage();
+  /** 設定画面を、未登録の項目があるページで開く */
+  const openOptionsAt = (key: string) => {
+    const page = isFieldKey(key) ? FIELD_KEYS[key].page : 'basic';
+    browser.tabs.create({ url: `${browser.runtime.getURL('/options.html')}#${page}` });
+  };
 
   if (profiles === null) return <div className="popup" />;
 
@@ -190,6 +197,28 @@ export default function App() {
               <Undo2 size={14} />
               元に戻す
             </button>
+          )}
+
+          {phase === 'done' && summary.missing.length > 0 && (
+            <section className="missing">
+              <div className="missing-head">
+                <CirclePlus size={14} />
+                <span>このページで使える未登録の項目</span>
+                <span className="missing-count">{summary.missing.length}件</span>
+              </div>
+              <div className="chips">
+                {summary.missing.slice(0, 6).map((m) => (
+                  <button key={m.key} className="chip" onClick={() => openOptionsAt(m.key)}>
+                    {m.label}
+                  </button>
+                ))}
+                {summary.missing.length > 6 && <span className="more-chip">ほか{summary.missing.length - 6}件</span>}
+              </div>
+              <button className="btn wide add-btn" onClick={() => openOptionsAt(summary.missing[0]!.key)}>
+                プロフィールに追加する
+              </button>
+              <p className="missing-note">登録すると、次に入力したときから自動で入ります。</p>
+            </section>
           )}
 
           {summary.aiError && (

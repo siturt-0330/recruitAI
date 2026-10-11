@@ -2,6 +2,7 @@ import type { FieldKind } from './extract';
 import type { FieldKey } from './fieldKeys';
 import type { Hints, Profile } from './types';
 import { toFullWidth, toHalfKana, toHalfWidthAscii, toHiragana, toKatakana, toWareki } from './japanese';
+import { PREFECTURE_KANA } from './prefectures';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 const uniq = (xs: string[]) => [...new Set(xs.filter(Boolean))];
@@ -9,6 +10,21 @@ const uniq = (xs: string[]) => [...new Set(xs.filter(Boolean))];
 function parseYmd(s: string): [number, number, number] | null {
   const m = /^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/.exec(s);
   return m ? [Number(m[1]), Number(m[2]), Number(m[3] ?? 1)] : null;
+}
+
+/** YYYY-MM を「2026年3月」に。空なら空文字 */
+export function formatYm(s: string): string {
+  const d = parseYmd(s);
+  return d ? `${d[0]}年${d[1]}月` : '';
+}
+
+export function ageOn(birthDate: string, today = new Date()): number | null {
+  const b = parseYmd(birthDate);
+  if (!b) return null;
+  const [y, m, d] = b;
+  let age = today.getFullYear() - y;
+  if (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && today.getDate() < d)) age--;
+  return age;
 }
 
 function kanaForms(s: string, hint: Hints['kana']): string[] {
@@ -31,11 +47,27 @@ export function splitPhone(phone: string): string[] {
   return digits ? [digits] : [];
 }
 
+function phoneForms(phone: string, h: Hints): string[] {
+  const parts = splitPhone(phone);
+  if (!parts.length) return [];
+  const [a, b] = [parts.join('-'), parts.join('')];
+  return h.hyphen === false ? [b, a] : [a, b];
+}
+
+function postalForms(code: string, h: Hints): string[] {
+  const digits = code.normalize('NFKC').replace(/\D/g, '');
+  if (digits.length !== 7) return code ? [code] : [];
+  const [a, b] = [`${digits.slice(0, 3)}-${digits.slice(3)}`, digits];
+  return h.hyphen === false ? [b, a] : [a, b];
+}
+
 function yearForms(y: number, m: number, d: number, era: Hints['era']): string[] {
   const w = toWareki(y, m, d);
   const wareki = w ? [`${w.era}${w.year}`, w.year === 1 ? `${w.era}元` : '', `${w.abbr}${w.year}`] : [];
   const seireki = [String(y)];
-  return era === 'wareki' ? [...wareki, ...seireki] : [...seireki, ...wareki];
+  // 元号が別のプルダウンになっている「［平成▼］［17▼］年」用に、数字だけの和暦年を最後の候補にする
+  const eraNumber = w ? [w.year === 1 ? '元' : '', String(w.year)] : [];
+  return era === 'wareki' ? [...wareki, ...eraNumber, ...seireki] : [...seireki, ...wareki, ...eraNumber];
 }
 
 function dateForms([y, m, d]: [number, number, number], h: Hints): string[] {
@@ -51,21 +83,111 @@ function dateForms([y, m, d]: [number, number, number], h: Hints): string[] {
   return uniq([first, forms.slash, forms.kanji, forms.hyphen, wareki]);
 }
 
+/** 年月（YYYY-MM）の欄。month 型ならそのまま、テキストなら「2026年3月」など */
+function ymForms(s: string, h: Hints, kind: FieldKind): string[] {
+  const d = parseYmd(s);
+  if (!d) return [];
+  if (kind === 'month' || kind === 'date') return [s.slice(0, 7)];
+  const [y, m] = d;
+  const w = toWareki(y, m, 1);
+  const wareki = w ? `${w.era}${w.year === 1 ? '元' : w.year}年${m}月` : '';
+  const kanji = `${y}年${m}月`;
+  const slash = `${y}/${pad2(m)}`;
+  const first = h.era === 'wareki' ? wareki : h.dateFormat === 'slash' || h.dateFormat === 'hyphen' ? slash : kanji;
+  return uniq([first, kanji, slash, `${y}.${pad2(m)}`, wareki]);
+}
+
+function ymPart(s: string, part: 'year' | 'month', h: Hints): string[] {
+  const d = parseYmd(s);
+  if (!d) return [];
+  return part === 'year' ? yearForms(d[0], d[1], 1, h.era) : [String(d[1]), pad2(d[1])];
+}
+
 const GENDER: Record<string, string[]> = {
   male: ['男性', '男', 'male', 'man', 'm'],
   female: ['女性', '女', 'female', 'woman', 'f'],
   other: ['その他', '回答しない', '無回答', 'other'],
 };
 
+const SCHOOL_TYPE_VARIANTS: Record<string, string[]> = {
+  大学: ['大学', '大学（学部）', '4年制大学', '四年制大学', '学部', '大学生', '学士'],
+  '大学院（修士）': ['大学院（修士）', '大学院修士', '修士', '大学院（修士課程）', '大学院'],
+  '大学院（博士）': ['大学院（博士）', '大学院博士', '博士', '大学院（博士課程）', '大学院'],
+  短期大学: ['短期大学', '短大', '短期大学士'],
+  高等専門学校: ['高等専門学校', '高専', '準学士'],
+  専門学校: ['専門学校', '専修学校'],
+  海外の学校: ['海外の学校', '海外大学', '外国大学', '海外'],
+  高校: ['高校', '高等学校'],
+};
+
+const BUNRI_VARIANTS: Record<string, string[]> = {
+  文系: ['文系', '文科系', '文'],
+  理系: ['理系', '理科系', '理'],
+  その他: ['その他', 'どちらでもない'],
+};
+
+const LICENSE_NAME: Record<string, string> = {
+  regular: '普通自動車第一種運転免許',
+  regularAT: '普通自動車第一種運転免許（AT限定）',
+};
+
+function licenseForms(p: Profile, kind: FieldKind): string[] {
+  if (!p.driverLicense) return [];
+  if (p.driverLicense === 'none') return ['なし', '無', '無し', '持っていない', '未取得'];
+  const yes = ['あり', '有', '有り', '取得済み', '取得済', '保有'];
+  const names = p.driverLicense === 'regularAT'
+    ? [LICENSE_NAME.regularAT!, 'AT限定', 'オートマ限定', '普通自動車免許（AT限定）', '普通（AT限定）']
+    : [LICENSE_NAME.regular!, '普通自動車免許', '普通自動車', '普通'];
+  return kind === 'select' || kind === 'radio' ? [...names, ...yes] : names;
+}
+
+/** 資格の一覧。textarea なら改行区切り、1行の欄なら「、」区切り */
+export function qualificationLines(p: Profile): { date: string; text: string }[] {
+  const out: { date: string; text: string }[] = [];
+  if (LICENSE_NAME[p.driverLicense]) out.push({ date: p.driverLicenseDate, text: `${LICENSE_NAME[p.driverLicense]} 取得` });
+  if (p.toeic) out.push({ date: p.toeicDate, text: `TOEIC L&R ${p.toeic}点 取得` });
+  if (p.toefl) out.push({ date: '', text: `TOEFL iBT ${p.toefl}点 取得` });
+  if (p.eiken) out.push({ date: '', text: `実用英語技能検定 ${p.eiken} 合格` });
+  for (const q of p.qualifications) if (q.name.trim()) out.push({ date: q.date, text: q.name.trim() });
+  return out;
+}
+
+/** 学歴を履歴書の形式で並べる */
+export function educationLines(p: Profile): string[] {
+  const lines: string[] = [];
+  if (p.highSchool) {
+    if (p.highSchoolAdmission) lines.push(`${formatYm(p.highSchoolAdmission)} ${p.highSchool} 入学`);
+    if (p.highSchoolGraduation) lines.push(`${formatYm(p.highSchoolGraduation)} ${p.highSchool} 卒業`);
+  }
+  const school = [p.school, p.faculty, p.department].filter(Boolean).join(' ');
+  if (school) {
+    if (p.admission) lines.push(`${formatYm(p.admission)} ${school} 入学`);
+    if (p.graduation) {
+      lines.push(`${formatYm(p.graduation)} ${school} ${p.graduationStatus === 'graduated' ? '卒業' : '卒業見込み'}`);
+    }
+  }
+  return lines;
+}
+
+function kiseiOf(p: Profile) {
+  return p.kiseiSame
+    ? { postal: p.postalCode, pref: p.prefecture, city: p.city, line: p.addressLine, building: p.building, phone: p.landline || p.phone }
+    : { postal: p.kiseiPostalCode, pref: p.kiseiPrefecture, city: p.kiseiCity, line: p.kiseiAddressLine, building: p.kiseiBuilding, phone: p.kiseiPhone };
+}
+
+function fullAddress(pref: string, city: string, line: string, building: string): string[] {
+  const base = `${pref}${city}${line}`;
+  return base ? [building ? `${base}　${building}` : base, `${base}${building}`] : [];
+}
+
 function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): string[] {
   const birth = parseYmd(p.birthDate);
-  const grad = parseYmd(p.graduation);
-  const phone = splitPhone(p.phone);
-  const postal = p.postalCode.normalize('NFKC').replace(/\D/g, '');
-  const withHyphen = h.hyphen !== false;
   const join = (a: string, b: string, seps: string[]) => (a && b ? seps.map((s) => `${a}${s}${b}`) : [a || b]);
+  const kisei = kiseiOf(p);
+  const multiline = kind === 'textarea';
 
   switch (key) {
+    // 基本情報
     case 'fullName':
       return join(p.lastName, p.firstName, ['　', ' ', '']);
     case 'lastName':
@@ -89,35 +211,67 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
       if (kind === 'date') return [p.birthDate];
       if (kind === 'month') return [`${birth[0]}-${pad2(birth[1])}`];
       return dateForms(birth, h);
+    case 'birthEra': {
+      const w = birth ? toWareki(...birth) : null;
+      return w ? [w.era, w.abbr, `${w.era}（${w.abbr}）`] : [];
+    }
     case 'birthYear':
       return birth ? yearForms(...birth, h.era) : [];
     case 'birthMonth':
       return birth ? [String(birth[1]), pad2(birth[1])] : [];
     case 'birthDay':
       return birth ? [String(birth[2]), pad2(birth[2])] : [];
+    case 'age': {
+      const age = ageOn(p.birthDate);
+      return age == null ? [] : [String(age), `${age}歳`];
+    }
     case 'gender':
       return GENDER[p.gender] ?? [];
+    case 'nationality':
+      return p.nationality === '日本' ? ['日本', '日本国籍', 'Japan'] : [p.nationality];
+    case 'photo':
+      return [p.photo];
+
+    // 連絡先・住所
     case 'email':
     case 'emailConfirm':
       return [p.email];
-    case 'phone': {
-      if (!phone.length) return [];
-      const [a, b] = [phone.join('-'), phone.join('')];
-      return withHyphen ? [a, b] : [b, a];
+    case 'emailSub':
+      return [p.emailSub];
+    case 'emailLocal':
+    case 'emailDomain': {
+      const at = p.email.lastIndexOf('@');
+      if (at < 0) return [];
+      return [key === 'emailLocal' ? p.email.slice(0, at) : p.email.slice(at + 1)];
     }
+    case 'phone':
+      return phoneForms(p.phone, h);
     case 'phone1':
     case 'phone2':
-    case 'phone3':
-      return phone.length === 3 ? [phone[Number(key.slice(-1)) - 1] ?? ''] : [];
-    case 'postalCode': {
-      if (postal.length !== 7) return p.postalCode ? [p.postalCode] : [];
-      const [a, b] = [`${postal.slice(0, 3)}-${postal.slice(3)}`, postal];
-      return withHyphen ? [a, b] : [b, a];
+    case 'phone3': {
+      const parts = splitPhone(p.phone);
+      return parts.length === 3 ? [parts[Number(key.slice(-1)) - 1] ?? ''] : [];
     }
+    case 'landline':
+      return phoneForms(p.landline, h);
+    case 'landline1':
+    case 'landline2':
+    case 'landline3': {
+      const parts = splitPhone(p.landline);
+      return parts.length === 3 ? [parts[Number(key.slice(-1)) - 1] ?? ''] : [];
+    }
+    case 'cityAddressLine':
+      return p.city || p.addressLine ? [`${p.city}${p.addressLine}`] : [];
+    case 'postalCode':
+      return postalForms(p.postalCode, h);
     case 'postalCode1':
-      return postal.length === 7 ? [postal.slice(0, 3)] : [];
     case 'postalCode2':
-      return postal.length === 7 ? [postal.slice(3)] : [];
+    case 'kiseiPostalCode1':
+    case 'kiseiPostalCode2': {
+      const code = (key.startsWith('kisei') ? kisei.postal : p.postalCode).normalize('NFKC').replace(/\D/g, '');
+      if (code.length !== 7) return [];
+      return [key.endsWith('1') ? code.slice(0, 3) : code.slice(3)];
+    }
     case 'prefecture':
       return [p.prefecture, p.prefecture === '北海道' ? '' : p.prefecture.replace(/[都府県]$/, '')];
     case 'city':
@@ -126,32 +280,230 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
       return [p.addressLine];
     case 'building':
       return [p.building];
-    case 'fullAddress': {
-      const base = `${p.prefecture}${p.city}${p.addressLine}`;
-      return base ? [p.building ? `${base}　${p.building}` : base] : [];
+    case 'fullAddress':
+      return fullAddress(p.prefecture, p.city, p.addressLine, p.building);
+    case 'prefectureKana':
+      return kanaForms(PREFECTURE_KANA[p.prefecture] ?? '', h.kana);
+    case 'cityKana':
+      return kanaForms(p.cityKana, h.kana);
+    case 'addressLineKana':
+      return kanaForms(p.addressLineKana, h.kana);
+    case 'buildingKana':
+      return kanaForms(p.buildingKana, h.kana);
+    case 'fullAddressKana': {
+      const pref = PREFECTURE_KANA[p.prefecture] ?? '';
+      if (!pref || !p.cityKana) return [];
+      return kanaForms(`${pref}${p.cityKana}${p.addressLineKana}${p.buildingKana ? `　${p.buildingKana}` : ''}`, h.kana);
     }
+    case 'nearestLine':
+      return [p.nearestLine, p.nearestLine.replace(/線$/, '')];
+    case 'nearestStation':
+      return [p.nearestStation.replace(/駅$/, ''), p.nearestStation.endsWith('駅') ? p.nearestStation : `${p.nearestStation}駅`].filter(
+        () => !!p.nearestStation,
+      );
+    case 'kiseiSameCheck':
+      return [p.kiseiSame ? 'checked' : 'unchecked'];
+    case 'kiseiPostalCode':
+      return postalForms(kisei.postal, h);
+    case 'kiseiPrefecture':
+      return [kisei.pref, kisei.pref === '北海道' ? '' : kisei.pref.replace(/[都府県]$/, '')];
+    case 'kiseiCity':
+      return [kisei.city];
+    case 'kiseiAddressLine':
+      return [kisei.line];
+    case 'kiseiBuilding':
+      return [kisei.building];
+    case 'kiseiFullAddress':
+      return fullAddress(kisei.pref, kisei.city, kisei.line, kisei.building);
+    case 'kiseiPhone':
+      return phoneForms(kisei.phone, h);
+    case 'kiseiPhone1':
+    case 'kiseiPhone2':
+    case 'kiseiPhone3': {
+      const parts = splitPhone(kisei.phone);
+      return parts.length === 3 ? [parts[Number(key.slice(-1)) - 1] ?? ''] : [];
+    }
+    case 'kiseiCityAddressLine':
+      return kisei.city || kisei.line ? [`${kisei.city}${kisei.line}`] : [];
+    case 'emergencyName':
+      return [p.emergencyName];
+    case 'emergencyRelation':
+      return [p.emergencyRelation];
+    case 'emergencyPhone':
+      return phoneForms(p.emergencyPhone, h);
+
+    // 学歴
+    case 'schoolType':
+      return SCHOOL_TYPE_VARIANTS[p.schoolType] ?? [p.schoolType];
+    case 'bunri':
+      return BUNRI_VARIANTS[p.bunri] ?? [p.bunri];
     case 'school':
       return [p.school];
+    case 'schoolKana':
+      return kanaForms(p.schoolKana, h.kana);
+    case 'schoolInitial': {
+      // 「が」→「か」、「ぁ」→「あ」のように、五十音表の文字にそろえる
+      const first = toHiragana(p.schoolKana.trim()).normalize('NFD').charAt(0);
+      if (!first) return [];
+      const base = ({ ぁ: 'あ', ぃ: 'い', ぅ: 'う', ぇ: 'え', ぉ: 'お', ゃ: 'や', ゅ: 'ゆ', ょ: 'よ', っ: 'つ', ゎ: 'わ' } as Record<string, string>)[first] ?? first;
+      return [base, toKatakana(base)];
+    }
+    case 'schoolPrefecture':
+      return [p.schoolPrefecture, p.schoolPrefecture === '北海道' ? '' : p.schoolPrefecture.replace(/[都府県]$/, '')];
     case 'faculty':
       return [p.faculty];
     case 'department':
       return [p.department];
+    case 'fieldCategory':
+      return [p.fieldCategory, p.fieldCategory.replace(/（.*）/, '')];
+    case 'degree':
+      return [p.degree];
+    case 'admission':
+      return ymForms(p.admission, h, kind);
+    case 'admissionYear':
+      return ymPart(p.admission, 'year', h);
+    case 'admissionMonth':
+      return ymPart(p.admission, 'month', h);
     case 'graduation':
-      if (!grad) return [];
-      if (kind === 'month' || kind === 'date') return [p.graduation.slice(0, 7)];
-      return [`${grad[0]}年${grad[1]}月`, `${grad[0]}/${pad2(grad[1])}`];
+      return ymForms(p.graduation, h, kind);
     case 'graduationYear':
-      return grad ? yearForms(...grad, h.era) : [];
+      return ymPart(p.graduation, 'year', h);
     case 'graduationMonth':
-      return grad ? [String(grad[1]), pad2(grad[1])] : [];
+      return ymPart(p.graduation, 'month', h);
+    case 'graduationStatus':
+      if (p.graduationStatus === 'expected') return ['卒業見込み', '卒業見込', '見込み', '見込', '新卒'];
+      if (p.graduationStatus === 'graduated') return ['卒業', '既卒', '卒業済み'];
+      return [];
+    case 'lab':
+      return [p.lab];
+    case 'advisor':
+      return [p.advisor];
+    case 'researchTheme':
+      return [p.researchTheme];
+    case 'highSchool':
+      return [p.highSchool];
+    case 'highSchoolAdmission':
+      return ymForms(p.highSchoolAdmission, h, kind);
+    case 'highSchoolGraduation':
+      return ymForms(p.highSchoolGraduation, h, kind);
+    case 'highSchoolGraduationYear':
+      return ymPart(p.highSchoolGraduation, 'year', h);
+    case 'highSchoolGraduationMonth':
+      return ymPart(p.highSchoolGraduation, 'month', h);
+    case 'highSchoolGraduated':
+      return p.highSchool || p.highSchoolGraduation ? ['はい', '卒業', '卒業している', 'yes'] : [];
+    case 'highSchoolPrefecture':
+      return [p.highSchoolPrefecture, p.highSchoolPrefecture === '北海道' ? '' : p.highSchoolPrefecture.replace(/[都府県]$/, '')];
+    case 'educationHistory': {
+      const lines = educationLines(p);
+      return lines.length ? [lines.join(multiline ? '\n' : '、')] : [];
+    }
+
+    // 資格・スキル
+    case 'driverLicense':
+      return licenseForms(p, kind);
+    case 'driverLicenseDate':
+      return ymForms(p.driverLicenseDate, h, kind);
+    case 'toeic':
+      return p.toeic ? [p.toeic, `${p.toeic}点`] : [];
+    case 'toeicDate':
+      return ymForms(p.toeicDate, h, kind);
+    case 'toefl':
+      return p.toefl ? [p.toefl, `${p.toefl}点`] : [];
+    case 'eiken':
+      return p.eiken ? [p.eiken, `英検${p.eiken}`, p.eiken.replace(/級$/, '')] : [];
+    case 'otherLanguage':
+      return [p.otherLanguage];
+    case 'qualifications': {
+      const items = qualificationLines(p);
+      if (!items.length) return [];
+      return multiline
+        ? [items.map((q) => (q.date ? `${formatYm(q.date)} ${q.text}` : q.text)).join('\n')]
+        : [items.map((q) => q.text.replace(/ (取得|合格)$/, '')).join('、')];
+    }
+    case 'pcSkills':
+      return [p.pcSkills];
+
+    // 経験・自己PR
+    case 'club':
+      return [p.club];
+    case 'clubRole':
+      return [p.clubRole];
+    case 'studyAbroad':
+      return [p.studyAbroad];
+    case 'partTime':
+      return [p.partTime];
+    case 'hobbies':
+      return [p.hobbies];
+    case 'specialSkills':
+      return [p.specialSkills];
+    case 'hobbiesAndSkills': {
+      if (!p.hobbies && !p.specialSkills) return [];
+      const parts = [p.hobbies && `趣味：${p.hobbies}`, p.specialSkills && `特技：${p.specialSkills}`].filter(Boolean);
+      return [parts.join(multiline ? '\n' : '　')];
+    }
+    case 'portfolioUrl':
+      return [p.portfolioUrl];
+    case 'githubUrl':
+      return [p.githubUrl];
+
+    // 希望条件
+    case 'desiredLocation1':
+    case 'desiredLocation2':
+    case 'desiredLocation3': {
+      const v = p.desiredLocations[Number(key.slice(-1)) - 1] ?? '';
+      return [v, v.replace(/[都府県]$/, '')];
+    }
+    case 'desiredJob':
+      return [p.desiredJob];
+    case 'personalRequest':
+      return [p.personalRequest];
+
+    // 職歴（中途）
+    case 'currentCompany':
+      return [p.currentCompany];
+    case 'currentJobType':
+      return [p.currentJobType];
+    case 'employmentType':
+      return [p.employmentType];
+    case 'currentSalary':
+      return [p.currentSalary, p.currentSalary.replace(/[^\d]/g, '')];
+    case 'desiredSalary':
+      return [p.desiredSalary, p.desiredSalary.replace(/[^\d]/g, '')];
+    case 'availableDate': {
+      if (p.availableDate) return [p.availableDate];
+      // 新卒は「卒業の翌月」（3月卒業なら4月入社）
+      const grad = parseYmd(p.graduation);
+      if (!grad || p.graduationStatus === 'graduated') return [];
+      const [y, m] = grad[1] === 12 ? [grad[0] + 1, 1] : [grad[0], grad[1] + 1];
+      return ymForms(`${y}-${pad2(m)}`, h, kind);
+    }
+    case 'workHistory':
+      return [p.workHistory];
   }
 }
 
+const NO_WIDTH_KEYS = new Set<FieldKey>(['email', 'emailConfirm', 'emailSub', 'portfolioUrl', 'githubUrl', 'photo']);
+
+const YES_WORDS = ['はい', 'あり', '有', '有り', 'ある', 'yes'];
+const NO_WORDS = ['いいえ', 'なし', '無', '無し', 'ない', 'no'];
+const isYesNoOptions = (options: string[]) => {
+  const opts = options.map((o) => o.normalize('NFKC').replace(/\s/g, '').toLowerCase());
+  return opts.some((o) => YES_WORDS.includes(o)) && opts.some((o) => NO_WORDS.includes(o));
+};
+/** 「なし」「特になし」のように、ないことを書いた値 */
+export const SAYS_NONE = /^(特に)?(なし|無し|無|ない|ありません|no|none)$/i;
+
 /** 欄に入れる値の候補を優先度順に返す。先頭が第一候補 */
-export function valueVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): string[] {
+export function valueVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind, options: string[] = []): string[] {
   const values = uniq(rawVariants(key, p, h, kind).map((v) => v.trim()));
-  if (kind === 'select' || kind === 'radio' || kind === 'date' || kind === 'month' || kind === 'email') return values;
-  if (h.width === 'full' && key !== 'email' && key !== 'emailConfirm') return uniq(values.map(toFullWidth));
+  // 「留学経験 ［あり］［なし］」のように、項目の中身ではなく有無を聞いている欄
+  if ((kind === 'radio' || kind === 'select') && values.length && isYesNoOptions(options) && !YES_WORDS.includes(values[0]!)) {
+    return SAYS_NONE.test(values[0]!.normalize('NFKC')) ? NO_WORDS : YES_WORDS;
+  }
+  if (kind !== 'text' && kind !== 'textarea' && kind !== 'tel' && kind !== 'number') return values;
+  if (NO_WIDTH_KEYS.has(key)) return values;
+  if (h.width === 'full') return uniq(values.map(toFullWidth));
   if (h.width === 'half') return uniq(values.map(toHalfWidthAscii));
   return values;
 }

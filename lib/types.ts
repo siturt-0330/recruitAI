@@ -1,30 +1,119 @@
 export type Gender = '' | 'male' | 'female' | 'other';
+export type GraduationStatus = '' | 'expected' | 'graduated';
+export type DriverLicense = '' | 'none' | 'regular' | 'regularAT';
 
+export interface Qualification {
+  name: string;
+  /** YYYY-MM */
+  date: string;
+}
+
+/** 日付は date が YYYY-MM-DD、年月は YYYY-MM で持つ */
 export interface Profile {
   id: string;
   /** プロフィール自体の名前（例: 新卒用） */
   label: string;
+
+  // 基本情報
   lastName: string;
   firstName: string;
   lastNameKana: string;
   firstNameKana: string;
   lastNameRoman: string;
   firstNameRoman: string;
-  /** YYYY-MM-DD */
   birthDate: string;
   gender: Gender;
+  nationality: string;
+  /** 顔写真（縮小済みの JPEG data URL） */
+  photo: string;
+
+  // 連絡先・住所
   email: string;
+  emailSub: string;
+  /** 携帯電話 */
   phone: string;
+  /** 自宅・固定電話 */
+  landline: string;
   postalCode: string;
   prefecture: string;
   city: string;
   addressLine: string;
   building: string;
+  cityKana: string;
+  addressLineKana: string;
+  buildingKana: string;
+  nearestLine: string;
+  nearestStation: string;
+  /** 帰省先が現住所と同じ */
+  kiseiSame: boolean;
+  kiseiPostalCode: string;
+  kiseiPrefecture: string;
+  kiseiCity: string;
+  kiseiAddressLine: string;
+  kiseiBuilding: string;
+  kiseiPhone: string;
+  emergencyName: string;
+  emergencyRelation: string;
+  emergencyPhone: string;
+
+  // 学歴
+  schoolType: string;
+  bunri: string;
   school: string;
+  /** 学校名の読み（学校選択の「頭文字」で使う） */
+  schoolKana: string;
+  /** 学校の所在地（都道府県） */
+  schoolPrefecture: string;
   faculty: string;
   department: string;
-  /** YYYY-MM（卒業・卒業見込み） */
+  fieldCategory: string;
+  degree: string;
+  admission: string;
+  /** 卒業・卒業見込み年月 */
   graduation: string;
+  graduationStatus: GraduationStatus;
+  lab: string;
+  advisor: string;
+  researchTheme: string;
+  highSchool: string;
+  highSchoolAdmission: string;
+  highSchoolGraduation: string;
+  highSchoolPrefecture: string;
+
+  // 資格・スキル
+  driverLicense: DriverLicense;
+  driverLicenseDate: string;
+  toeic: string;
+  toeicDate: string;
+  toefl: string;
+  eiken: string;
+  otherLanguage: string;
+  qualifications: Qualification[];
+  pcSkills: string;
+
+  // 経験・自己PR
+  club: string;
+  clubRole: string;
+  studyAbroad: string;
+  partTime: string;
+  hobbies: string;
+  specialSkills: string;
+  portfolioUrl: string;
+  githubUrl: string;
+
+  // 希望条件
+  desiredLocations: string[];
+  desiredJob: string;
+  personalRequest: string;
+
+  // 職歴（中途）
+  currentCompany: string;
+  currentJobType: string;
+  employmentType: string;
+  currentSalary: string;
+  desiredSalary: string;
+  availableDate: string;
+  workHistory: string;
 }
 
 export type Engine = 'rules' | 'openai';
@@ -69,6 +158,8 @@ export interface FrameStatus {
   filled: number;
   warn: number;
   reviews: ReviewItem[];
+  /** 欄はあったがプロフィールが未登録だった項目 */
+  missing?: { key: string; label: string }[];
   error?: 'no-profile';
   aiError?: string;
 }

@@ -1,4 +1,8 @@
-export type FieldKind = 'text' | 'email' | 'tel' | 'number' | 'date' | 'month' | 'select' | 'radio' | 'textarea';
+export type FieldKind =
+  | 'text' | 'email' | 'tel' | 'number' | 'date' | 'month' | 'select' | 'radio' | 'textarea' | 'file' | 'checkbox';
+
+/** 扱うチェックボックスは「現住所と同じ」系だけ（同意チェックなどには触らない） */
+export const SAME_AS_CURRENT = /(現住所|上記|本人|自宅)(と|に)?同(じ|一)|同上/;
 
 /** AI・ルール判定に使う欄の特徴。ユーザーが入力済みの値は含めない */
 export interface FieldDescriptor {
@@ -11,11 +15,15 @@ export interface FieldDescriptor {
   suffix: string;
   /** 行見出し・dt・周辺のテキスト */
   context: string;
+  /** 欄が属する区切りの見出し（「帰省先」「緊急連絡先」など） */
+  section: string;
   placeholder: string;
   name: string;
   htmlId: string;
   autocomplete: string;
   maxLength: number | null;
+  /** file 欄の accept 属性 */
+  accept: string;
   /** select の選択肢・ラジオボタンのラベル */
   options: string[];
   groupIndex: number;
@@ -56,14 +64,32 @@ function isVisible(el: HTMLElement): boolean {
   return style.visibility !== 'hidden';
 }
 
+/**
+ * ボット対策のダミー欄（ハニーポット）。人には見えない位置・大きさにして、入力されたらボットと判定する。
+ * ここに入れると応募がはじかれるおそれがあるので触らない。
+ */
+function isHoneypot(el: HTMLElement): boolean {
+  if (el.closest('[aria-hidden="true"]')) return true;
+  if (el instanceof HTMLInputElement && /^(radio|checkbox|file)$/.test(el.type)) return false;
+  // 独自デザインのプルダウンは、透明な <select> を飾りの上に重ねていることが多い
+  if (el instanceof HTMLSelectElement) return false;
+  if (el.tabIndex < 0) return true;
+  const r = el.getBoundingClientRect();
+  if (r.width <= 2 || r.height <= 2) return true;
+  if (r.right + scrollX < 0 || r.bottom + scrollY < 0) return true;
+  const style = getComputedStyle(el);
+  return Number(style.opacity) === 0;
+}
+
 function isCandidate(el: Element): el is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement {
+  if (el instanceof HTMLElement && isHoneypot(el)) return false;
   if (el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) {
     return !el.disabled && !(el instanceof HTMLTextAreaElement && el.readOnly) && isVisible(el);
   }
   if (!(el instanceof HTMLInputElement) || el.disabled || el.readOnly) return false;
   const type = (el.getAttribute('type') ?? '').toLowerCase();
-  if (type === 'radio') {
-    // カスタムデザインのラジオは本体が非表示でラベルだけ見えていることが多い
+  if (type === 'radio' || type === 'file' || type === 'checkbox') {
+    // カスタムデザインのラジオやファイル欄は、本体が非表示でラベルだけ見えていることが多い
     return isVisible(el) || Array.from(el.labels ?? []).some(isVisible);
   }
   return TEXT_TYPES.has(type) && isVisible(el);
@@ -88,8 +114,24 @@ function labelText(el: HTMLElement): string {
   return parts.filter(Boolean).join(' ').slice(0, 80);
 }
 
-/** 直前（dir=-1）・直後（dir=1）の兄弟ノードにある短いテキスト */
+/**
+ * 直前（dir=-1）・直後（dir=1）の短いテキスト。
+ * `<span>姓：</span><span><input></span>` のように欄が包まれているときは、包んでいる要素の外側も見る
+ */
 function siblingText(el: HTMLElement, dir: 1 | -1, max: number): string {
+  let target: HTMLElement = el;
+  for (let i = 0; i < 3; i++) {
+    const t = adjacentText(target, dir, max);
+    if (t) return t;
+    const parent = target.parentElement;
+    if (!parent || /^(TD|TH|DD|DT|TR|LI|FORM|BODY|FIELDSET)$/.test(parent.tagName)) break;
+    if (parent.querySelectorAll('input, select, textarea').length > 1) break;
+    target = parent;
+  }
+  return '';
+}
+
+function adjacentText(el: HTMLElement, dir: 1 | -1, max: number): string {
   let out = '';
   let n: Node | null = dir === 1 ? el.nextSibling : el.previousSibling;
   while (n && out.length < max) {
@@ -102,11 +144,10 @@ function siblingText(el: HTMLElement, dir: 1 | -1, max: number): string {
   return dir === 1 ? out.slice(0, max) : out.slice(-max);
 }
 
-function contextText(el: HTMLElement): string {
+/** 表の行見出し（th）・dt・legend など、構造上の見出し */
+function structuralHeader(el: HTMLElement): string {
   let node = el.parentElement;
   for (let depth = 0; node && depth < 6; depth++, node = node.parentElement) {
-    // 欄自身の <label>（ラジオの「男性」など）は見出しではない
-    if (node.tagName === 'LABEL') continue;
     if (node.tagName === 'TD' || node.tagName === 'TH') {
       const row = node.parentElement;
       const header = Array.from(row?.children ?? []).find((c) => c !== node && !c.contains(el));
@@ -123,9 +164,54 @@ function contextText(el: HTMLElement): string {
       const t = textOf(node.querySelector('legend'), 60);
       if (t) return t;
     }
+  }
+  return '';
+}
+
+/** 「例（111-0000）」「-」のような入力例・区切り記号は見出しにしない */
+const NOT_A_HEADING = /^(例|e\.?g\.?|ex\.?)\s*[:：(（]|^[\s\-‐ー－~〜～/／:：()（）]*$/i;
+
+function contextText(el: HTMLElement): string {
+  // 表や dl の行見出しがあれば、近くにある入力例より優先する
+  const header = structuralHeader(el);
+  if (header) return header;
+
+  let node = el.parentElement;
+  for (let depth = 0; node && depth < 6; depth++, node = node.parentElement) {
+    // 欄自身の <label>（ラジオの「男性」など）は見出しではない
+    if (node.tagName === 'LABEL') continue;
     const t = textOf(node, 60);
     if (t.length > 60) break;
-    if (t) return t;
+    if (t && !NOT_A_HEADING.test(t)) return t;
+  }
+  return '';
+}
+
+const HEADING_TAGS = /^(H[1-6]|LEGEND|CAPTION)$/;
+
+function isHeadingLike(el: Element): boolean {
+  if (/^(SCRIPT|STYLE|TEMPLATE)$/.test(el.tagName)) return false;
+  if (el.querySelector('input, select, textarea, button')) return false;
+  if (HEADING_TAGS.test(el.tagName)) return true;
+  // 入力欄のない1セルの行（<tr><th colspan="2">帰省先</th></tr>）
+  if (el.tagName === 'TR') return el.children.length === 1;
+  if (/title|ttl|heading|head|caption|section|midashi/i.test(el.className?.toString() ?? '')) return true;
+  // クラス名のない <div>休暇中の連絡先</div> のような短い見出し
+  return /^(DIV|P|SPAN|STRONG|B|DT)$/.test(el.tagName) && textOf(el, 30).length <= 20;
+}
+
+/** 前方にある見出し（h3「帰省先」など）。帰省先・緊急連絡先のような区切りの判定に使う */
+function sectionText(el: HTMLElement): string {
+  let node: Element | null = el;
+  for (let depth = 0; node && depth < 8; depth++, node = node.parentElement) {
+    let sib = node.previousElementSibling;
+    for (let i = 0; sib && i < 8; i++, sib = sib.previousElementSibling) {
+      if (!isHeadingLike(sib)) continue;
+      const t = textOf(sib, 40);
+      // 「例（111-0000）」や「※〜」の注意書きは見出しではない
+      if (!t || t.length > 40 || NOT_A_HEADING.test(t) || /^[※*＊]/.test(t)) continue;
+      return t;
+    }
   }
   return '';
 }
@@ -141,6 +227,15 @@ export function scanFields(doc: Document): ScannedField[] {
 
   for (const el of controls) {
     if (!isCandidate(el)) continue;
+
+    if (el instanceof HTMLInputElement && el.type === 'checkbox') {
+      const text = `${labelText(el)} ${siblingText(el, 1, 40)}`;
+      if (!SAME_AS_CURRENT.test(text)) continue;
+      const field = makeField(el, 'checkbox');
+      field.desc.label = text.trim();
+      fields.push(field);
+      continue;
+    }
 
     if (el instanceof HTMLInputElement && el.type === 'radio') {
       const optionLabel = labelText(el) || siblingText(el, 1, 20) || el.value;
@@ -163,7 +258,9 @@ export function scanFields(doc: Document): ScannedField[] {
         ? 'select'
         : el instanceof HTMLTextAreaElement
           ? 'textarea'
-          : ((el.type || 'text') as FieldKind);
+          : el.type === 'file'
+            ? 'file'
+            : ((el.type || 'text') as FieldKind);
     const field = makeField(el, kind);
     if (el instanceof HTMLSelectElement) {
       field.desc.options = Array.from(el.options)
@@ -173,8 +270,19 @@ export function scanFields(doc: Document): ScannedField[] {
     fields.push(field);
   }
 
-  assignGroups(fields);
-  return fields;
+  const result = fields.filter((f) => !inLoginForm(f));
+  assignGroups(result);
+  return result;
+}
+
+/** ページ上部などにあるログインフォーム（ID とパスワードだけ）には入れない */
+function inLoginForm(f: ScannedField): boolean {
+  const form = (f.elements[0] as HTMLInputElement).form;
+  if (!form || !form.querySelector('input[type="password"]')) return false;
+  const textInputs = Array.from(form.querySelectorAll('input, select, textarea')).filter(
+    (el) => el instanceof HTMLElement && /^(text|email|tel|)$/.test((el.getAttribute('type') ?? '').toLowerCase()) && el.tagName === 'INPUT',
+  );
+  return textInputs.length <= 2;
 }
 
 function makeField(el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, kind: FieldKind): ScannedField {
@@ -188,11 +296,13 @@ function makeField(el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElemen
       prefix: siblingText(el, -1, 20),
       suffix: siblingText(el, 1, 10),
       context: contextText(el),
+      section: sectionText(el),
       placeholder: el.getAttribute('placeholder') ?? '',
       name: el.getAttribute('name') ?? '',
       htmlId: el.id,
       autocomplete: el.getAttribute('autocomplete') ?? '',
       maxLength,
+      accept: el.getAttribute('accept') ?? '',
       options: [],
       groupIndex: 0,
       groupSize: 1,
@@ -229,6 +339,7 @@ export function describeForm(fields: ScannedField[]): string {
     const parts = [`[${d.id}] 種類:${d.kind}`];
     if (d.label) parts.push(`ラベル:${q(d.label)}`);
     if (d.context) parts.push(`見出し:${q(d.context)}`);
+    if (d.section && d.section !== d.context) parts.push(`区切り:${q(d.section)}`);
     if (d.prefix) parts.push(`直前:${q(d.prefix)}`);
     if (d.suffix) parts.push(`直後:${q(d.suffix)}`);
     if (d.placeholder) parts.push(`placeholder:${q(d.placeholder)}`);

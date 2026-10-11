@@ -2,9 +2,10 @@ import { describeForm, scanFields, type ScannedField } from './extract';
 import { FIELD_KEYS, isFieldKey, type FieldKey } from './fieldKeys';
 import { applyValue, hasUserValue, markTarget, restoreSnapshot, takeSnapshot, type Snapshot } from './fill';
 import { Overlay } from './overlay';
-import { classify, computeHints, type Classification } from './rules';
+import { adjustForForm, classify, computeHints, type Classification } from './rules';
 import type { FieldStatus, FrameStatus, Profile, RemoteAnswer, RemoteQuestion, Settings } from './types';
-import { valueVariants } from './values';
+import { SAYS_NONE, valueVariants } from './values';
+import { norm } from './japanese';
 
 export type ClassifyRemote = (formText: string, questions: RemoteQuestion[]) => Promise<RemoteAnswer[]>;
 
@@ -16,12 +17,113 @@ interface Result {
   status: FieldStatus;
   value: string;
   variants: string[];
+  /** 欄は判定できたが、プロフィールにその項目が未登録だった */
+  noData: boolean;
 }
 
 /** AI に問い合わせる欄の上限（1リクエストあたり） */
 const MAX_REMOTE_QUESTIONS = 60;
 /** これ未満の確信度では入力しない */
 const MIN_CONFIDENCE = 0.5;
+/** 連動するプルダウン（年→月→日）の選択肢が作られるのを待つ間隔 */
+const RETRY_DELAYS = [150, 300, 600];
+
+/** 未登録の項目として案内するときは、分割欄や自動生成の項目を元の入力項目にまとめる */
+const MISSING_ALIAS: Partial<Record<FieldKey, FieldKey>> = {
+  emailConfirm: 'email',
+  phone1: 'phone',
+  phone2: 'phone',
+  phone3: 'phone',
+  landline1: 'landline',
+  landline2: 'landline',
+  landline3: 'landline',
+  cityAddressLine: 'city',
+  postalCode1: 'postalCode',
+  postalCode2: 'postalCode',
+  kiseiPostalCode1: 'kiseiPostalCode',
+  kiseiPhone1: 'kiseiPhone',
+  kiseiPhone2: 'kiseiPhone',
+  kiseiPhone3: 'kiseiPhone',
+  kiseiCityAddressLine: 'kiseiCity',
+  highSchoolGraduationYear: 'highSchoolGraduation',
+  highSchoolGraduationMonth: 'highSchoolGraduation',
+  highSchoolGraduated: 'highSchool',
+  schoolInitial: 'schoolKana',
+  emailLocal: 'email',
+  emailDomain: 'email',
+  birthEra: 'birthDate',
+  availableDate: 'graduation',
+  kiseiPostalCode2: 'kiseiPostalCode',
+  birthYear: 'birthDate',
+  birthMonth: 'birthDate',
+  birthDay: 'birthDate',
+  age: 'birthDate',
+  admissionYear: 'admission',
+  admissionMonth: 'admission',
+  graduationYear: 'graduation',
+  graduationMonth: 'graduation',
+  prefectureKana: 'prefecture',
+  fullAddressKana: 'cityKana',
+  educationHistory: 'admission',
+  hobbiesAndSkills: 'hobbies',
+  desiredLocation2: 'desiredLocation1',
+  desiredLocation3: 'desiredLocation1',
+};
+
+/**
+ * 「現住所と同じ場合はチェック（チェックしたら休暇中住所は入力しない）」という形式に合わせる。
+ * 帰省先が現住所と同じなら、チェックを入れて同じフォームの帰省先の欄には何も入れない。
+ */
+function skipKiseiWhenSame(fields: ScannedField[], classes: Classification[], profile: Profile) {
+  if (!profile.kiseiSame) return;
+  const formOf = (f: ScannedField) => (f.elements[0] as HTMLInputElement).form ?? null;
+  const formsWithCheck = new Set(fields.filter((_, i) => classes[i]!.key === 'kiseiSameCheck').map(formOf));
+  if (!formsWithCheck.size) return;
+  fields.forEach((f, i) => {
+    const key = classes[i]!.key;
+    if (key?.startsWith('kisei') && key !== 'kiseiSameCheck' && formsWithCheck.has(formOf(f))) {
+      classes[i] = { key: null, confidence: 0, source: 'rule' };
+    }
+  });
+}
+
+/** 「※大学院に所属している方のみ」のような条件付きの欄と、その条件をプロフィールが満たすか */
+const CONDITIONS: [RegExp, (p: Profile) => boolean][] = [
+  [/博士.{0,8}(の方|方|者)のみ/, (p) => p.schoolType === '大学院（博士）'],
+  [/大学院.{0,12}(の方|方|者|生)のみ|大学院に(所属|在籍)/, (p) => p.schoolType.startsWith('大学院')],
+  [/(既卒|社会人|卒業された|卒業済).{0,8}(の方|方|者)のみ/, (p) => p.graduationStatus === 'graduated'],
+  [/留学.{0,12}(の方|方|者)のみ/, (p) => !!p.studyAbroad && !SAYS_NONE.test(p.studyAbroad.normalize('NFKC'))],
+];
+
+/** 卒業年月の欄が、直前のどの欄（高校・在籍校・条件付きで飛ばした欄）に続くものかを見る範囲 */
+const OWNER_DISTANCE = 3;
+
+/**
+ * 条件に合わない欄を飛ばし、「卒業年月」がどの学校のものかを直前の欄から決める。
+ * 例：「出身高校」の直後の卒業年月は高校の卒業年月、飛ばした「出身大学（大学院生のみ）」の直後の卒業年月も飛ばす。
+ */
+function applyConditions(fields: ScannedField[], classes: Classification[], profile: Profile) {
+  let owner: { kind: 'current' | 'high' | 'skip'; index: number } = { kind: 'current', index: -Infinity };
+  fields.forEach((f, i) => {
+    const c = classes[i]!;
+    if (!c.key) return;
+    const d = f.desc;
+    const text = norm(`${d.label} ${d.prefix} ${d.context}`);
+    if (CONDITIONS.some(([re, ok]) => re.test(text) && !ok(profile))) {
+      classes[i] = { key: null, confidence: 0, source: c.source };
+      owner = { kind: 'skip', index: i };
+      return;
+    }
+    if (c.key === 'highSchool') owner = { kind: 'high', index: i };
+    else if (/^(school|schoolKana|faculty|department|lab)$/.test(c.key)) owner = { kind: 'current', index: i };
+    else if (/^graduation(Year|Month)?$/.test(c.key) && i - owner.index <= OWNER_DISTANCE) {
+      if (owner.kind === 'skip') classes[i] = { key: null, confidence: 0, source: c.source };
+      if (owner.kind === 'high') {
+        classes[i] = { ...c, key: c.key.replace('graduation', 'highSchoolGraduation') as FieldKey };
+      }
+    }
+  });
+}
 
 export class FormFiller {
   private results: Result[] = [];
@@ -45,7 +147,10 @@ export class FormFiller {
   async fill(profile: Profile, settings: Settings, classifyRemote?: ClassifyRemote): Promise<FrameStatus> {
     this.undo();
     const fields = scanFields(this.doc);
-    const classes = fields.map((f) => classify(f.desc));
+    const classes = adjustForForm(
+      fields,
+      fields.map((f) => classify(f.desc)),
+    );
 
     let aiError: string | undefined;
     if (classifyRemote) {
@@ -55,26 +160,55 @@ export class FormFiller {
         aiError = e instanceof Error ? e.message : String(e);
       }
     }
+    skipKiseiWhenSame(fields, classes, profile);
+    applyConditions(fields, classes, profile);
 
     this.results = fields.map((field, i) => {
       const { key, confidence, source } = classes[i]!;
-      const result: Result = { field, key, confidence, source, status: 'skip', value: '', variants: [] };
+      const result: Result = { field, key, confidence, source, status: 'skip', value: '', variants: [], noData: false };
       if (!key || confidence < MIN_CONFIDENCE || hasUserValue(field)) return result;
 
-      result.variants = valueVariants(key, profile, computeHints(field.desc), field.desc.kind);
-      this.snapshots.set(field, takeSnapshot(field));
-      const applied = applyValue(field, result.variants);
-      if (applied == null) {
+      result.variants = valueVariants(key, profile, computeHints(field.desc), field.desc.kind, field.desc.options);
+      if (!result.variants.length) {
         result.status = 'empty';
+        result.noData = true;
         return result;
       }
-      result.value = applied;
-      result.status = confidence >= settings.threshold ? 'ok' : 'warn';
+      this.snapshots.set(field, takeSnapshot(field));
+      this.apply(result, settings.threshold);
       return result;
     });
 
+    await this.retryDependentSelects(settings.threshold);
+
     this.render();
     return { ...this.status(), aiError };
+  }
+
+  private apply(result: Result, threshold: number): boolean {
+    const applied = applyValue(result.field, result.variants);
+    if (applied == null) {
+      result.status = 'empty';
+      return false;
+    }
+    result.value = applied;
+    result.status = result.confidence >= threshold ? 'ok' : 'warn';
+    return true;
+  }
+
+  /**
+   * 年を選ぶと月の選択肢が、月を選ぶと日の選択肢が作られるフォームがある。
+   * 選択肢が見つからなかったプルダウンは、少し待ってから入れ直す。
+   */
+  private async retryDependentSelects(threshold: number) {
+    for (let attempt = 0; attempt < RETRY_DELAYS.length; attempt++) {
+      const pending = this.results.filter(
+        (r) => r.status === 'empty' && !r.noData && r.field.desc.kind === 'select' && r.variants.length,
+      );
+      if (!pending.length) return;
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS[attempt]));
+      for (const r of pending) this.apply(r, threshold);
+    }
   }
 
   /** ルールで判定できなかった・確信度が低い欄だけ AI に聞く */
@@ -135,7 +269,13 @@ export class FormFiller {
   status(): FrameStatus {
     const recognized = this.results.filter((r) => r.key);
     const warn = recognized.filter((r) => r.status === 'warn');
+    const missing = new Map<string, { key: string; label: string }>();
+    for (const r of recognized) {
+      const key = MISSING_ALIAS[r.key!] ?? r.key!;
+      if (r.noData && !missing.has(key)) missing.set(key, { key, label: FIELD_KEYS[key].label });
+    }
     return {
+      missing: [...missing.values()],
       detected: recognized.length,
       filled: recognized.filter((r) => r.status === 'ok' || r.status === 'warn').length,
       warn: warn.length,
