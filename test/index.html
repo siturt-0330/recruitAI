@@ -239,6 +239,46 @@
       </table>
     </form>
 
+    <h2>K. 独自デザインのチェックボックス・CSS の @・携帯アドレス</h2>
+    <style>
+      .fake-check input { display: none; }
+      .fake-check .box { display: inline-block; width: 14px; height: 14px; border: 1px solid #999; vertical-align: middle; }
+      .at::after { content: '@'; margin: 0 6px; }
+      .mail-line { margin: 4px 0; }
+    </style>
+    <form id="k">
+      <div class="block-head">休暇中の連絡先</div>
+      <table>
+        <tr>
+          <td colspan="2">
+            <div class="fake-check"><input type="checkbox" name="k2_same" id="k2_same" /><span class="box"></span><span class="txt">現住所と同じ場合はこちらにチェックしてください</span><br /><strong>※チェックを入れる場合は休暇中住所は入力しないでください。</strong></div>
+          </td>
+        </tr>
+        <tr><th>郵便番号</th><td><div>例（111-0000）</div><input name="k2_zip1" /> - <input name="k2_zip2" /></td></tr>
+        <tr><th>市区郡・地名・番地</th><td><input name="k2_addr" size="40" /></td></tr>
+        <tr><th>電話番号</th><td><input name="k2_tel1" size="4" /> - <input name="k2_tel2" size="4" /> - <input name="k2_tel3" size="4" /></td></tr>
+      </table>
+      <div class="block-head">連絡先</div>
+      <table>
+        <tr>
+          <th>◆E-mailアドレス<br /><small>（半角入力のみ）</small></th>
+          <td>
+            <div class="mail-line"><span><input name="k2_m1" /></span><span class="at"></span><span><input name="k2_m2" /></span></div>
+            <div>誤入力を防止する為に同様のアドレスを2回入力してください。</div>
+            <div class="mail-line"><span><input name="k2_m3" /></span><span class="at"></span><span><input name="k2_m4" /></span></div>
+          </td>
+        </tr>
+        <tr>
+          <th>携帯アドレス<br /><small>（半角入力のみ）</small></th>
+          <td>
+            <div class="mail-line"><span><input name="k2_k1" /></span><span class="at"></span><span><input name="k2_k2" /></span></div>
+            <div>誤入力を防止する為に同様のアドレスを2回入力してください。</div>
+            <div class="mail-line"><span><input name="k2_k3" /></span><span class="at"></span><span><input name="k2_k4" /></span></div>
+          </td>
+        </tr>
+      </table>
+    </form>
+
     <h2>I. ログインフォーム（入力しないこと）</h2>
     <form id="i">
       <input name="login_mail" placeholder="メールアドレス" /> <input type="password" name="login_pw" />

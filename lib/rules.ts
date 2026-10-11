@@ -68,7 +68,7 @@ const AUTOCOMPLETE: Record<string, FieldKey> = {
  */
 const TEXT_RULES: [Category, RegExp][] = [
   ['emailConfirm', /(メール|e-?mail|mail).*(確認|再入力|もう一度|confirm)|(確認|confirm).*(メール|e-?mail)/],
-  ['emailSub', /(予備|サブ|携帯|第2|2つ目|セカンド|個人).{0,4}(メール|mail)|(メール|mail).{0,6}(予備|サブ|2)/],
+  ['emailSub', /(予備|サブ|携帯|第2|2つ目|セカンド|個人).{0,4}(メール|mail)|(メール|mail).{0,6}(予備|サブ|2)|(携帯|モバイル|スマホ|サブ|予備).{0,3}アドレス/],
   ['email', /メール|e-?mail|mail/],
   ['relation', /続柄|間柄|ご関係/],
   ['station', /最寄|沿線|路線|駅/],
@@ -238,6 +238,12 @@ export function classify(d: FieldDescriptor): Classification {
   const r = (key: FieldKey, c = conf) => result(key, c);
   const has = (re: RegExp) => re.test(near) || re.test(ctx);
 
+  // 欄の前後に @ があれば、見出しが何であってもメールアドレス
+  const atSign = /[@＠]$/.test(d.prefix.trim()) || /^[@＠]/.test(d.suffix.trim());
+  if (atSign && cat !== 'email' && cat !== 'emailConfirm' && cat !== 'emailSub') {
+    cat = has(/携帯|モバイル|スマホ|サブ|予備/) ? 'emailSub' : 'email';
+  }
+
   switch (cat) {
     case 'name':
     case 'roman': {
@@ -298,11 +304,20 @@ export function classify(d: FieldDescriptor): Classification {
       return r(line ? 'addressLine' : second ? 'building' : 'fullAddress');
     }
     case 'email':
-    case 'emailConfirm': {
-      // ［taro］@［example.com］のように @ の前後で分かれた欄
-      // 「メールアドレス」と「確認用」が同じ見出しに並ぶこともあるので、@ が欄の間にあるときだけ分ける
-      if (/[@＠]$/.test(d.prefix.trim())) return r('emailDomain', byPosition);
-      if (/^[@＠]/.test(d.suffix.trim())) return r('emailLocal', byPosition);
+    case 'emailConfirm':
+    case 'emailSub': {
+      // ［taro］@［example.com］のように @ の前後で分かれた欄。
+      // @ が CSS で描かれていて文字として取れないこともあるので、2つの欄が横に並んでいるかでも判断する。
+      // 「入力」と「確認用」は縦に並ぶので分けない
+      const [local, domain] = (cat === 'emailSub' ? ['emailSubLocal', 'emailSubDomain'] : ['emailLocal', 'emailDomain']) as [
+        FieldKey,
+        FieldKey,
+      ];
+      if (/[@＠]$/.test(d.prefix.trim())) return r(domain, byPosition);
+      if (/^[@＠]/.test(d.suffix.trim())) return r(local, byPosition);
+      // 「アドレス［　］ 確認用［　］」のように横に並ぶ形もあるので、確認用と書かれていたら分けない
+      const confirmLabel = /確認|再入力|もう一度/.test(near);
+      if (d.groupSize >= 2 && d.lineSize === 2 && !confirmLabel) return r(d.lineIndex === 0 ? local : domain, byPosition);
       return r(cat);
     }
     case 'relation':

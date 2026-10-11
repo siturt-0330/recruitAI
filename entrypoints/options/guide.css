@@ -1,0 +1,521 @@
+/* API キーの取り方ガイド */
+.guide {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px 14px;
+  margin-bottom: 14px;
+}
+
+.guide-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.guide-head h2 {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 2px;
+}
+
+.guide-head p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.guide-toggle {
+  width: 100%;
+  height: 44px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  border: 1px dashed var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.guide-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.guide-steps button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px;
+  border: none;
+  border-top: 3px solid var(--surface-1);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.guide-steps button.done {
+  border-top-color: var(--ok);
+  color: var(--text-2);
+}
+
+.guide-steps button.on {
+  border-top-color: var(--accent);
+  color: var(--text);
+}
+
+.guide-steps .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-1);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.guide-steps .on .num {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.guide-steps .done .num {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+}
+
+.guide-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+  animation: guide-in 0.25s ease-out;
+}
+
+@keyframes guide-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.guide-step-no {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--accent-text);
+  margin-bottom: 2px;
+}
+
+.guide-text h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0 0 8px;
+}
+
+.guide-text p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-2);
+  margin: 0 0 10px;
+}
+
+.guide-text code,
+.guide-extra code {
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--surface-1);
+}
+
+.guide-list {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text-2);
+}
+
+.guide-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--accent-text);
+  font-weight: 500;
+}
+
+.guide-warn {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--warn-bg);
+}
+
+.guide-head .mini {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.guide-text .guide-warn {
+  color: var(--warn-text);
+  font-size: 12px;
+}
+
+.guide-warn svg {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.guide-nav {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.guide-nav .btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.guide-extra {
+  margin-top: 16px;
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+  font-size: 13px;
+}
+
+.guide-extra summary {
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.guide-extra ul {
+  margin-top: 8px;
+}
+
+.guide-extra a {
+  color: var(--accent-text);
+}
+
+/* 図（模式図）。OpenAI の画面は明るい配色なので、ダークモードでも明るいまま描く */
+.guide-figure {
+  min-width: 0;
+}
+
+.mock-browser,
+.mock-ext {
+  --m-line: #ececea;
+  --m-text: #202123;
+  --m-sub: #8e8ea0;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: #ffffff;
+  color: var(--m-text);
+  overflow: hidden;
+  font-size: 11px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.mock-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  background: #f1f1f0;
+  border-bottom: 1px solid var(--m-line);
+}
+
+.mock-bar .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d9d9d6;
+}
+
+.mock-url {
+  margin-left: 8px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #fff;
+  color: #5f5e5a;
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.mock-page {
+  position: relative;
+  min-height: 230px;
+  padding: 14px;
+}
+
+.mock-app {
+  display: flex;
+  gap: 12px;
+}
+
+.mock-app.dim {
+  opacity: 0.25;
+}
+
+.mock-side {
+  width: 84px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mock-side-item {
+  height: 18px;
+  border-radius: 6px;
+  background: #f4f4f3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  font-size: 10px;
+}
+
+.mock-side-item.on {
+  background: #ececea;
+  font-weight: 500;
+}
+
+.mock-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.mock-row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.mock-h {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.mock-row-between .mock-h {
+  margin: 0;
+}
+
+.mock-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mock-line {
+  height: 8px;
+  border-radius: 4px;
+  background: #f0f0ee;
+}
+
+.mock-line.short {
+  width: 60%;
+}
+
+.mock-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: #f0f0ee;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.mock-btn.primary {
+  background: #202123;
+  color: #fff;
+}
+
+.mock-btn.accent {
+  background: #2f6fde;
+  color: #fff;
+}
+
+.mock-dialog {
+  position: relative;
+  margin: 0 4px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--m-line);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mock-dialog > * {
+  flex-shrink: 0;
+}
+
+/* 2枚目：薄くした一覧の上にダイアログが開いた様子 */
+.mock-dialog.small {
+  position: absolute;
+  inset: 50px 40px auto;
+  margin: 0;
+  gap: 8px;
+  animation: mock-pop 0.35s ease-out;
+}
+
+@keyframes mock-pop {
+  from {
+    transform: scale(0.94);
+    opacity: 0;
+  }
+}
+
+.mock-label {
+  font-size: 10px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.mock-input {
+  height: 22px;
+  border-radius: 7px;
+  border: 1px solid #dededb;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  color: var(--m-sub);
+  font-size: 10px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.mock-input.filled {
+  color: var(--m-text);
+}
+
+.mock-input.mono {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  flex: 1;
+}
+
+.mock-seg {
+  display: inline-flex;
+  align-self: flex-start;
+  background: #f0f0ee;
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.mock-seg span {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  color: var(--m-sub);
+}
+
+.mock-seg span.on {
+  background: #fff;
+  color: var(--m-text);
+  box-shadow: 0 0 0 1px #e2e2df;
+}
+
+.mock-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+
+.mock-note {
+  color: var(--m-sub);
+  font-size: 10px;
+  margin-bottom: 6px;
+}
+
+.mock-key-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.mock-ext {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 180px;
+  justify-content: center;
+}
+
+.mock-ext-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+/* 押す場所の強調 */
+.target {
+  box-shadow: 0 0 0 3px rgba(47, 111, 222, 0.35);
+  animation: mock-pulse 1.6s ease-in-out infinite;
+}
+
+.target-soft {
+  box-shadow: 0 0 0 2px rgba(47, 111, 222, 0.35);
+}
+
+@keyframes mock-pulse {
+  50% {
+    box-shadow: 0 0 0 6px rgba(47, 111, 222, 0.12);
+  }
+}
+
+.mock-pointer {
+  position: absolute;
+  right: -10px;
+  bottom: -14px;
+  color: #202123;
+  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.9));
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .guide-body {
+    grid-template-columns: 1fr;
+  }
+  .guide-steps .label {
+    display: none;
+  }
+}

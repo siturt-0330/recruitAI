@@ -1,7 +1,7 @@
 import { browser } from '#imports';
 import type { FrameStatus } from './types';
 
-export type Action = 'status' | 'fill' | 'undo' | 'resolve';
+export type Action = 'status' | 'fill' | 'undo' | 'resolve' | 'diagnose';
 
 export interface FrameResult {
   frameId: number;

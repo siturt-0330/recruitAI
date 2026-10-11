@@ -144,6 +144,7 @@ document.getElementById('fill')!.onclick = async () => {
   });
   log.textContent = `${JSON.stringify(status, null, 1)}\n\n${rows.join('\n')}`;
   (window as unknown as { describe: () => string }).describe = () => describeForm(scanFields(document));
+  (window as unknown as { diag: () => string }).diag = () => filler.diagnose();
 };
 document.getElementById('undo')!.onclick = () => {
   filler.undo();

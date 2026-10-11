@@ -20,6 +20,19 @@ export default function App() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [pageError, setPageError] = useState('');
   const [shortcut, setShortcut] = useState('');
+  const [diagState, setDiagState] = useState<'idle' | 'copied' | 'error'>('idle');
+
+  const copyDiagnosis = async () => {
+    if (tabId == null) return;
+    try {
+      const res = await runInTab(tabId, 'diagnose');
+      const text = res.map((f) => `--- frame ${f.frameId} ---\n${f.result.report ?? ''}`).join('\n\n');
+      await navigator.clipboard.writeText(text);
+      setDiagState('copied');
+    } catch {
+      setDiagState('error');
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -293,6 +306,10 @@ export default function App() {
             value={Math.round(settings.threshold * 100)}
             onChange={(e) => updateSettings({ threshold: Number(e.target.value) / 100 })}
           />
+          <button className="btn wide diag" onClick={copyDiagnosis} disabled={tabId == null || !!pageError}>
+            {diagState === 'copied' ? '診断情報をコピーしました' : diagState === 'error' ? 'コピーできませんでした' : '診断情報をコピー'}
+          </button>
+          <p className="diag-note">うまく入らないときに送ってください。各欄の見出しと判定結果だけで、入力した値は含まれません。</p>
         </div>
       </details>
 

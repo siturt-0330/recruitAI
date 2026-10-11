@@ -400,3 +400,13 @@ body {
   font-size: 11px;
   opacity: 0.85;
 }
+
+.diag {
+  margin-top: 14px;
+}
+
+.diag-note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--text-3);
+}
