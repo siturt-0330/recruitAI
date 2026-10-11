@@ -161,6 +161,8 @@ export interface FrameStatus {
   /** 欄はあったがプロフィールが未登録だった項目 */
   missing?: { key: string; label: string }[];
   error?: 'no-profile';
+  /** 診断情報（diagnose のときだけ） */
+  report?: string;
   aiError?: string;
 }
 

@@ -3,6 +3,7 @@ import { Check, ChevronDown, Copy, Eye, EyeOff, ImagePlus, KeyRound, Loader2, Pl
 import { PREFECTURES } from '@/lib/prefectures';
 import { activeProfileIdItem, emptyProfile, getProfiles, getSettings, profilesItem, settingsItem } from '@/lib/store';
 import { DEFAULT_SETTINGS, type Profile, type Settings } from '@/lib/types';
+import ApiKeyGuide from './ApiKeyGuide';
 import { ESSENTIALS, PAGES, isFilled, pageProgress, type FieldDef, type PageDef } from './pages';
 
 type PageId = PageDef['id'] | 'ai';
@@ -494,6 +495,7 @@ function AiSettings({ settings, onSave }: { settings: Settings; onSave(patch: Pa
           送信するのはフォームのラベルや name 属性などの構造だけで、プロフィールの内容は送りません。
         </p>
       </header>
+      <ApiKeyGuide defaultOpen={!settings.openaiApiKey} />
       <section className="section">
         <h2>OpenAI Decisions API</h2>
         <div className="grid">

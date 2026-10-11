@@ -239,10 +239,13 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
     case 'emailSub':
       return [p.emailSub];
     case 'emailLocal':
-    case 'emailDomain': {
-      const at = p.email.lastIndexOf('@');
+    case 'emailDomain':
+    case 'emailSubLocal':
+    case 'emailSubDomain': {
+      const address = key.startsWith('emailSub') ? p.emailSub : p.email;
+      const at = address.lastIndexOf('@');
       if (at < 0) return [];
-      return [key === 'emailLocal' ? p.email.slice(0, at) : p.email.slice(at + 1)];
+      return [key.endsWith('Local') ? address.slice(0, at) : address.slice(at + 1)];
     }
     case 'phone':
       return phoneForms(p.phone, h);

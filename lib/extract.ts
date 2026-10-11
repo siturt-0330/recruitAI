@@ -28,6 +28,9 @@ export interface FieldDescriptor {
   options: string[];
   groupIndex: number;
   groupSize: number;
+  /** グループの中で、同じ行（横並び）にある欄の数と、その中での位置 */
+  lineIndex: number;
+  lineSize: number;
 }
 
 export interface ScannedField {
@@ -88,7 +91,10 @@ function isCandidate(el: Element): el is HTMLInputElement | HTMLSelectElement | 
   }
   if (!(el instanceof HTMLInputElement) || el.disabled || el.readOnly) return false;
   const type = (el.getAttribute('type') ?? '').toLowerCase();
-  if (type === 'radio' || type === 'file' || type === 'checkbox') {
+  // 「現住所と同じ」チェックボックスは、本体もラベルも隠して飾りの要素で見せていることがある。
+  // 扱うのは文言で絞り込んだものだけなので、見えるかどうかは問わない
+  if (type === 'checkbox') return true;
+  if (type === 'radio' || type === 'file') {
     // カスタムデザインのラジオやファイル欄は、本体が非表示でラベルだけ見えていることが多い
     return isVisible(el) || Array.from(el.labels ?? []).some(isVisible);
   }
@@ -205,7 +211,7 @@ function sectionText(el: HTMLElement): string {
   let node: Element | null = el;
   for (let depth = 0; node && depth < 8; depth++, node = node.parentElement) {
     let sib = node.previousElementSibling;
-    for (let i = 0; sib && i < 8; i++, sib = sib.previousElementSibling) {
+    for (let i = 0; sib && i < 15; i++, sib = sib.previousElementSibling) {
       if (!isHeadingLike(sib)) continue;
       const t = textOf(sib, 40);
       // 「例（111-0000）」や「※〜」の注意書きは見出しではない
@@ -214,6 +220,18 @@ function sectionText(el: HTMLElement): string {
     }
   }
   return '';
+}
+
+/** チェックボックスの文言。<label> がなくても、隣や親の要素の短いテキストを使う */
+function checkboxText(el: HTMLInputElement): string {
+  const parts = [labelText(el), siblingText(el, 1, 60), siblingText(el, -1, 30)];
+  let node = el.parentElement;
+  for (let depth = 0; node && depth < 3; depth++, node = node.parentElement) {
+    if (node.querySelectorAll('input, select, textarea').length > 1) break;
+    const t = textOf(node, 100);
+    if (t && t.length <= 100) parts.push(t);
+  }
+  return parts.filter(Boolean).join(' ').slice(0, 160);
 }
 
 let seq = 0;
@@ -229,7 +247,7 @@ export function scanFields(doc: Document): ScannedField[] {
     if (!isCandidate(el)) continue;
 
     if (el instanceof HTMLInputElement && el.type === 'checkbox') {
-      const text = `${labelText(el)} ${siblingText(el, 1, 40)}`;
+      const text = checkboxText(el);
       if (!SAME_AS_CURRENT.test(text)) continue;
       const field = makeField(el, 'checkbox');
       field.desc.label = text.trim();
@@ -306,6 +324,8 @@ function makeField(el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElemen
       options: [],
       groupIndex: 0,
       groupSize: 1,
+      lineIndex: 0,
+      lineSize: 1,
     },
   };
 }
@@ -319,11 +339,33 @@ function assignGroups(fields: ScannedField[]) {
     const same = cur && cur.context && cur.context === prev.context && sameFamily(cur.kind, prev.kind);
     if (same) continue;
     const size = i - start;
-    for (let j = start; j < i; j++) {
-      fields[j]!.desc.groupIndex = j - start;
-      fields[j]!.desc.groupSize = size;
-    }
+    const group = fields.slice(start, i);
+    group.forEach((f, j) => {
+      f.desc.groupIndex = j;
+      f.desc.groupSize = size;
+    });
+    assignLines(group);
     start = i;
+  }
+}
+
+/**
+ * グループ内の欄を見た目の行ごとに分ける。
+ * ［taro］@［example.com］のような横並びと、「入力」「確認用」の縦並びを区別するため。
+ */
+function assignLines(group: ScannedField[]) {
+  const tops = group.map((f) => {
+    const r = f.elements[0]!.getBoundingClientRect();
+    return r.top + r.height / 2;
+  });
+  let lineStart = 0;
+  for (let j = 1; j <= group.length; j++) {
+    if (j < group.length && Math.abs(tops[j]! - tops[j - 1]!) < 10) continue;
+    for (let k = lineStart; k < j; k++) {
+      group[k]!.desc.lineIndex = k - lineStart;
+      group[k]!.desc.lineSize = j - lineStart;
+    }
+    lineStart = j;
   }
 }
 

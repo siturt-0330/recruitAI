@@ -32,6 +32,8 @@ export default defineContentScript({
           }
           case 'undo':
             return filler.undo();
+          case 'diagnose':
+            return { ...filler.status(), report: filler.diagnose() };
           case 'resolve': {
             const { id, value } = payload as { id: string; value: string };
             return filler.resolve(id, value);

@@ -50,6 +50,8 @@ const MISSING_ALIAS: Partial<Record<FieldKey, FieldKey>> = {
   highSchoolGraduated: 'highSchool',
   schoolInitial: 'schoolKana',
   emailLocal: 'email',
+  emailSubLocal: 'emailSub',
+  emailSubDomain: 'emailSub',
   emailDomain: 'email',
   birthEra: 'birthDate',
   availableDate: 'graduation',
@@ -85,6 +87,12 @@ function skipKiseiWhenSame(fields: ScannedField[], classes: Classification[], pr
       classes[i] = { key: null, confidence: 0, source: 'rule' };
     }
   });
+}
+
+/** 入れたプルダウンの選択が、今も残っているか */
+function stillSelected(r: Result): boolean {
+  const el = r.field.elements[0] as HTMLSelectElement;
+  return el.selectedIndex >= 0 && el.options[el.selectedIndex]?.text.trim() === r.value;
 }
 
 /** 「※大学院に所属している方のみ」のような条件付きの欄と、その条件をプロフィールが満たすか */
@@ -201,12 +209,13 @@ export class FormFiller {
    * 選択肢が見つからなかったプルダウンは、少し待ってから入れ直す。
    */
   private async retryDependentSelects(threshold: number) {
+    const selects = this.results.filter((r) => r.field.desc.kind === 'select' && r.variants.length && !r.noData);
+    if (!selects.length) return;
     for (let attempt = 0; attempt < RETRY_DELAYS.length; attempt++) {
-      const pending = this.results.filter(
-        (r) => r.status === 'empty' && !r.noData && r.field.desc.kind === 'select' && r.variants.length,
-      );
-      if (!pending.length) return;
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS[attempt]));
+      // 選択肢が後から作られたもの、作り直されて選択が消えたものを入れ直す
+      const pending = selects.filter((r) => r.status === 'empty' || !stillSelected(r));
+      if (!pending.length) return;
       for (const r of pending) this.apply(r, threshold);
     }
   }
@@ -256,6 +265,38 @@ export class FormFiller {
       this.render();
     }
     return this.status();
+  }
+
+  /**
+   * 不具合を調べるための診断情報。各欄の手がかりと判定結果を並べる。
+   * 入力した値やプロフィールの中身は含めない（ページ側の文言と判定結果だけ）。
+   */
+  diagnose(): string {
+    const rows = this.results.length
+      ? this.results.map((r) => ({ desc: r.field.desc, key: r.key, confidence: r.confidence, source: r.source, status: r.status }))
+      : (() => {
+          const fields = scanFields(this.doc);
+          const classes = adjustForForm(fields, fields.map((f) => classify(f.desc)));
+          return fields.map((f, i) => ({ desc: f.desc, ...classes[i]!, status: '未入力' as const }));
+        })();
+    const q = (s: string) => (s ? JSON.stringify(s.slice(0, 50)) : '-');
+    const lines = rows.map(({ desc: d, key, confidence, source, status }) =>
+      [
+        `[${d.id}] ${d.kind}`,
+        `label=${q(d.label)}`,
+        `見出し=${q(d.context)}`,
+        `区切り=${q(d.section)}`,
+        `前=${q(d.prefix)}`,
+        `後=${q(d.suffix)}`,
+        `name=${q(d.name || d.htmlId)}`,
+        d.options.length ? `選択肢=${d.options.length}件${q(d.options.slice(0, 4).join('/'))}` : '',
+        `group=${d.groupIndex + 1}/${d.groupSize} line=${d.lineIndex + 1}/${d.lineSize}`,
+        `→ ${key ?? 'なし'} (${Math.round(confidence * 100)}% ${source}) ${status}`,
+      ]
+        .filter(Boolean)
+        .join(' | '),
+    );
+    return [`URL: ${location.host}${location.pathname}`, `欄: ${rows.length}件`, ...lines].join('\n');
   }
 
   undo(): FrameStatus {
