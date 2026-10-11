@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>RecruitAI 回帰テスト</title>
+    <style>
+      body { font: 13px/1.6 system-ui, 'Yu Gothic UI', sans-serif; margin: 16px; min-width: 900px; }
+      #stage { width: 900px; }
+      #stage input:not([type='radio']):not([type='checkbox']) { width: 160px; }
+      .ok { color: #0a7d4f; }
+      .ng { color: #c41320; }
+      li.ok { color: #555; }
+      .d { color: #222; margin-left: 12px; font-size: 12px; }
+      pre.d { white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <div id="results">実行中…</div>
+    <div id="stage"></div>
+    <script type="module" src="./suite.ts"></script>
+  </body>
+</html>

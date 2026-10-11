@@ -27,6 +27,12 @@ export function ageOn(birthDate: string, today = new Date()): number | null {
   return age;
 }
 
+/** 姓と名の間のスペースの候補。placeholder の例に合わせたものを先頭にする */
+function spaces(h: Hints): string[] {
+  const order = { full: ['　', ' ', ''], half: [' ', '　', ''], none: ['', '　', ' '] } as const;
+  return [...order[h.nameSpace ?? 'full']];
+}
+
 function kanaForms(s: string, hint: Hints['kana']): string[] {
   if (!s) return [];
   const forms = { kata: toKatakana(s), hira: toHiragana(s), half: toHalfKana(s) };
@@ -87,7 +93,8 @@ function dateForms([y, m, d]: [number, number, number], h: Hints): string[] {
 function ymForms(s: string, h: Hints, kind: FieldKind): string[] {
   const d = parseYmd(s);
   if (!d) return [];
-  if (kind === 'month' || kind === 'date') return [s.slice(0, 7)];
+  if (kind === 'month') return [s.slice(0, 7)];
+  if (kind === 'date') return [`${s.slice(0, 7)}-01`];
   const [y, m] = d;
   const w = toWareki(y, m, 1);
   const wareki = w ? `${w.era}${w.year === 1 ? '元' : w.year}年${m}月` : '';
@@ -97,10 +104,18 @@ function ymForms(s: string, h: Hints, kind: FieldKind): string[] {
   return uniq([first, kanji, slash, `${y}.${pad2(m)}`, wareki]);
 }
 
+const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/** 月の候補。英語のフォーム用に「April」「Apr」も入れる（数字の欄では先頭の数字が使われる） */
+function monthForms(m: number): string[] {
+  const en = MONTHS_EN[m - 1] ?? '';
+  return [String(m), pad2(m), en, en.slice(0, 3)];
+}
+
 function ymPart(s: string, part: 'year' | 'month', h: Hints): string[] {
   const d = parseYmd(s);
   if (!d) return [];
-  return part === 'year' ? yearForms(d[0], d[1], 1, h.era) : [String(d[1]), pad2(d[1])];
+  return part === 'year' ? yearForms(d[0], d[1], 1, h.era) : monthForms(d[1]);
 }
 
 const GENDER: Record<string, string[]> = {
@@ -189,13 +204,13 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
   switch (key) {
     // 基本情報
     case 'fullName':
-      return join(p.lastName, p.firstName, ['　', ' ', '']);
+      return join(p.lastName, p.firstName, spaces(h));
     case 'lastName':
       return [p.lastName];
     case 'firstName':
       return [p.firstName];
     case 'fullNameKana':
-      return join(p.lastNameKana, p.firstNameKana, ['　', ' ', '']).flatMap((s) => kanaForms(s, h.kana));
+      return join(p.lastNameKana, p.firstNameKana, spaces(h)).flatMap((s) => kanaForms(s, h.kana));
     case 'lastNameKana':
       return kanaForms(p.lastNameKana, h.kana);
     case 'firstNameKana':
@@ -217,8 +232,12 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
     }
     case 'birthYear':
       return birth ? yearForms(...birth, h.era) : [];
+    case 'birthEraYear': {
+      const w = birth ? toWareki(...birth) : null;
+      return w ? (w.year === 1 ? ['元', '1'] : [String(w.year)]) : [];
+    }
     case 'birthMonth':
-      return birth ? [String(birth[1]), pad2(birth[1])] : [];
+      return birth ? monthForms(birth[1]) : [];
     case 'birthDay':
       return birth ? [String(birth[2]), pad2(birth[2])] : [];
     case 'age': {
@@ -265,6 +284,12 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
     }
     case 'cityAddressLine':
       return p.city || p.addressLine ? [`${p.city}${p.addressLine}`] : [];
+    case 'cityAddressLineBuilding':
+      return p.city || p.addressLine ? [`${p.city}${p.addressLine}${p.building ? `　${p.building}` : ''}`, `${p.city}${p.addressLine}${p.building}`] : [];
+    case 'fullAddressNoBuilding':
+      return p.prefecture || p.city ? [`${p.prefecture}${p.city}${p.addressLine}`] : [];
+    case 'addressLineBuilding':
+      return p.addressLine ? [p.building ? `${p.addressLine}　${p.building}` : p.addressLine, `${p.addressLine}${p.building}`] : [];
     case 'postalCode':
       return postalForms(p.postalCode, h);
     case 'postalCode1':

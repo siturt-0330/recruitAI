@@ -138,6 +138,8 @@ export interface Hints {
   era: 'wareki' | 'seireki' | null;
   hyphen: boolean | null;
   dateFormat: 'slash' | 'hyphen' | 'kanji' | 'compact' | null;
+  /** 氏名の姓と名の間のスペース（placeholder の例に合わせる） */
+  nameSpace: 'full' | 'half' | 'none' | null;
 }
 
 export type FieldStatus = 'ok' | 'warn' | 'empty' | 'skip';
