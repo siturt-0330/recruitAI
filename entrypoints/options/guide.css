@@ -519,3 +519,17 @@
     display: none;
   }
 }
+
+.guide .mini {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.guide .mini:hover {
+  background: var(--surface-1);
+}

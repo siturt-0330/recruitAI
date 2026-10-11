@@ -268,25 +268,7 @@ export const PAGES: PageDef[] = [
   },
 ];
 
-/** 最初に埋めてほしい項目（多くのフォームで使うもの） */
-export const ESSENTIALS: StringKey[] = [
-  'lastName',
-  'firstName',
-  'lastNameKana',
-  'firstNameKana',
-  'birthDate',
-  'email',
-  'phone',
-  'postalCode',
-  'prefecture',
-  'city',
-  'addressLine',
-  'schoolType',
-  'school',
-  'faculty',
-  'department',
-  'graduation',
-];
+export { ESSENTIALS } from '@/lib/essentials';
 
 /** そのページの項目のうち、入力済みの数（カスタム欄は1項目として数える） */
 export function pageProgress(page: PageDef, p: Profile): { filled: number; total: number } {

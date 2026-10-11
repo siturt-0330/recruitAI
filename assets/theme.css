@@ -1,55 +1,68 @@
+@import '@fontsource-variable/noto-sans-jp';
+
+/* X・Instagram を参考にした配色。白と黒を基本に、グラデーションはリングと進捗だけに使う */
 :root {
-  --bg: #f6f5f2;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-1: #f1efe8;
-  --text: #1f1e1c;
-  --text-2: #5f5e5a;
-  --text-3: #888780;
-  --border: rgba(31, 30, 28, 0.12);
-  --border-strong: rgba(31, 30, 28, 0.22);
-  --accent: #2f6fde;
-  --accent-hover: #255fc4;
-  --on-accent: #ffffff;
-  --accent-bg: #e6f1fb;
-  --accent-text: #185fa5;
-  --ok: #1d9e75;
-  --ok-bg: #e1f5ee;
-  --ok-text: #0f6e56;
-  --warn: #d48a1c;
-  --warn-bg: #faeeda;
-  --warn-text: #854f0b;
-  --danger-text: #a32d2d;
-  --danger-bg: #fcebeb;
-  --radius: 10px;
+  --surface-1: #f7f9f9;
+  --surface-2: #eff3f4;
+  --text: #0f1419;
+  --text-2: #536471;
+  --text-3: #8b98a5;
+  --border: #eff3f4;
+  --border-strong: #cfd9de;
+  --primary: #0f1419;
+  --primary-hover: #272c30;
+  --on-primary: #ffffff;
+  --link: #1d9bf0;
+  --ok: #00ba7c;
+  --ok-bg: #e6f8f1;
+  --ok-text: #00875a;
+  --warn: #f4a100;
+  --warn-bg: #fff5db;
+  --warn-text: #8a5a00;
+  --danger: #f4212e;
+  --danger-bg: #fee8ea;
+  --danger-text: #c41320;
+  --grad: linear-gradient(45deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5);
+  --grad-line: linear-gradient(90deg, #fa7e1e, #d62976, #962fbf, #4f5bd5);
+  --radius: 8px;
+
+  /* 既存の部品（API キーガイドなど）との互換用 */
+  --accent: var(--primary);
+  --accent-hover: var(--primary-hover);
+  --on-accent: var(--on-primary);
+  --accent-bg: var(--surface-1);
+  --accent-text: var(--text);
+
   color-scheme: light dark;
-  font-family: system-ui, 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif;
+  font-family: 'Noto Sans JP Variable', -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
   font-size: 14px;
   line-height: 1.5;
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1c1c1a;
-    --surface: #262624;
-    --surface-1: #31312e;
-    --text: #f1efe8;
-    --text-2: #b4b2a9;
-    --text-3: #888780;
-    --border: rgba(255, 255, 255, 0.1);
-    --border-strong: rgba(255, 255, 255, 0.2);
-    --accent: #4a86ec;
-    --accent-hover: #6297f0;
-    --accent-bg: #0c447c;
-    --accent-text: #b5d4f4;
-    --ok: #3cb48c;
-    --ok-bg: #085041;
-    --ok-text: #9fe1cb;
-    --warn: #ef9f27;
-    --warn-bg: #633806;
-    --warn-text: #fac775;
-    --danger-text: #f09595;
-    --danger-bg: #501313;
+    --bg: #000000;
+    --surface: #000000;
+    --surface-1: #16181c;
+    --surface-2: #202327;
+    --text: #e7e9ea;
+    --text-2: #71767b;
+    --text-3: #5b6168;
+    --border: #2f3336;
+    --border-strong: #536471;
+    --primary: #eff3f4;
+    --primary-hover: #d7dbdc;
+    --on-primary: #0f1419;
+    --ok-bg: #032b1f;
+    --ok-text: #3fd19f;
+    --warn-bg: #2e2200;
+    --warn-text: #ffc53d;
+    --danger-bg: #2d0a0d;
+    --danger-text: #ff6b75;
   }
 }
 
@@ -76,17 +89,29 @@ textarea {
   color: inherit;
 }
 
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ボタン：ピル型 */
 .btn {
-  height: 34px;
-  padding: 0 14px;
-  border-radius: var(--radius);
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
   border: 1px solid var(--border-strong);
   background: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background 0.15s;
 }
 
 .btn:hover {
@@ -94,13 +119,13 @@ textarea {
 }
 
 .btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
 }
 
 .btn-primary:hover {
-  background: var(--accent-hover);
+  background: var(--primary-hover);
 }
 
 .btn-ghost {
@@ -113,44 +138,147 @@ textarea {
 }
 
 .btn:focus-visible,
+.chip:focus-visible,
 .input:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
 }
 
 .input {
   width: 100%;
-  height: 36px;
-  padding: 0 10px;
-  border-radius: var(--radius);
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 6px;
   border: 1px solid var(--border-strong);
   background: var(--surface);
 }
 
-.input:hover {
-  border-color: var(--text-3);
+/* 選択肢：ピル型のチップ */
+.chip {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.chip:hover {
+  background: var(--surface-1);
+}
+
+.chip[aria-pressed='true'],
+.chip.on {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+/* プロフィール完成度のリング（Instagram のストーリー風） */
+.ring {
+  --p: 100%;
+  border-radius: 50%;
+  padding: 2.5px;
+  background: conic-gradient(#fa7e1e 0, #d62976 calc(var(--p) * 0.35), #962fbf calc(var(--p) * 0.7), #4f5bd5 var(--p), var(--border) var(--p));
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.ring > .ring-inner {
+  background: var(--bg);
+  border-radius: 50%;
+  padding: 2.5px;
+  display: flex;
+}
+
+.avatar {
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .seg {
   display: flex;
-  background: var(--surface-1);
-  border-radius: 999px;
-  padding: 3px;
-  gap: 2px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .seg button {
-  flex: 1;
-  border: none;
-  background: transparent;
-  height: 28px;
-  font-size: 12px;
+  height: 32px;
+  padding: 0 14px;
   border-radius: 999px;
-  color: var(--text-2);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .seg button[aria-pressed='true'] {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 0 0 1px var(--border-strong);
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+/* Sophon のロゴ（濃紺の光の中に薄紫の輪）。画像を使わず CSS で描くので、どの大きさでも鮮明 */
+.orb {
+  --ring: 2px;
+  --glow: 6px;
+  position: relative;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #34386a 0%, #23264a 28%, #121322 52%, #0a0a0f 72%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.orb::after {
+  content: '';
+  width: 42%;
+  height: 42%;
+  border-radius: 50%;
+  background: #0a0a0f;
+  box-shadow: 0 0 0 var(--ring) #b9bde8, 0 0 var(--glow) var(--ring) rgba(185, 189, 232, 0.55);
+}
+
+/* 考えているあいだは、輪がゆっくり呼吸するように光る */
+.orb.live {
+  animation: orb-halo 2.4s ease-in-out infinite;
+}
+
+.orb.live::after {
+  animation: orb-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes orb-breathe {
+  50% {
+    box-shadow: 0 0 0 calc(var(--ring) + 1px) #d6d9ff, 0 0 calc(var(--glow) * 2.4) calc(var(--ring) + 2px) rgba(185, 189, 232, 0.8);
+  }
+}
+
+@keyframes orb-halo {
+  50% {
+    filter: brightness(1.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb.live,
+  .orb.live::after {
+    animation: none;
+  }
 }
