@@ -24,8 +24,11 @@ npm run compile  # 型チェック
 npm run harness
 ```
 
-- http://localhost:5179/test/ … いろいろな形のテストフォームに入力エンジンを直接当てる（「AI モック」でAI判定の流れも確認できる）
+- http://localhost:5179/test/ … 手動確認用のテストフォームに入力エンジンを直接当てる（「AI モック」でAI判定の流れも確認できる）
+- http://localhost:5179/test/suite.html … **回帰テスト**。いろいろな形式のフォーム（test/fixtures/cases.ts）に入力し、期待値と「元に戻す」を自動で確認する
 - http://localhost:5179/test/popup.html ・ /test/options.html … 拡張 API をスタブにした UI プレビュー
+
+判定ルールを変えたら、必ず suite.html がすべて成功することを確認してください。実サイトで外れた形は、cases.ts にケースとして追加していきます。
 
 ## 構成
 

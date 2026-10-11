@@ -109,7 +109,7 @@ const TEXT_RULES: [Category, RegExp][] = [
   ['currentJobType', /現在の職種|現職.{0,3}職種/],
   ['currentCompany', /現在の勤務先|現勤務先|在籍企業|現職|勤務先|会社名/],
   ['roman', /ローマ字|英字|アルファベット|roman|english name/],
-  ['birth', /生年月日|誕生日|birth|bday|date of birth/],
+  ['birth', /生年月日|誕生日|生年|birth|bday|date of birth|dob/],
   ['gender', /性別|gender|^sex/],
   ['postal', /郵便番号|〒|postal|zip/],
   ['phone', /電話|携帯|^tel|phone|mobile/],
@@ -182,7 +182,23 @@ function stripModifiers(text: string) {
     .trim();
 }
 
+/** 文章の欄（textarea）に入れてよい項目。それ以外はラベルに直接書かれていないと入れない */
+const TEXTAREA_KEYS = new Set<FieldKey>([
+  'fullAddress', 'kiseiFullAddress', 'educationHistory', 'qualifications', 'pcSkills', 'otherLanguage',
+  'researchTheme', 'studyAbroad', 'partTime', 'hobbies', 'specialSkills', 'hobbiesAndSkills',
+  'personalRequest', 'workHistory', 'club', 'desiredJob',
+]);
+
 export function classify(d: FieldDescriptor): Classification {
+  const c = classifyField(d);
+  // 自己PR などの文章欄に、周りの見出しから推測した氏名などを入れてしまわないように
+  if (d.kind === 'textarea' && c.key && !TEXTAREA_KEYS.has(c.key) && c.confidence < CONF.near) {
+    return { key: null, confidence: 0, source: 'rule' };
+  }
+  return c;
+}
+
+function classifyField(d: FieldDescriptor): Classification {
   const ac = d.autocomplete.toLowerCase().split(/\s+/).pop() ?? '';
   if (AUTOCOMPLETE[ac] && d.kind !== 'file') return { key: AUTOCOMPLETE[ac], confidence: CONF.autocomplete, source: 'rule' };
 
@@ -248,8 +264,11 @@ export function classify(d: FieldDescriptor): Classification {
     case 'name':
     case 'roman': {
       if (emergency && !kana) return r('emergencyName');
+      // 「First name」「Last name」のように見出しが英語だけなら、ローマ字の名前を入れる
+      const shownLabel = (nearRaw.trim() || d.context).trim();
+      const englishOnly = !!shownLabel && /[a-z]/i.test(shownLabel) && !/[぀-ヿ㐀-鿿]/.test(shownLabel);
       const keys = (
-        cat === 'roman'
+        cat === 'roman' || (englishOnly && !kana)
           ? ['fullNameRoman', 'lastNameRoman', 'firstNameRoman']
           : kana
             ? ['fullNameKana', 'lastNameKana', 'firstNameKana']
@@ -295,6 +314,8 @@ export function classify(d: FieldDescriptor): Classification {
       if (!kana && has(/番地|地名|町名|丁目/)) return r(kisei ? 'kiseiCityAddressLine' : 'cityAddressLine');
       return r(kana ? 'cityKana' : kisei ? 'kiseiCity' : 'city');
     case 'building':
+      // 「番地・建物名」のように1つの欄にまとめる形
+      if (!kana && !kisei && has(/番地|町名|丁目/)) return r('addressLineBuilding');
       return r(kana ? 'buildingKana' : kisei ? 'kiseiBuilding' : 'building');
     case 'address': {
       const line = /番地|町名|丁目|住所\s*1|address ?(line ?)?1/.test(near || ctx);
@@ -376,7 +397,8 @@ const PHONE_TO_LANDLINE: Partial<Record<FieldKey, FieldKey>> = {
  * フォーム全体を見て判定を調整する。
  * 「電話番号」と「携帯電話番号」が両方あるときは、ただの「電話番号」を自宅の電話として扱う。
  */
-export function adjustForForm(fields: ScannedField[], classes: Classification[]): Classification[] {
+export function adjustForForm(fields: ScannedField[], input: Classification[]): Classification[] {
+  let classes = input;
   const isPhone = (c: Classification) => !!c.key && c.key in PHONE_TO_LANDLINE;
   const mentionsMobile = (d: FieldDescriptor) => MOBILE.test(norm(`${d.label} ${d.prefix} ${d.context} ${d.name} ${d.htmlId}`));
   // 同じ <form> の中だけで比べる（form がなければページ全体）
@@ -389,6 +411,31 @@ export function adjustForForm(fields: ScannedField[], classes: Classification[])
     else s.plain = true;
     forms.set(formOf(f), s);
   });
+  // 「住所」の欄と別に都道府県・建物名の欄があるなら、住所の欄にはそれを重ねて入れない
+  const addressParts = new Map<HTMLFormElement | null, Set<string>>();
+  fields.forEach((f, i) => {
+    const key = classes[i]!.key;
+    if (!key) return;
+    const set = addressParts.get(formOf(f)) ?? new Set<string>();
+    set.add(key);
+    addressParts.set(formOf(f), set);
+  });
+  const narrowAddress = (key: FieldKey, f: ScannedField): FieldKey => {
+    const parts = addressParts.get(formOf(f)) ?? new Set<string>();
+    const hasPref = parts.has('prefecture');
+    const hasBuilding = parts.has('building');
+    if (key === 'fullAddress') {
+      if (hasPref && hasBuilding) return 'cityAddressLine';
+      if (hasPref) return 'cityAddressLineBuilding';
+      if (hasBuilding) return 'fullAddressNoBuilding';
+    }
+    if (key === 'kiseiFullAddress' && parts.has('kiseiPrefecture')) return 'kiseiCityAddressLine';
+    if (key === 'cityAddressLineBuilding' && hasBuilding) return 'cityAddressLine';
+    if (key === 'addressLineBuilding' && hasBuilding) return 'addressLine';
+    return key;
+  };
+  classes = classes.map((c, i) => (c.key ? { ...c, key: narrowAddress(c.key, fields[i]!) } : c));
+
   // 学校区分・頭文字と同じフォームにあり、住所の欄がない都道府県は「学校の所在地」
   const schoolForms = new Set<HTMLFormElement | null>();
   const addressForms = new Set<HTMLFormElement | null>();
@@ -400,6 +447,10 @@ export function adjustForForm(fields: ScannedField[], classes: Classification[])
 
   return classes.map((c, i) => {
     const f = fields[i]!;
+    // ［平成▼］［  ］年 のように、元号の欄のすぐ後ろの年は和暦の数字
+    if (c.key === 'birthYear' && classes[i - 1]?.key === 'birthEra' && f.desc.kind !== 'select') {
+      return { ...c, key: 'birthEraYear' };
+    }
     if (c.key === 'prefecture' && schoolForms.has(formOf(f)) && !addressForms.has(formOf(f))) {
       return { ...c, key: 'schoolPrefecture' };
     }
@@ -411,8 +462,12 @@ export function adjustForForm(fields: ScannedField[], classes: Classification[])
 
 function namePart(nearRaw: string, attrs: string): 'last' | 'first' | null {
   const t = nearRaw.replace(/氏名|姓名|お名前|名前|フリガナ|ふりがな|ローマ字|緊急連絡先/g, '');
-  if (/姓|せい|セイ|ｾｲ|苗字|名字|last|family|surname/i.test(t)) return 'last';
-  if (/名|めい|メイ|ﾒｲ|first|given/i.test(t)) return 'first';
+  const last = /姓|せい|セイ|ｾｲ|苗字|名字|last|family|surname/i.test(t);
+  const first = /名|めい|メイ|ﾒｲ|first|given/i.test(t.replace(/苗字|名字/g, ''));
+  // 「フリガナ（セイ・メイ）」「氏名（姓・名）」は1つの欄に両方を入れる
+  if (last && first) return null;
+  if (last) return 'last';
+  if (first) return 'first';
   if (/last|family|(^|[^a-z])sei([^a-z]|$)|lname/.test(attrs)) return 'last';
   if (/first|given|(^|[^a-z])mei([^a-z]|$)|fname/.test(attrs)) return 'first';
   return null;
@@ -454,6 +509,8 @@ function dateKey(
   return r(full);
 }
 
+const MONTH_NAMES = /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
+
 function datePart(d: FieldDescriptor, attrs: string): 'era' | 'year' | 'month' | 'day' | null {
   const unit = (s: string) => {
     const t = s.replace(/生年月日|誕生日|卒業予定年月|卒業年月日?|入学年月日?|年月日|年月/g, '');
@@ -462,11 +519,16 @@ function datePart(d: FieldDescriptor, attrs: string): 'era' | 'year' | 'month' |
     if (/日|day/i.test(t)) return 'day';
     return null;
   };
+  // 「YYYY/MM/DD」「例：1999/04/01」のように年月日すべてを入れる欄
+  const sample = norm(`${d.placeholder} ${d.label}`);
+  if (/y{2,4}\s*[\/\-.年]?\s*m{1,2}\s*[\/\-.月]?\s*d{1,2}|\d{4}\s*[\/\-.年]\s*\d{1,2}\s*[\/\-.月]\s*\d{1,2}|\d{8}/.test(sample)) return null;
+
   // 直前のテキストは前の欄の単位（「年」の後ろに月の欄…）なので見ない
   const fromSuffix = unit(d.suffix);
   if (fromSuffix) return fromSuffix;
 
   if (d.options.length) {
+    if (d.options.filter((o) => MONTH_NAMES.test(o)).length >= 6) return 'month';
     // 元号だけの選択肢（［昭和／平成／令和］）
     if (d.options.some((o) => /平成|昭和|令和/.test(o)) && !d.options.some((o) => /\d/.test(o.normalize('NFKC')))) return 'era';
     if (d.options.some((o) => /平成|昭和|令和/.test(o))) return 'year';
@@ -518,5 +580,13 @@ export function computeHints(d: FieldDescriptor): Hints {
   else if (/\d{4}-\d|yyyy-/.test(ph)) dateFormat = 'hyphen';
   else if (/\d{4}\/\d|yyyy\//.test(ph)) dateFormat = 'slash';
 
-  return { kana, width, era, hyphen, dateFormat };
+  // 「例）山田 太郎」「ヤマダタロウ」のような例から、姓と名の間のスペースを決める
+  let nameSpace: Hints['nameSpace'] = null;
+  const example = d.placeholder.replace(/^\s*(例|e\.?g\.?)\s*[:：)）]?\s*/i, '').trim();
+  if (/[^\s　]　[^\s　]/.test(example)) nameSpace = 'full';
+  else if (/[^\s　] [^\s　]/.test(example)) nameSpace = 'half';
+  else if (/^[぀-ヿ㐀-鿿]{3,}$/.test(example)) nameSpace = 'none';
+  else if (/スペースなし|スペース不要|空白なし|詰めて/.test(text)) nameSpace = 'none';
+
+  return { kana, width, era, hyphen, dateFormat, nameSpace };
 }

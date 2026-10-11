@@ -177,6 +177,21 @@ function structuralHeader(el: HTMLElement): string {
 /** 「例（111-0000）」「-」のような入力例・区切り記号は見出しにしない */
 const NOT_A_HEADING = /^(例|e\.?g\.?|ex\.?)\s*[:：(（]|^[\s\-‐ー－~〜～/／:：()（）]*$/i;
 
+/**
+ * node の中に、el 以外の入力欄に紐づいた <label> があるか。
+ * 同じラジオグループの選択肢のラベル（「男性」「女性」）は el の仲間なので数えない。
+ */
+function hasOtherFieldLabel(node: Element, el: HTMLElement): boolean {
+  const radioName = el instanceof HTMLInputElement && el.type === 'radio' ? el.name : null;
+  for (const label of Array.from(node.querySelectorAll('label'))) {
+    const control = label.control;
+    if (!control || control === el || label.contains(el)) continue;
+    if (radioName && control instanceof HTMLInputElement && control.type === 'radio' && control.name === radioName) continue;
+    return true;
+  }
+  return false;
+}
+
 function contextText(el: HTMLElement): string {
   // 表や dl の行見出しがあれば、近くにある入力例より優先する
   const header = structuralHeader(el);
@@ -186,6 +201,8 @@ function contextText(el: HTMLElement): string {
   for (let depth = 0; node && depth < 6; depth++, node = node.parentElement) {
     // 欄自身の <label>（ラジオの「男性」など）は見出しではない
     if (node.tagName === 'LABEL') continue;
+    // ほかの欄のラベルを含むところまで広がったら、その文字は別の欄の見出しなので使わない
+    if (hasOtherFieldLabel(node, el)) break;
     const t = textOf(node, 60);
     if (t.length > 60) break;
     if (t && !NOT_A_HEADING.test(t)) return t;
@@ -296,11 +313,19 @@ export function scanFields(doc: Document): ScannedField[] {
 /** ページ上部などにあるログインフォーム（ID とパスワードだけ）には入れない */
 function inLoginForm(f: ScannedField): boolean {
   const form = (f.elements[0] as HTMLInputElement).form;
-  if (!form || !form.querySelector('input[type="password"]')) return false;
-  const textInputs = Array.from(form.querySelectorAll('input, select, textarea')).filter(
-    (el) => el instanceof HTMLElement && /^(text|email|tel|)$/.test((el.getAttribute('type') ?? '').toLowerCase()) && el.tagName === 'INPUT',
+  if (!form) return false;
+  // 会員登録はパスワードと確認用の2つがあることが多いので、パスワード欄が1つのときだけ
+  if (form.querySelectorAll('input[type="password"]').length !== 1) return false;
+  const textInputs = Array.from(form.querySelectorAll('input')).filter((el) =>
+    /^(text|email|tel|)$/.test((el.getAttribute('type') ?? '').toLowerCase()),
   );
-  return textInputs.length <= 2;
+  if (textInputs.length > 2) return false;
+  // ID とパスワードだけなら、文言がなくてもログインフォーム
+  if (textInputs.length <= 1) return true;
+  const words = `${textOf(form, 200)} ${Array.from(form.querySelectorAll('button, input[type=submit]'))
+    .map((b) => (b as HTMLInputElement).value || b.textContent)
+    .join(' ')}`;
+  return /ログイン|サインイン|login|log in|sign ?in/i.test(words);
 }
 
 function makeField(el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, kind: FieldKind): ScannedField {
@@ -336,7 +361,13 @@ function assignGroups(fields: ScannedField[]) {
   for (let i = 1; i <= fields.length; i++) {
     const prev = fields[i - 1]!.desc;
     const cur = fields[i]?.desc;
-    const same = cur && cur.context && cur.context === prev.context && sameFamily(cur.kind, prev.kind);
+    // 見出しが同じでも、別の行（別の表の「郵便番号」など）にある欄は同じグループにしない
+    const same =
+      cur &&
+      cur.context &&
+      cur.context === prev.context &&
+      sameFamily(cur.kind, prev.kind) &&
+      rowOf(fields[i]!.elements[0]!) === rowOf(fields[i - 1]!.elements[0]!);
     if (same) continue;
     const size = i - start;
     const group = fields.slice(start, i);
@@ -347,6 +378,17 @@ function assignGroups(fields: ScannedField[]) {
     assignLines(group);
     start = i;
   }
+}
+
+/** 欄が属する「行」（表の行・dd・リスト項目・行らしい div など） */
+function rowOf(el: HTMLElement): Element | null {
+  // 表やリストの構造を優先する（入力欄ごとの小さな包み要素を「行」と取り違えないように）
+  return (
+    el.closest('tr, dd, li, fieldset') ??
+    el.closest('p, [class*="row" i], [class*="group" i]') ??
+    el.parentElement?.parentElement ??
+    null
+  );
 }
 
 /**
