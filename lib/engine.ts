@@ -29,6 +29,8 @@ const MIN_CONFIDENCE = 0.5;
 const RETRY_DELAYS = [150, 300, 600];
 /** 入力したあと、新しく入力できるようになった欄を探すまでの待ち時間 */
 const NEW_FIELD_DELAY = 200;
+/** サイト側の自動入力（郵便番号からの住所検索など）が終わるのを待つ時間 */
+const OVERWRITE_CHECK_DELAY = 500;
 
 /** 未登録の項目として案内するときは、分割欄や自動生成の項目を元の入力項目にまとめる */
 const MISSING_ALIAS: Partial<Record<FieldKey, FieldKey>> = {
@@ -178,6 +180,7 @@ export class FormFiller {
 
     await this.retryDependentSelects(settings.threshold);
     await this.fillNewlyAvailable(profile, settings);
+    await this.reapplyOverwritten(settings.threshold);
 
     this.render();
     return { ...this.status(), aiError };
@@ -197,6 +200,21 @@ export class FormFiller {
     this.snapshots.set(field, takeSnapshot(field));
     this.apply(result, settings.threshold);
     return result;
+  }
+
+  /**
+   * 郵便番号を入れると住所を自動で埋めるサイト（ajaxzip3 など）は、少し遅れて住所の欄を書き換える。
+   * そのせいで入れた番地が消えることがあるので、書き換わった文字の欄を入れ直す。
+   */
+  private async reapplyOverwritten(threshold: number) {
+    await new Promise((resolve) => setTimeout(resolve, OVERWRITE_CHECK_DELAY));
+    for (const r of this.results) {
+      if (r.status !== 'ok' && r.status !== 'warn') continue;
+      const el = r.field.elements[0];
+      if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) continue;
+      if (el.type === 'radio' || el.type === 'checkbox' || el.type === 'file') continue;
+      if (el.value !== r.value) this.apply(r, threshold);
+    }
   }
 
   /**
@@ -321,6 +339,11 @@ export class FormFiller {
         .join(' | '),
     );
     return [`URL: ${location.host}${location.pathname}`, `欄: ${rows.length}件`, ...lines].join('\n');
+  }
+
+  /** ページ右下に短いお知らせを出す（ショートカットで入力しようとしたが、できなかったときなど） */
+  notice(message: string) {
+    this.overlay.notice(message);
   }
 
   undo(): FrameStatus {

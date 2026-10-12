@@ -614,6 +614,160 @@ export const CASES: Case[] = [
     },
     expect: { '[name=f3ay]': '2022', '[name=f3am]': '04', '[name=f3gy]': '2026', '[name=f3gm]': '03' },
   },
+  // ---- 第3弾：ATS 風の作り・表記ゆれ・似ているけれど入れてはいけない欄 ----
+  {
+    name: 'aria-labelledby で別の要素をラベルにしている（ATS 風）',
+    html: `<form>
+      <div><div id="g1l1">姓</div><input aria-labelledby="g1l1" name="g1a" data-automation-id="legalNameSection_lastName"></div>
+      <div><div id="g1l2">名</div><input aria-labelledby="g1l2" name="g1b"></div>
+      <div><div id="g1l3">メールアドレス</div><input aria-labelledby="g1l3" name="g1c"></div>
+    </form>`,
+    expect: { '[name=g1a]': '山田', '[name=g1b]': '太郎', '[name=g1c]': 'taro@example.com' },
+  },
+  {
+    name: '配列形式の name 属性（name[last] / name[first]）',
+    html: `<form><table><tr><th>氏名</th><td><input name="name[last]"> <input name="name[first]"></td></tr></table></form>`,
+    expect: { '[name="name[last]"]': '山田', '[name="name[first]"]': '太郎' },
+  },
+  {
+    name: '都道府県の選択肢が「東京」（都道府県の文字なし）',
+    html: `<form><label>都道府県 <select name="g3">${opts(PREFECTURES.map((p) => [p, p === '北海道' ? p : p.replace(/[都府県]$/, '')]))}</select></label></form>`,
+    expect: { '[name=g3]': '東京都' },
+  },
+  {
+    name: '都道府県の選択肢が「13:東京都」',
+    html: `<form><label>都道府県 <select name="g4">${opts(PREFECTURES.map((p, i) => [String(i + 1), `${String(i + 1).padStart(2, '0')}:${p}`]))}</select></label></form>`,
+    expect: { '[name=g4]': '13' },
+  },
+  {
+    name: '年齢の選択肢が「27歳」',
+    html: `<form><label>年齢 <select name="g5">${opts(range(18, 40).map((n) => `${n}歳`))}</select></label></form>`,
+    expect: { '[name=g5]': '27歳' },
+  },
+  {
+    name: '生年の選択肢が「平成11年（1999年）」',
+    html: `<form><label>生まれた年 <select name="g6">${opts(range(1985, 2005).map((y) => [String(y), `${y >= 1989 ? `平成${y - 1988}` : `昭和${y - 1925}`}年（${y}年）`]))}</select></label></form>`,
+    expect: { '[name=g6]': '1999' },
+  },
+  {
+    name: 'FAX・内線には入れない',
+    html: `<form><table>
+      <tr><th>電話番号</th><td><input name="g7a" size="4">-<input name="g7b" size="4">-<input name="g7c" size="4"> 内線<input name="g7d" size="4"></td></tr>
+      <tr><th>FAX番号</th><td><input name="g7e"></td></tr>
+    </table></form>`,
+    expect: { '[name=g7a]': '090', '[name=g7b]': '1234', '[name=g7c]': '5678', '[name=g7d]': '', '[name=g7e]': '' },
+  },
+  {
+    name: '学籍番号・ユーザーID・マイページID には入れない',
+    html: `<form>
+      <label>学籍番号 <input name="g8a"></label>
+      <label>ユーザーID <input name="g8b"></label>
+      <label>マイページID <input name="g8c"></label>
+      <label>紹介者のお名前 <input name="g8d"></label>
+    </form>`,
+    expect: { '[name=g8a]': '', '[name=g8b]': '', '[name=g8c]': '', '[name=g8d]': '' },
+  },
+  {
+    name: '見出しは「ふりがな」でも placeholder がカタカナならカタカナ',
+    html: `<form><label>ふりがな <input name="g9" placeholder="ヤマダ　タロウ"></label></form>`,
+    expect: { '[name=g9]': 'ヤマダ　タロウ' },
+  },
+  {
+    name: '氏名（ひらがな）',
+    html: `<form><label>氏名（ひらがな） <input name="g10"></label></form>`,
+    expect: { '[name=g10]': 'やまだ　たろう' },
+  },
+  {
+    name: '卒業見込年月が「2026/03」形式の文字欄',
+    html: `<form><label>卒業見込年月 <input name="g11" placeholder="2026/03"></label></form>`,
+    expect: { '[name=g11]': '2026/03' },
+  },
+  {
+    name: '郵便番号が type="number"',
+    html: `<form><label>郵便番号 <input type="number" name="g12"></label></form>`,
+    expect: { '[name=g12]': '1500041' },
+  },
+  {
+    name: '文字数制限より長い値は入れない',
+    html: `<form><label>フリガナ <input name="g13" maxlength="4"></label></form>`,
+    expect: { '[name=g13]': '' },
+  },
+  {
+    name: '都道府県を選ぶと市区町村の選択肢が作られる',
+    html: `<form>
+      <label>都道府県 <select name="g14a">${opts(PREFECTURES)}</select></label>
+      <label>市区町村 <select name="g14b"><option value="">選択してください</option></select></label>
+    </form>`,
+    setup(root) {
+      const pref = root.querySelector<HTMLSelectElement>('[name=g14a]')!;
+      const city = root.querySelector<HTMLSelectElement>('[name=g14b]')!;
+      pref.addEventListener('change', () =>
+        setTimeout(() => {
+          city.length = 1;
+          for (const c of pref.value === '東京都' ? ['千代田区', '港区', '渋谷区', '新宿区'] : ['その他']) city.add(new Option(c));
+        }, 80),
+      );
+    },
+    expect: { '[name=g14a]': '東京都', '[name=g14b]': '渋谷区' },
+  },
+  {
+    name: '履歴書形式の学歴・職歴の表には入れない',
+    html: `<form><table>
+      <tr><th>年</th><th>月</th><th>学歴・職歴</th></tr>
+      <tr><td><input name="g15y1" size="4"></td><td><input name="g15m1" size="2"></td><td><input name="g15t1" size="40"></td></tr>
+      <tr><td><input name="g15y2" size="4"></td><td><input name="g15m2" size="2"></td><td><input name="g15t2" size="40"></td></tr>
+    </table></form>`,
+    expect: { '[name=g15y1]': '', '[name=g15m1]': '', '[name=g15t1]': '', '[name=g15y2]': '', '[name=g15t2]': '' },
+  },
+  {
+    name: '生年月日（西暦）の3つの文字欄',
+    html: `<form><table><tr><th>生年月日（西暦）</th><td><input name="g16y" size="4">年<input name="g16m" size="2">月<input name="g16d" size="2">日</td></tr></table></form>`,
+    expect: { '[name=g16y]': '1999', '[name=g16m]': '4', '[name=g16d]': '1' },
+  },
+  {
+    name: '女性・「選択しない」付きの性別プルダウン',
+    profile: { gender: 'female' },
+    html: `<form><label>性別 <select name="g17">${opts(['男性', '女性', '選択しない'])}</select></label></form>`,
+    expect: { '[name=g17]': '女性' },
+  },
+  {
+    name: '日付ピッカー（読み取り専用の文字欄）には入れない',
+    html: `<form><label>生年月日 <input name="g18" class="datepicker" readonly></label></form>`,
+    expect: { '[name=g18]': '' },
+  },
+  {
+    name: 'ラベルの中の入力欄の後ろに説明文',
+    html: `<form>
+      <label><span>氏名</span><input name="g19a"><small>全角で入力してください</small></label>
+      <label><span>メールアドレス</span><input name="g19b"><small>半角英数字</small></label>
+    </form>`,
+    expect: { '[name=g19a]': '山田　太郎', '[name=g19b]': 'taro@example.com' },
+  },
+  {
+    name: '連絡用メール・PC メール',
+    html: `<form><label>連絡用メールアドレス <input name="g20a"></label><label>PCメール <input name="g20b"></label></form>`,
+    expect: { '[name=g20a]': 'taro@example.com', '[name=g20b]': 'taro@example.com' },
+  },
+  {
+    name: '郵便番号から住所を自動入力するサイト（ajaxzip3 風）で番地が消えない',
+    html: `<form>
+      <label>郵便番号 <input name="g21a"></label>
+      <label>都道府県 <select name="g21b">${opts(PREFECTURES)}</select></label>
+      <label>市区町村 <input name="g21c"></label>
+      <label>番地 <input name="g21d"></label>
+    </form>`,
+    setup(root) {
+      const zip = root.querySelector<HTMLInputElement>('[name=g21a]')!;
+      zip.addEventListener('keyup', () =>
+        setTimeout(() => {
+          root.querySelector<HTMLSelectElement>('[name=g21b]')!.value = '東京都';
+          root.querySelector<HTMLInputElement>('[name=g21c]')!.value = '渋谷区';
+          root.querySelector<HTMLInputElement>('[name=g21d]')!.value = '神南';
+        }, 150),
+      );
+    },
+    expect: { '[name=g21a]': '150-0041', '[name=g21b]': '東京都', '[name=g21c]': '渋谷区', '[name=g21d]': '神南1-2-3' },
+  },
   {
     name: '性別が未設定なら選ばない',
     profile: { gender: '' },
