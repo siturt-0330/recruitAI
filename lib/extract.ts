@@ -2,7 +2,12 @@ export type FieldKind =
   | 'text' | 'email' | 'tel' | 'number' | 'date' | 'month' | 'select' | 'radio' | 'textarea' | 'file' | 'checkbox';
 
 /** 扱うチェックボックスは「現住所と同じ」系だけ（同意チェックなどには触らない） */
-export const SAME_AS_CURRENT = /(現住所|上記|本人|自宅)(と|に)?同(じ|一)|同上/;
+export function isSameAsCurrent(text: string): boolean {
+  const t = text.replace(/\s+/g, '');
+  // 「現住所と同じ」「現在の連絡先と同じ」「上記と同一」「同上」など。
+  // 住所・連絡先の話であることを必須にし、同意・メール配信・海外在住などのチェックボックスは含まない
+  return /同じ|同一|同上/.test(t) && /住所|連絡先|帰省|休暇/.test(t) && !/同意|メール|マガジン|配信|海外|国外/.test(t);
+}
 
 /** AI・ルール判定に使う欄の特徴。ユーザーが入力済みの値は含めない */
 export interface FieldDescriptor {
@@ -265,7 +270,8 @@ export function scanFields(doc: Document): ScannedField[] {
 
     if (el instanceof HTMLInputElement && el.type === 'checkbox') {
       const text = checkboxText(el);
-      if (!SAME_AS_CURRENT.test(text)) continue;
+      // 「上記と同じ」だけの文言でも、見出しが「休暇中の連絡先」なら対象にする
+      if (!isSameAsCurrent(`${text} ${sectionText(el)} ${contextText(el)}`) || !isSameAsCurrent(`${text} 住所`)) continue;
       const field = makeField(el, 'checkbox');
       field.desc.label = text.trim();
       fields.push(field);

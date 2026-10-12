@@ -27,6 +27,8 @@ const MAX_REMOTE_QUESTIONS = 60;
 const MIN_CONFIDENCE = 0.5;
 /** 連動するプルダウン（年→月→日）の選択肢が作られるのを待つ間隔 */
 const RETRY_DELAYS = [150, 300, 600];
+/** 入力したあと、新しく入力できるようになった欄を探すまでの待ち時間 */
+const NEW_FIELD_DELAY = 200;
 
 /** 未登録の項目として案内するときは、分割欄や自動生成の項目を元の入力項目にまとめる */
 const MISSING_ALIAS: Partial<Record<FieldKey, FieldKey>> = {
@@ -172,26 +174,47 @@ export class FormFiller {
     skipKiseiWhenSame(fields, classes, profile);
     applyConditions(fields, classes, profile);
 
-    this.results = fields.map((field, i) => {
-      const { key, confidence, source } = classes[i]!;
-      const result: Result = { field, key, confidence, source, status: 'skip', value: '', variants: [], noData: false };
-      if (!key || confidence < MIN_CONFIDENCE || hasUserValue(field)) return result;
-
-      result.variants = valueVariants(key, profile, computeHints(field.desc), field.desc.kind, field.desc.options);
-      if (!result.variants.length) {
-        result.status = 'empty';
-        result.noData = true;
-        return result;
-      }
-      this.snapshots.set(field, takeSnapshot(field));
-      this.apply(result, settings.threshold);
-      return result;
-    });
+    this.results = fields.map((field, i) => this.fillField(field, classes[i]!, profile, settings));
 
     await this.retryDependentSelects(settings.threshold);
+    await this.fillNewlyAvailable(profile, settings);
 
     this.render();
     return { ...this.status(), aiError };
+  }
+
+  private fillField(field: ScannedField, c: Classification, profile: Profile, settings: Settings): Result {
+    const { key, confidence, source } = c;
+    const result: Result = { field, key, confidence, source, status: 'skip', value: '', variants: [], noData: false };
+    if (!key || confidence < MIN_CONFIDENCE || hasUserValue(field)) return result;
+
+    result.variants = valueVariants(key, profile, computeHints(field.desc), field.desc.kind, field.desc.options);
+    if (!result.variants.length) {
+      result.status = 'empty';
+      result.noData = true;
+      return result;
+    }
+    this.snapshots.set(field, takeSnapshot(field));
+    this.apply(result, settings.threshold);
+    return result;
+  }
+
+  /**
+   * 「入学年月を選ぶと卒業年月が選べるようになる」「学校区分を選ぶと欄が出てくる」フォームがある。
+   * 入力後にもう一度ページを調べ、新しく入力できるようになった欄にも入れる（AI には聞かずルールだけ）。
+   */
+  private async fillNewlyAvailable(profile: Profile, settings: Settings) {
+    for (let round = 0; round < 2; round++) {
+      await new Promise((resolve) => setTimeout(resolve, NEW_FIELD_DELAY));
+      const known = new Set(this.results.flatMap((r) => r.field.elements));
+      const fields = scanFields(this.doc);
+      const freshIndexes = fields.map((f, i) => (f.elements.some((e) => known.has(e)) ? -1 : i)).filter((i) => i >= 0);
+      if (!freshIndexes.length) return;
+      const classes = adjustForForm(fields, fields.map((f) => classify(f.desc)));
+      skipKiseiWhenSame(fields, classes, profile);
+      applyConditions(fields, classes, profile);
+      for (const i of freshIndexes) this.results.push(this.fillField(fields[i]!, classes[i]!, profile, settings));
+    }
   }
 
   private apply(result: Result, threshold: number): boolean {

@@ -43,6 +43,7 @@ export function emptyProfile(label = '新しいプロフィール'): Profile {
     school: '',
     schoolKana: '',
     schoolPrefecture: '',
+    schoolOwnership: '',
     faculty: '',
     department: '',
     fieldCategory: '',

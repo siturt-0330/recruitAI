@@ -90,6 +90,7 @@ export const FIELD_KEYS = {
   schoolKana: k('education', '学校名（フリガナ）', '学校名の読み仮名'),
   schoolInitial: k('education', '学校名の頭文字', '学校名の読みの最初の1文字（あ・か・さ…）を選ぶ欄'),
   schoolPrefecture: k('education', '学校の所在地', '在籍している学校の所在地の都道府県'),
+  schoolOwnership: k('education', '設置区分', '在籍している学校の設置区分（国立・公立・私立）'),
   faculty: k('education', '学部', '学部・研究科'),
   department: k('education', '学科', '学科・専攻・コース'),
   fieldCategory: k('education', '学科系統', '学科・専攻の系統・分野'),
