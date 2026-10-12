@@ -370,12 +370,24 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
     case 'schoolKana':
       return kanaForms(p.schoolKana, h.kana);
     case 'schoolInitial': {
-      // 「が」→「か」、「ぁ」→「あ」のように、五十音表の文字にそろえる
-      const first = toHiragana(p.schoolKana.trim()).normalize('NFD').charAt(0);
-      if (!first) return [];
-      const base = ({ ぁ: 'あ', ぃ: 'い', ぅ: 'う', ぇ: 'え', ぉ: 'お', ゃ: 'や', ゅ: 'ゆ', ょ: 'よ', っ: 'つ', ゎ: 'わ' } as Record<string, string>)[first] ?? first;
-      return [base, toKatakana(base)];
+      const kana = p.schoolKana.trim();
+      if (!kana) return [];
+      // 五十音表の文字（「が」→「か」、「ぁ」→「あ」）と、濁点を残した文字（「ガ」）の両方を用意する
+      const plain = toHiragana(kana).normalize('NFD').charAt(0);
+      const base = ({ ぁ: 'あ', ぃ: 'い', ぅ: 'う', ぇ: 'え', ぉ: 'お', ゃ: 'や', ゅ: 'ゆ', ょ: 'よ', っ: 'つ', ゎ: 'わ' } as Record<string, string>)[plain] ?? plain;
+      const voiced = toHiragana(kana).charAt(0);
+      if (kind === 'radio' || kind === 'select') return [base, toKatakana(base), voiced, toKatakana(voiced)];
+      // 文字の欄：「全角カタカナ1文字＜濁点含む＞」のような指定に合わせる（指定がなければ濁点を残す）
+      const toForm = (s: string) => (h.kana === 'hira' ? s : h.kana === 'half' ? toHalfKana(s) : toKatakana(s));
+      return h.dakuten === false ? [toForm(base), toForm(voiced)] : [toForm(voiced), toForm(base)];
     }
+    case 'schoolOwnership':
+      return (
+        ({ 国立: ['国立', '国立大学'], 公立: ['公立', '公立大学', '県立', '市立'], 私立: ['私立', '私立大学'], 海外: ['日本国外', '海外', '外国'] } as Record<
+          string,
+          string[]
+        >)[p.schoolOwnership] ?? (p.schoolOwnership ? [p.schoolOwnership] : [])
+      );
     case 'schoolPrefecture':
       return [p.schoolPrefecture, p.schoolPrefecture === '北海道' ? '' : p.schoolPrefecture.replace(/[都府県]$/, '')];
     case 'faculty':

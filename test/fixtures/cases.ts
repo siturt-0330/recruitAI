@@ -535,6 +535,86 @@ export const CASES: Case[] = [
     expect: { '[name=d22a]': 'taro@example.com', '[name=d22b]': '山田　太郎', '[name=d22c]': '' },
   },
   {
+    name: '休暇中の連絡先：「現在の連絡先と同じ」チェックボックス（実サイトの形）',
+    html: `<form><table>
+      <tr><th>現住所</th><td><input name="e1a" placeholder="郵便番号"></td></tr>
+      <tr><th>休暇中の連絡先</th><td>
+        <div>現在の連絡先と同じ場合はチェックしてください。<br><label><input type="checkbox" name="e1same"> 現在の連絡先と同じ</label></div>
+        <div>日本国外の場合はチェックしてください。<br><label><input type="checkbox" name="e1abroad"> 日本国外の場合</label></div>
+        <div><b>郵便番号</b><br><input name="e1z1" size="4"> - <input name="e1z2" size="4"></div>
+        <div><b>都道府県</b><br><select name="e1p">${opts(PREFECTURES)}</select></div>
+        <div><b>市区郡町村</b><br><input name="e1c"></div>
+        <div><b>町域・番地</b><br><input name="e1l"></div>
+        <div><b>電話番号</b><br><input name="e1t1" size="4"> - <input name="e1t2" size="4"> - <input name="e1t3" size="4"></div>
+      </td></tr>
+    </table></form>`,
+    expect: {
+      '[name=e1same]': true,
+      '[name=e1abroad]': false,
+      '[name=e1z1]': '',
+      '[name=e1z2]': '',
+      '[name=e1p]': '',
+      '[name=e1c]': '',
+      '[name=e1l]': '',
+      '[name=e1t1]': '',
+    },
+  },
+  {
+    name: '「上記と同じ」だけの文言でも、見出しが帰省先なら対象',
+    html: `<form><h3>帰省先</h3><label><input type="checkbox" name="e2a"> 上記と同じ</label><table><tr><th>住所</th><td><input name="e2b" size="40"></td></tr></table></form>`,
+    expect: { '[name=e2a]': true, '[name=e2b]': '' },
+  },
+  {
+    name: 'メール配信の「上記と同じ」チェックボックスには触らない',
+    html: `<form><label>メールアドレス <input name="e3a"></label><label><input type="checkbox" name="e3b"> 上記と同じアドレスにお知らせメールを配信する</label></form>`,
+    expect: { '[name=e3a]': 'taro@example.com', '[name=e3b]': false },
+  },
+  {
+    name: '学校情報（実サイトの形）：頭文字・設置区分・卒業高校',
+    profile: {
+      school: '学習院大学',
+      schoolKana: 'ガクシュウインダイガク',
+      schoolOwnership: '私立',
+      highSchool: '福島県立相馬高等学校',
+      highSchoolPrefecture: '福島県',
+    },
+    html: `<form><table>
+      <tr><th>学校区分</th><td>${['大学院', '大学', '短期大学', '高等専門学校', '専門学校', '高等学校'].map((t) => `<label><input type="radio" name="f1type">${t}</label>`).join(' ')}</td></tr>
+      <tr><th>設置区分</th><td>${['国立', '公立', '私立', '日本国外'].map((t) => `<label><input type="radio" name="f1own">${t}</label>`).join(' ')}</td></tr>
+      <tr><th>学校名の頭文字</th><td><div>（全角カタカナ１文字＜濁点含む＞、日本国外の場合は空欄）</div><input name="f1init" maxlength="1" size="3"> <button type="button">学校検索</button></td></tr>
+      <tr><th>卒業高校</th><td><div><b>都道府県</b><br><select name="f1hspref">${opts(PREFECTURES, '（選択してください）')}</select></div><div><b>高校名の一部</b><br><input name="f1hs"> <button type="button">高校検索</button></div></td></tr>
+    </table></form>`,
+    expect: {
+      'radio:f1type': '大学',
+      'radio:f1own': '私立',
+      '[name=f1init]': 'ガ',
+      '[name=f1hspref]': '福島県',
+      '[name=f1hs]': '福島県立相馬高等学校',
+    },
+  },
+  {
+    name: '頭文字：清音の指定なら濁点を外す',
+    profile: { schoolKana: 'ガクシュウインダイガク' },
+    html: `<form><label>学校名の頭文字（清音・カタカナ1文字） <input name="f2" maxlength="1"></label></form>`,
+    expect: { '[name=f2]': 'カ' },
+  },
+  {
+    name: '入学年月を選ぶと卒業年月が選べるようになる',
+    html: `<form><table>
+      <tr><th>入学年月</th><td><select name="f3ay">${opts(range(2018, 2026).map(String), '--')}</select>年 <select name="f3am">${opts(range(1, 12).map((m) => String(m).padStart(2, '0')), '--')}</select>月</td></tr>
+      <tr><th>卒業（予定）年月</th><td><select name="f3gy" disabled>${opts(range(2024, 2030).map(String), '--')}</select>年 <select name="f3gm" disabled>${opts(range(1, 12).map((m) => String(m).padStart(2, '0')), '--')}</select>月</td></tr>
+    </table></form>`,
+    setup(root) {
+      const am = root.querySelector<HTMLSelectElement>('[name=f3am]')!;
+      am.addEventListener('change', () =>
+        setTimeout(() => {
+          root.querySelectorAll<HTMLSelectElement>('[name=f3gy], [name=f3gm]').forEach((s) => (s.disabled = false));
+        }, 50),
+      );
+    },
+    expect: { '[name=f3ay]': '2022', '[name=f3am]': '04', '[name=f3gy]': '2026', '[name=f3gm]': '03' },
+  },
+  {
     name: '性別が未設定なら選ばない',
     profile: { gender: '' },
     html: `<form><label>性別 <select name="c44">${opts(['男性', '女性'])}</select></label></form>`,

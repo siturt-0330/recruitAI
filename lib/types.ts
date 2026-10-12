@@ -64,6 +64,8 @@ export interface Profile {
   schoolKana: string;
   /** 学校の所在地（都道府県） */
   schoolPrefecture: string;
+  /** 設置区分（国立・公立・私立・海外） */
+  schoolOwnership: string;
   faculty: string;
   department: string;
   fieldCategory: string;
@@ -140,6 +142,8 @@ export interface Hints {
   dateFormat: 'slash' | 'hyphen' | 'kanji' | 'compact' | null;
   /** 氏名の姓と名の間のスペース（placeholder の例に合わせる） */
   nameSpace: 'full' | 'half' | 'none' | null;
+  /** 1文字だけ入れる欄で濁点を残すか（「濁点含む」「清音で」などの指定） */
+  dakuten: boolean | null;
 }
 
 export type FieldStatus = 'ok' | 'warn' | 'empty' | 'skip';

@@ -11,7 +11,7 @@ export interface Classification {
 
 type Category =
   | 'emailConfirm' | 'emailSub' | 'email' | 'relation' | 'station' | 'age' | 'nationality'
-  | 'schoolType' | 'schoolInitial' | 'bunri' | 'graduationStatus' | 'fieldCategory' | 'degree' | 'researchTheme' | 'lab'
+  | 'schoolType' | 'schoolInitial' | 'schoolOwnership' | 'bunri' | 'graduationStatus' | 'fieldCategory' | 'degree' | 'researchTheme' | 'lab'
   | 'highSchool' | 'admission' | 'educationHistory'
   | 'license' | 'toeic' | 'toefl' | 'eiken' | 'otherLanguage' | 'qualifications' | 'pcSkills'
   | 'club' | 'studyAbroad' | 'partTime' | 'hobbies' | 'specialSkills' | 'github' | 'portfolio'
@@ -36,6 +36,7 @@ function optionCategory(d: FieldDescriptor): Category | null {
     return 'schoolType';
   }
   if (opts.some((o) => /文系/.test(o)) && opts.some((o) => /理系/.test(o))) return 'bunri';
+  if (opts.some((o) => /^国立/.test(o)) && opts.some((o) => /^私立/.test(o))) return 'schoolOwnership';
   if (opts.some((o) => /^男(性)?$/.test(o)) && opts.some((o) => /^女(性)?$/.test(o))) return 'gender';
   return null;
 }
@@ -120,6 +121,8 @@ const TEXT_RULES: [Category, RegExp][] = [
   ['graduation', /卒業|修了|graduat/],
   ['department', /学科|専攻|コース|department|major/],
   ['faculty', /学部|研究科|faculty/],
+  ['schoolOwnership', /設置区分|設置者|国公私立|国・公・私立/],
+  ['schoolInitial', /頭文字|最初の.?文字|1文字目|一文字目|イニシャル/],
   ['school', /学校名|大学名|大学|学校|school|university|college/],
   ['name', /氏名|名前|姓名|姓|^名|full ?name|last ?name|first ?name|family ?name|given ?name|^name$|^your name/],
 ];
@@ -588,5 +591,9 @@ export function computeHints(d: FieldDescriptor): Hints {
   else if (/^[぀-ヿ㐀-鿿]{3,}$/.test(example)) nameSpace = 'none';
   else if (/スペースなし|スペース不要|空白なし|詰めて/.test(text)) nameSpace = 'none';
 
-  return { kana, width, era, hyphen, dateFormat, nameSpace };
+  let dakuten: Hints['dakuten'] = null;
+  if (/清音|濁点[^含]{0,2}(なし|不要|除|外)|濁点を付けない/.test(text)) dakuten = false;
+  else if (/濁点(を)?(含|あり|付)/.test(text)) dakuten = true;
+
+  return { kana, width, era, hyphen, dateFormat, nameSpace, dakuten };
 }
