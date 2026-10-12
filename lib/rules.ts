@@ -110,7 +110,7 @@ const TEXT_RULES: [Category, RegExp][] = [
   ['currentJobType', /現在の職種|現職.{0,3}職種/],
   ['currentCompany', /現在の勤務先|現勤務先|在籍企業|現職|勤務先|会社名/],
   ['roman', /ローマ字|英字|アルファベット|roman|english name/],
-  ['birth', /生年月日|誕生日|生年|birth|bday|date of birth|dob/],
+  ['birth', /生年月日|誕生日|生年|生まれ|birth|bday|date of birth|dob/],
   ['gender', /性別|gender|^sex/],
   ['postal', /郵便番号|〒|postal|zip/],
   ['phone', /電話|携帯|^tel|phone|mobile/],
@@ -165,7 +165,11 @@ const ATTR_RULES: [Category, RegExp][] = [
   ['name', /(^|[^a-z])(name|sei|mei|shimei|namae)([^a-z]|$)|lastname|firstname|familyname|givenname|lname|fname/],
 ];
 
-const KANA_TEXT = /フリガナ|ふりがな|よみがな|カナ|かな|kana|furigana/g;
+/** 本人以外の人を指す言葉（紹介者のお名前・保護者の電話番号など） */
+const OTHER_PERSON = /紹介者|推薦者|保護者|担当者|代表者|上司|配偶者|父親|母親|ご両親|家族|保証人|面接官|社員|知人|友人/;
+const PERSONAL_CATEGORIES = new Set<string>(['name', 'roman', 'phone', 'email', 'emailSub', 'emailConfirm', 'birth', 'address']);
+
+const KANA_TEXT = /フリガナ|ふりがな|よみがな|ひらがな|平仮名|カナ|かな|kana|furigana/g;
 const KANA_ATTR = /kana|furi|yomi/;
 const KISEI = /帰省|休暇中|実家|kisei/;
 const EMERGENCY = /緊急|emergency|kinkyu/;
@@ -238,7 +242,7 @@ function classifyField(d: FieldDescriptor): Classification {
     [attrs, CONF.attr, ATTR_RULES, true],
   ] as const) {
     if (cat) break;
-    kana ||= isAttr ? KANA_ATTR.test(text) : /フリガナ|ふりがな|よみがな|カナ|かな|kana|furigana|^セイ(?![ァ-ヶ])|^メイ(?![ァ-ヶ])/.test(text);
+    kana ||= isAttr ? KANA_ATTR.test(text) : /フリガナ|ふりがな|よみがな|ひらがな|平仮名|カナ|かな|kana|furigana|^セイ(?![ァ-ヶ])|^メイ(?![ァ-ヶ])/.test(text);
     cat = firstMatch(rules, isAttr ? text : stripModifiers(text));
     if (cat) {
       conf = c;
@@ -256,6 +260,11 @@ function classifyField(d: FieldDescriptor): Classification {
   const byPosition = Math.min(conf, CONF.position);
   const r = (key: FieldKey, c = conf) => result(key, c);
   const has = (re: RegExp) => re.test(near) || re.test(ctx);
+
+  // 紹介者・保護者など、本人以外の人の欄には本人の情報を入れない
+  if (!emergency && OTHER_PERSON.test(`${near} ${ctx}`) && PERSONAL_CATEGORIES.has(cat)) return result(null, 0);
+  // 内線・FAX は電話番号ではない
+  if (cat === 'phone' && (/内線|\bext\b/i.test(near) || /fax|ファックス|ファクス/i.test(`${near} ${ctx}`))) return result(null, 0);
 
   // 欄の前後に @ があれば、見出しが何であってもメールアドレス
   const atSign = /[@＠]$/.test(d.prefix.trim()) || /^[@＠]/.test(d.suffix.trim());
@@ -362,7 +371,8 @@ function classifyField(d: FieldDescriptor): Classification {
     case 'educationHistory':
       if (d.kind === 'textarea') return r('educationHistory');
       if (d.kind === 'select' || d.kind === 'radio') return r('schoolType');
-      return r('school', Math.min(conf, 0.85));
+      // 履歴書形式の「学歴・職歴」の1行の欄には入れない（「最終学歴」「学校名」とはっきり書かれていれば学校名）
+      return /学校名|最終学歴/.test(near) ? r('school', Math.min(conf, 0.85)) : result(null, 0);
     case 'lab':
       return r(has(/教員|教官|教授|先生/) ? 'advisor' : 'lab');
     case 'license':
@@ -556,7 +566,10 @@ export function computeHints(d: FieldDescriptor): Hints {
 
   let kana: Hints['kana'] = 'kata';
   if ((/半角/.test(text) && /カナ|ｶﾅ|ﾌﾘｶﾞﾅ/.test(text)) || hasHalfKana(d.placeholder)) kana = 'half';
-  else if (/ふりがな|ひらがな/.test(text) || hasHiragana(d.placeholder)) kana = 'hira';
+  else if (hasHiragana(d.placeholder)) kana = 'hira';
+  // placeholder の例がカタカナなら、見出しが「ふりがな」でもカタカナ
+  else if (/[ァ-ヶ]/.test(d.placeholder)) kana = 'kata';
+  else if (/ふりがな|ひらがな|平仮名/.test(text)) kana = 'hira';
 
   let width: Hints['width'] = null;
   if (/全角/.test(text) && !/全角カナ/.test(text)) width = 'full';

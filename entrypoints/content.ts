@@ -27,7 +27,10 @@ export default defineContentScript({
         switch (action) {
           case 'fill': {
             const [profile, settings] = await Promise.all([getActiveProfile(), getSettings()]);
-            if (!profile) return { detected: 0, filled: 0, warn: 0, reviews: [], error: 'no-profile' };
+            if (!profile) {
+              if (window === window.top) filler.notice('プロフィールが未登録です。RecruitAI のアイコンから登録してください');
+              return { detected: 0, filled: 0, warn: 0, reviews: [], error: 'no-profile' };
+            }
             return filler.fill(profile, settings, settings.engine === 'openai' ? classifyRemote : undefined);
           }
           case 'undo':

@@ -59,6 +59,8 @@ export function hasUserValue(field: ScannedField): boolean {
  */
 function dispatch(el: HTMLElement) {
   el.dispatchEvent(new Event('input', { bubbles: true }));
+  // キーを離したときに入力チェックや郵便番号検索をするサイトのため
+  el.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
   el.dispatchEvent(new Event('change', { bubbles: true }));
   el.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
   el.dispatchEvent(new FocusEvent('blur'));

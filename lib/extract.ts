@@ -155,15 +155,34 @@ function adjacentText(el: HTMLElement, dir: 1 | -1, max: number): string {
   return dir === 1 ? out.slice(0, max) : out.slice(-max);
 }
 
+/** 表の列見出し（ヘッダー行の同じ位置のセル） */
+function columnHeader(cell: HTMLTableCellElement): string {
+  const table = cell.closest('table');
+  const row = cell.parentElement as HTMLTableRowElement | null;
+  if (!table || !row) return '';
+  const headerRow =
+    table.tHead?.rows[0] ??
+    Array.from(table.rows).find((r) => r !== row && r.querySelector('th') && !r.querySelector('input, select, textarea'));
+  if (!headerRow || headerRow === row) return '';
+  return textOf(headerRow.cells[cell.cellIndex] ?? null, 40);
+}
+
 /** 表の行見出し（th）・dt・legend など、構造上の見出し */
 function structuralHeader(el: HTMLElement): string {
   let node = el.parentElement;
   for (let depth = 0; node && depth < 6; depth++, node = node.parentElement) {
     if (node.tagName === 'TD' || node.tagName === 'TH') {
-      const row = node.parentElement;
-      const header = Array.from(row?.children ?? []).find((c) => c !== node && !c.contains(el));
+      const cell = node as HTMLTableCellElement;
+      const row = cell.parentElement as HTMLTableRowElement | null;
+      // 同じ行の、入力欄のないセル（ふつうは th）が行見出し
+      const header = Array.from(row?.children ?? []).find(
+        (c) => c !== cell && !c.contains(el) && !c.querySelector('input, select, textarea'),
+      );
       const t = textOf(header ?? null, 60);
-      if (t) return t;
+      if (t && !/^[\s\-‐ー－~〜()（）]*$/.test(t)) return t;
+      // 行見出しがない表（「年｜月｜学歴・職歴」のような表）は、列の見出しを使う
+      const column = columnHeader(cell);
+      if (column) return column;
     }
     if (node.tagName === 'DD') {
       let prev = node.previousElementSibling;
@@ -208,6 +227,8 @@ function contextText(el: HTMLElement): string {
     if (node.tagName === 'LABEL') continue;
     // ほかの欄のラベルを含むところまで広がったら、その文字は別の欄の見出しなので使わない
     if (hasOtherFieldLabel(node, el)) break;
+    // 表全体の文字は複数の行の見出しが混ざるので使わない
+    if (/^(TABLE|TBODY|THEAD|TR)$/.test(node.tagName)) break;
     const t = textOf(node, 60);
     if (t.length > 60) break;
     if (t && !NOT_A_HEADING.test(t)) return t;
@@ -373,6 +394,8 @@ function assignGroups(fields: ScannedField[]) {
       cur.context &&
       cur.context === prev.context &&
       sameFamily(cur.kind, prev.kind) &&
+      // 「内線」の欄は電話番号の3分割に含めない
+      !/内線|\bext\b/i.test(`${cur.prefix} ${cur.label}`) &&
       rowOf(fields[i]!.elements[0]!) === rowOf(fields[i - 1]!.elements[0]!);
     if (same) continue;
     const size = i - start;

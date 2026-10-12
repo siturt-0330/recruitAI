@@ -77,6 +77,34 @@ export class Overlay {
     addEventListener('resize', this.schedule);
   }
 
+  /** 入力できなかった理由など、短いお知らせを右下のバーに出す */
+  notice(message: string) {
+    this.clear();
+    const host = this.doc.createElement('div');
+    host.setAttribute('data-recruitai', '');
+    host.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;z-index:2147483647;pointer-events:none;';
+    const root = host.attachShadow({ mode: 'closed' });
+    root.innerHTML = `<style>${CSS}</style>`;
+    const bar = this.doc.createElement('div');
+    bar.className = 'bar';
+    const orb = this.doc.createElement('span');
+    orb.className = 'orb';
+    const text = this.doc.createElement('span');
+    text.textContent = message;
+    const close = this.doc.createElement('button');
+    close.className = 'icon';
+    close.textContent = '✕';
+    close.setAttribute('aria-label', '閉じる');
+    close.onclick = () => this.clear();
+    bar.append(orb, text, close);
+    root.append(bar);
+    this.doc.documentElement.append(host);
+    this.host = host;
+    setTimeout(() => {
+      if (this.host === host) this.clear();
+    }, 6000);
+  }
+
   clear() {
     removeEventListener('scroll', this.schedule, true);
     removeEventListener('resize', this.schedule);
