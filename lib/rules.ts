@@ -350,7 +350,8 @@ function classifyField(d: FieldDescriptor): Classification {
       if (/^[@＠]/.test(d.suffix.trim())) return r(local, byPosition);
       // 「アドレス［　］ 確認用［　］」のように横に並ぶ形もあるので、確認用と書かれていたら分けない
       const confirmLabel = /確認|再入力|もう一度/.test(near);
-      if (d.groupSize >= 2 && d.lineSize === 2 && !confirmLabel) return r(d.lineIndex === 0 ? local : domain, byPosition);
+      // それぞれの欄に専用のラベル（「メールアドレス2」「確認用」）があれば、横並びでも別々のアドレス欄
+      if (d.groupSize >= 2 && d.lineSize === 2 && !confirmLabel && !d.label) return r(d.lineIndex === 0 ? local : domain, byPosition);
       return r(cat);
     }
     case 'relation':
@@ -398,7 +399,9 @@ function classifyField(d: FieldDescriptor): Classification {
   }
 }
 
-const MOBILE = /携帯|モバイル|mobile|keitai|cell/;
+const EMAIL_KEYS = new Set<FieldKey>(['email', 'emailConfirm', 'emailSub', 'emailSubConfirm']);
+
+const MOBILE =/携帯|モバイル|mobile|keitai|cell/;
 const PHONE_TO_LANDLINE: Partial<Record<FieldKey, FieldKey>> = {
   phone: 'landline',
   phone1: 'landline1',
@@ -460,6 +463,17 @@ export function adjustForForm(fields: ScannedField[], input: Classification[]): 
 
   return classes.map((c, i) => {
     const f = fields[i]!;
+    // 「確認用」「再入力」とラベルに書かれた欄は、見出しが何であっても直前のメール欄の確認用。
+    // 「メールアドレス2」の確認用なら予備のアドレスを入れる
+    const ownLabel = `${f.desc.label} ${f.desc.prefix}`;
+    const confirmLike = c.key === 'emailConfirm' || (/確認|再入力|もう一度|confirm/i.test(ownLabel) && f.desc.kind !== 'select');
+    if (confirmLike && (!c.key || EMAIL_KEYS.has(c.key))) {
+      for (let j = i - 1; j >= Math.max(0, i - 2); j--) {
+        const prev = classes[j]?.key;
+        if (prev === 'emailSub') return { key: 'emailSubConfirm', confidence: Math.max(c.confidence, CONF.context), source: c.source };
+        if (prev === 'email') return { key: 'emailConfirm', confidence: Math.max(c.confidence, CONF.context), source: c.source };
+      }
+    }
     // ［平成▼］［  ］年 のように、元号の欄のすぐ後ろの年は和暦の数字
     if (c.key === 'birthYear' && classes[i - 1]?.key === 'birthEra' && f.desc.kind !== 'select') {
       return { ...c, key: 'birthEraYear' };

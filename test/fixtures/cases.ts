@@ -760,13 +760,84 @@ export const CASES: Case[] = [
       const zip = root.querySelector<HTMLInputElement>('[name=g21a]')!;
       zip.addEventListener('keyup', () =>
         setTimeout(() => {
-          root.querySelector<HTMLSelectElement>('[name=g21b]')!.value = '東京都';
-          root.querySelector<HTMLInputElement>('[name=g21c]')!.value = '渋谷区';
-          root.querySelector<HTMLInputElement>('[name=g21d]')!.value = '神南';
+          // テストが終わって欄が消えたあとに動いても、エラーにしない
+          const set = (name: string, v: string) => {
+            const el = root.querySelector<HTMLInputElement | HTMLSelectElement>(`[name=${name}]`);
+            if (el) el.value = v;
+          };
+          set('g21b', '東京都');
+          set('g21c', '渋谷区');
+          set('g21d', '神南');
         }, 150),
       );
     },
     expect: { '[name=g21a]': '150-0041', '[name=g21b]': '東京都', '[name=g21c]': '渋谷区', '[name=g21d]': '神南1-2-3' },
+  },
+  {
+    name: '学校情報（実サイトの形・第2版）：学位の注意書き・入学年月・卒業年月',
+    profile: { schoolKana: 'ニイガタダイガク', schoolOwnership: '国立', highSchool: '福島県立相馬高等学校', highSchoolPrefecture: '福島県' },
+    html: `<form><table>
+      <tr><th>学校区分</th><td><label><input type="radio" name="h1type">大学院</label> <label><input type="radio" name="h1type">大学</label></td></tr>
+      <tr><th>設置区分</th><td>${['国立', '公立', '私立', '日本国外'].map((t) => `<label><input type="radio" name="h1own">${t}</label>`).join(' ')}</td></tr>
+      <tr><th>学位</th><td><p>※学位の選択は、大学院（国立・公立・私立）の方のみ対象です。</p></td></tr>
+      <tr><th>学校名の頭文字</th><td><p>全角カタカナ１文字＜濁点含む＞（日本国外の学校の場合は、設置区分「日本国外」を選択したうえで、本項目は空欄で検索）</p><input name="h1init" size="3"> <button type="button">学校検索</button></td></tr>
+      <tr><th>学校</th><td>（上記より学校を検索してください。）</td></tr>
+      <tr><th>入学年月</th><td><select name="h1ay">${opts(range(2015, 2026).map(String), '--')}</select>年 <select name="h1am">${opts(range(1, 12).map((m) => String(m).padStart(2, '0')), '--')}</select>月</td></tr>
+      <tr><th>卒業（予定）年月</th><td><select name="h1gy">${opts(range(2020, 2030).map(String), '--')}</select>年 <select name="h1gm">${opts(range(1, 12).map((m) => String(m).padStart(2, '0')), '--')}</select>月</td></tr>
+      <tr><th>卒業高校</th><td><div><b>都道府県</b><br><select name="h1hp">${opts(PREFECTURES, '（選択してください）')}</select></div><div><b>高校名の一部</b><br><input name="h1hs"> <button type="button">高校検索</button></div></td></tr>
+    </table></form>`,
+    expect: {
+      'radio:h1type': '大学',
+      'radio:h1own': '国立',
+      '[name=h1init]': 'ニ',
+      '[name=h1ay]': '2022',
+      '[name=h1am]': '04',
+      '[name=h1gy]': '2026',
+      '[name=h1gm]': '03',
+      '[name=h1hp]': '福島県',
+      '[name=h1hs]': '福島県立相馬高等学校',
+    },
+  },
+  {
+    name: '「メールアドレス2」と確認用（実サイトの形）',
+    profile: { emailSub: 'taro.sub@example.com' },
+    html: `<form><table>
+      <tr><th>メールアドレス</th><td>taro@example.com</td></tr>
+      <tr><th>メールアドレス2</th><td>
+        <p>入力ミス防止のため同じメールアドレスを２度ご記入ください。</p>
+        <div style="display:flex;gap:8px">
+          <label style="display:flex;flex-direction:column">メールアドレス2<input name="h2a" size="30"></label>
+          <label style="display:flex;flex-direction:column">確認用<input name="h2b" size="30"></label>
+        </div>
+      </td></tr>
+    </table></form>`,
+    expect: { '[name=h2a]': 'taro.sub@example.com', '[name=h2b]': 'taro.sub@example.com' },
+  },
+  {
+    name: 'メールアドレスとメールアドレス2が1つの見出しにまとまり、それぞれに確認用がある',
+    profile: { emailSub: 'taro.sub@example.com' },
+    html: `<form><table>
+      <tr><th rowspan="2">メールアドレス</th><td>
+        <p>携帯電話のメールアドレスはご遠慮ください。</p>
+        <div style="display:flex;gap:8px">
+          <label style="display:flex;flex-direction:column">メールアドレス<input name="h3a" size="30"></label>
+          <label style="display:flex;flex-direction:column">確認用<input name="h3b" size="30"></label>
+        </div>
+      </td></tr>
+      <tr><td>
+        <p>入力ミス防止のため同じメールアドレスを２度ご記入ください。</p>
+        <div style="display:flex;gap:8px">
+          <label style="display:flex;flex-direction:column">メールアドレス2<input name="h3c" size="30"></label>
+          <label style="display:flex;flex-direction:column">確認用<input name="h3d" size="30"></label>
+        </div>
+      </td></tr>
+    </table></form>`,
+    expect: {
+      '[name=h3a]': 'taro@example.com',
+      '[name=h3b]': 'taro@example.com',
+      '[name=h3c]': 'taro.sub@example.com',
+      '[name=h3d]': 'taro.sub@example.com',
+    },
   },
   {
     name: '性別が未設定なら選ばない',

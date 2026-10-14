@@ -55,6 +55,7 @@ const MISSING_ALIAS: Partial<Record<FieldKey, FieldKey>> = {
   schoolInitial: 'schoolKana',
   emailLocal: 'email',
   emailSubLocal: 'emailSub',
+  emailSubConfirm: 'emailSub',
   emailSubDomain: 'emailSub',
   emailDomain: 'email',
   birthEra: 'birthDate',

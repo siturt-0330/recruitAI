@@ -256,6 +256,7 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
     case 'emailConfirm':
       return [p.email];
     case 'emailSub':
+    case 'emailSubConfirm':
       return [p.emailSub];
     case 'emailLocal':
     case 'emailDomain':

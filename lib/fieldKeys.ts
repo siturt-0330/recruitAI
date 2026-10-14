@@ -34,6 +34,7 @@ export const FIELD_KEYS = {
   email: k('contact', 'メールアドレス', 'メインのメールアドレス'),
   emailConfirm: k('contact', 'メールアドレス（確認）', '確認のためにメールアドレスをもう一度入力する欄'),
   emailSub: k('contact', '予備のメールアドレス', '2つ目・予備・携帯用のメールアドレス'),
+  emailSubConfirm: k('contact', '予備のメールアドレス（確認）', '確認のために予備のメールアドレスをもう一度入力する欄'),
   emailSubLocal: k('contact', '予備のメールアドレス（@より前）', '@ で2つに分かれた予備・携帯メールアドレスの前半'),
   emailSubDomain: k('contact', '予備のメールアドレス（@より後）', '@ で2つに分かれた予備・携帯メールアドレスの後半'),
   emailLocal: k('contact', 'メールアドレス（@より前）', '@ で2つに分かれたメールアドレスの前半（ユーザー名）'),
