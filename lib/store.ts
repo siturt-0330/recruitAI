@@ -1,6 +1,7 @@
 import { storage } from '#imports';
 import { DEFAULT_SETTINGS, type Profile, type Settings } from './types';
 import { emptyProfile, normalizeProfile } from './profile';
+import type { LinkData, LinkRecord } from './sophon-link';
 
 export { emptyProfile, normalizeProfile };
 
@@ -21,3 +22,8 @@ export async function getActiveProfile(): Promise<Profile | undefined> {
   const [profiles, activeId] = await Promise.all([getProfiles(), activeProfileIdItem.getValue()]);
   return profiles.find((p) => p.id === activeId) ?? profiles[0];
 }
+
+/** Sophon（Web アプリ）から受け取った企業と ES。Sophon を一度も開いていなければ null */
+export const sophonDataItem = storage.defineItem<LinkData | null>('local:sophonData', { fallback: null });
+/** Sophon にまだ届けていない「ボードに記録」 */
+export const sophonOutboxItem = storage.defineItem<LinkRecord[]>('local:sophonOutbox', { fallback: [] });

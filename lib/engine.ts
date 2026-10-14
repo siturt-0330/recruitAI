@@ -1,7 +1,7 @@
 import { describeForm, scanFields, type ScannedField } from './extract';
 import { FIELD_KEYS, isFieldKey, type FieldKey } from './fieldKeys';
 import { applyValue, hasUserValue, markTarget, restoreSnapshot, takeSnapshot, type Snapshot } from './fill';
-import { Overlay } from './overlay';
+import { Overlay, type BarLink } from './overlay';
 import { adjustForForm, classify, computeHints, type Classification } from './rules';
 import type { FieldStatus, FrameStatus, Profile, RemoteAnswer, RemoteQuestion, Settings } from './types';
 import { SAYS_NONE, valueVariants } from './values';
@@ -149,6 +149,11 @@ export class FormFiller {
       onUndo: () => this.undo(),
       onClose: () => this.overlay.clear(),
     });
+  }
+
+  /** 応募先の企業（Sophon とつながっているとき）。フローティングバーに出す */
+  setLink(link: BarLink | null) {
+    this.overlay.setLink(link);
   }
 
   /** 入力前のプレビュー。ルールで判定できる欄の数だけ返す */

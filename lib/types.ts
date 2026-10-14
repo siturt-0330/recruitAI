@@ -13,6 +13,8 @@ export interface Profile {
   id: string;
   /** プロフィール自体の名前（例: 新卒用） */
   label: string;
+  /** 最後に編集した日時（ISO）。Sophon との同期で新しいほうを残すのに使う */
+  updatedAt?: string;
 
   // 基本情報
   lastName: string;

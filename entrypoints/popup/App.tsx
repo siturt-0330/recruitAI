@@ -4,7 +4,8 @@ import { AlertTriangle, ChevronDown, ChevronRight, Settings as SettingsIcon, Shi
 import { ProfileAvatar } from '@/components/ProfileAvatar';
 import { essentialProgress } from '@/lib/essentials';
 import { FIELD_KEYS, isFieldKey } from '@/lib/fieldKeys';
-import { activeProfileIdItem, getProfiles, getSettings, settingsItem } from '@/lib/store';
+import { SOPHON_URL, matchCompany, type LinkCompany } from '@/lib/sophon-link';
+import { activeProfileIdItem, getProfiles, getSettings, settingsItem, sophonDataItem } from '@/lib/store';
 import { activeTabId, runInTab, type Action, type FrameResult } from '@/lib/tab';
 import type { Engine, Profile, Settings } from '@/lib/types';
 import { DEFAULT_SETTINGS } from '@/lib/types';
@@ -21,6 +22,9 @@ export default function App() {
   const [pageError, setPageError] = useState('');
   const [shortcut, setShortcut] = useState('');
   const [diagState, setDiagState] = useState<'idle' | 'copied' | 'error'>('idle');
+  /** Sophon とつながっているか・このページの企業 */
+  const [linked, setLinked] = useState(false);
+  const [company, setCompany] = useState<LinkCompany>();
 
   const copyDiagnosis = async () => {
     if (tabId == null) return;
@@ -36,13 +40,17 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      const [ps, id, s, tab, commands] = await Promise.all([
+      const [ps, id, s, tab, commands, link, [current]] = await Promise.all([
         getProfiles(),
         activeProfileIdItem.getValue(),
         getSettings(),
         activeTabId(),
         browser.commands.getAll(),
+        sophonDataItem.getValue(),
+        browser.tabs.query({ active: true, currentWindow: true }),
       ]);
+      setLinked(!!link);
+      if (link && current?.url) setCompany(matchCompany(current.url, link.companies));
       setProfiles(ps);
       setActiveId(ps.some((p) => p.id === id) ? id : (ps[0]?.id ?? ''));
       setSettings(s);
@@ -156,6 +164,17 @@ export default function App() {
           <SettingsIcon size={19} />
         </button>
       </header>
+
+      {company && (
+        <a className="company-card" href={`${SOPHON_URL}/companies/${company.id}`} target="_blank" rel="noreferrer">
+          <span className="company-logo">{[...company.name][0]}</span>
+          <span className="company-body">
+            <b>{company.name}</b>
+            <span>{[company.stageLabel, company.deadline && `締切 ${Number(company.deadline.slice(5, 7))}/${Number(company.deadline.slice(8))}`].filter(Boolean).join(' · ')}</span>
+          </span>
+          <ChevronRight size={16} />
+        </a>
+      )}
 
       {pageError ? (
         <div className="notice">{pageError}</div>
@@ -301,7 +320,7 @@ export default function App() {
         </div>
       </details>
 
-      <Footer />
+      <Footer linked={linked} />
     </div>
   );
 }
@@ -313,11 +332,16 @@ function reviewMessage(r: { keyLabel: string; current: string; alternatives: str
   return `「${r.keyLabel}」は、${how}「${r.current}」と入れました。${choice}合っていますか？`;
 }
 
-function Footer() {
+function Footer({ linked }: { linked?: boolean }) {
   return (
     <footer className="foot">
       <ShieldCheck size={14} />
       個人情報はこの端末から出ません
+      {linked && (
+        <a className="sophon-link" href={SOPHON_URL} target="_blank" rel="noreferrer">
+          Sophon を開く
+        </a>
+      )}
     </footer>
   );
 }
