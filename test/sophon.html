@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sophon 連携テスト</title>
+    <style>
+      body { font-family: system-ui, 'Yu Gothic UI', sans-serif; max-width: 640px; margin: 24px auto; padding: 0 16px; color: #222; }
+      .row { margin: 12px 0; }
+      .row label { display: block; font-size: 13px; margin-bottom: 4px; }
+      input, textarea { width: 100%; box-sizing: border-box; padding: 6px; font-size: 14px; }
+      #harness { background: #fffbe6; border: 1px solid #e6d78a; padding: 8px 12px; border-radius: 6px; display: flex; gap: 8px; }
+    </style>
+  </head>
+  <body>
+    <div id="harness"><button id="fill">入力する</button><span id="out"></span></div>
+    <h1>B商事 エントリーフォーム</h1>
+    <div class="row"><label for="sei">姓</label><input id="sei" name="sei" /></div>
+    <div class="row"><label for="mei">名</label><input id="mei" name="mei" /></div>
+    <div class="row"><label for="mail">メールアドレス</label><input id="mail" name="mail" type="email" /></div>
+    <div class="row"><label for="motive">志望動機（400字以内）</label><textarea id="motive" name="motive" rows="6"></textarea></div>
+    <div class="row"><label for="pr">自己PRをしてください</label><textarea id="pr" name="pr" rows="6" maxlength="300"></textarea></div>
+    <script type="module" src="./sophon.ts"></script>
+  </body>
+</html>

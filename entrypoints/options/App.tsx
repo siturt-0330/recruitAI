@@ -3,7 +3,7 @@ import { Check, ChevronDown, Copy, Eye, EyeOff, Loader2, MoreHorizontal, Plus, T
 import { ProfileAvatar } from '@/components/ProfileAvatar';
 import { essentialProgress } from '@/lib/essentials';
 import { PREFECTURES } from '@/lib/prefectures';
-import { activeProfileIdItem, emptyProfile, getProfiles, getSettings, profilesItem, settingsItem } from '@/lib/store';
+import { activeProfileIdItem, emptyProfile, getProfiles, getSettings, normalizeProfile, profilesItem, settingsItem } from '@/lib/store';
 import { DEFAULT_SETTINGS, type Profile, type Settings } from '@/lib/types';
 import ApiKeyGuide from './ApiKeyGuide';
 import { ESSENTIALS, PAGES, isFilled, pageProgress, type FieldDef, type PageDef } from './pages';
@@ -41,9 +41,16 @@ export default function App() {
       setProfiles(ps);
       setActiveId(ps.some((p) => p.id === id) ? id : ps[0]!.id);
     })();
+    // Sophon でプロフィールを直したときは、保存待ちの編集がなければ画面にも反映する
+    const unwatch = profilesItem.watch((ps) => {
+      if (!saveTimer.current && ps) setProfiles(ps.map(normalizeProfile));
+    });
     const onHash = () => setPage(readHash());
     addEventListener('hashchange', onHash);
-    return () => removeEventListener('hashchange', onHash);
+    return () => {
+      unwatch();
+      removeEventListener('hashchange', onHash);
+    };
   }, []);
 
   useEffect(() => {
@@ -62,6 +69,7 @@ export default function App() {
     saveTimer.current = setTimeout(
       async () => {
         await profilesItem.setValue(next);
+        saveTimer.current = undefined;
         setSaveState('saved');
       },
       immediate ? 0 : 500,
@@ -70,7 +78,7 @@ export default function App() {
 
   const update = (patch: Partial<Profile>) => {
     if (!profile) return;
-    persist(profiles.map((p) => (p.id === profile.id ? { ...p, ...patch } : p)));
+    persist(profiles.map((p) => (p.id === profile.id ? { ...p, ...patch, updatedAt: new Date().toISOString() } : p)));
   };
 
   const switchProfile = async (id: string) => {

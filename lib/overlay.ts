@@ -30,12 +30,23 @@ const CSS = `
 .bar .warn { color: #ffc53d; }
 .bar button { all: unset; cursor: pointer; font-size: 13px; font-weight: 700; padding: 7px 14px; border-radius: 999px; background: #fff; color: #0f1419; }
 .bar button:hover { background: #e7e9ea; }
+.bar button.primary { background: #4a4fbf; color: #fff; }
+.bar button.primary:hover { background: #3d42a8; }
+.bar button.done { background: transparent; color: #9fe1cb; cursor: default; }
+.bar .company { font-weight: 700; }
 .bar button.icon { padding: 7px 10px; background: transparent; color: #8b98a5; font-weight: 400; }
 .bar button.icon:hover { background: rgba(255,255,255,.1); color: #fff; }
 @keyframes rise { from { transform: translateY(8px); opacity: 0; } }
 `;
 
 /** ページ上に入力結果の枠・バッジ・フローティングバーを描く。ページの CSS と干渉しないよう Shadow DOM に閉じ込める */
+/** Sophon とつながっていて、応募先の企業が分かったときにバーへ出す内容 */
+export interface BarLink {
+  company: string;
+  recorded: boolean;
+  onRecord(): void;
+}
+
 export class Overlay {
   private host: HTMLDivElement | null = null;
   private layer: HTMLDivElement | null = null;
@@ -46,6 +57,12 @@ export class Overlay {
     private doc: Document,
     private handlers: { onUndo(): void; onClose(): void },
   ) {}
+
+  private link: BarLink | null = null;
+
+  setLink(link: BarLink | null) {
+    this.link = link;
+  }
 
   render(marks: Mark[], summary: { filled: number; warn: number }) {
     this.clear();
@@ -127,6 +144,12 @@ export class Overlay {
       s.append(b, label);
       return s;
     };
+    if (this.link) {
+      const name = this.doc.createElement('span');
+      name.className = 'company';
+      name.textContent = this.link.company;
+      text.append(name, ' · ');
+    }
     text.append(count(filled, ' 件入力'));
     if (warn) text.append(' · ', count(warn, ' 件要確認', 'warn'));
     const undo = this.doc.createElement('button');
@@ -140,8 +163,31 @@ export class Overlay {
     const orb = this.doc.createElement('span');
     orb.className = 'orb';
     orb.title = 'Sophon';
-    bar.append(orb, text, undo, close);
+    bar.append(orb, text);
+    if (this.link) bar.append(this.recordButton(this.link));
+    bar.append(undo, close);
     return bar;
+  }
+
+  private recordButton(link: BarLink) {
+    const b = this.doc.createElement('button');
+    const done = () => {
+      b.className = 'done';
+      b.textContent = '✓ 記録しました';
+      b.onclick = null;
+    };
+    if (link.recorded) {
+      done();
+    } else {
+      b.className = 'primary';
+      b.textContent = 'ボードに記録';
+      b.onclick = () => {
+        link.onRecord();
+        link.recorded = true;
+        done();
+      };
+    }
+    return b;
   }
 
   private schedule = () => {

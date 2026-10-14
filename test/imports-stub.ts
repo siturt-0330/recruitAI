@@ -52,13 +52,16 @@ const status = (action: string): FrameStatus => {
 
 export const browser = {
   tabs: {
-    query: async () => [{ id: 1 }],
+    // Sophon 連携の確認用に、開いているページの URL を localStorage の stub:tabUrl で変えられる
+    query: async () => [{ id: 1, url: localStorage.getItem('stub:tabUrl') ?? 'https://example.com/' }],
     create: async ({ url }: { url: string }) => window.open(url.replace('/options.html', '/test/options.html'), '_blank'),
   },
   commands: { getAll: async () => [{ name: 'fill-page', shortcut: 'Alt+Shift+F' }] },
   runtime: {
     openOptionsPage: async () => window.open('/test/options.html', '_blank'),
     getURL: (path: string) => path,
+    getManifest: () => ({ version: '0.0.0' }),
+    sendMessage: async () => ({ error: 'stub' }),
   },
   scripting: {
     executeScript: async (opts: { files?: string[]; args?: [string, unknown] }) => {
@@ -68,3 +71,8 @@ export const browser = {
     },
   },
 };
+
+/** コンテンツスクリプトの定義をそのまま返す（テストページから main() を呼ぶ） */
+export function defineContentScript<T>(def: T): T {
+  return def;
+}
