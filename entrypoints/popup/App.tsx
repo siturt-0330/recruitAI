@@ -81,6 +81,23 @@ export default function App() {
     };
   }, [frames]);
 
+  /** 別のサイトから埋め込まれたフォーム枠のうち、まだ入力の許可をもらっていないもの */
+  const [blockedOrigins, setBlockedOrigins] = useState<string[]>([]);
+  useEffect(() => {
+    const origins = frames.find((f) => f.frameId === 0)?.result.iframeOrigins ?? [];
+    (async () => {
+      const blocked: string[] = [];
+      for (const o of origins) if (!(await browser.permissions.contains({ origins: [`${o}/*`] }))) blocked.push(o);
+      setBlockedOrigins(blocked);
+    })().catch(() => setBlockedOrigins([]));
+  }, [frames]);
+
+  /** 許可ダイアログはボタンを押した直後にしか出せないので、await より前に request を呼ぶ */
+  const allowFrames = async () => {
+    const granted = await browser.permissions.request({ origins: blockedOrigins.map((o) => `${o}/*`) }).catch(() => false);
+    if (granted) await fill();
+  };
+
   const run = async (action: Action, payload?: unknown, frameIds?: number[]) => {
     if (tabId == null) return;
     try {
@@ -217,6 +234,21 @@ export default function App() {
             )}
             {shortcut && <span className="kbd">{shortcut}</span>}
           </div>
+
+          {blockedOrigins.length > 0 && (
+            <div className="notice frame-permission">
+              <AlertTriangle size={14} />
+              <div>
+                <span>
+                  このページには別のサイト（{blockedOrigins.map((o) => new URL(o).host).join('、')}）の応募フォームが埋め込まれています。
+                  入力するにはそのサイトへのアクセスの許可が必要です。
+                </span>
+                <button className="btn wide" onClick={allowFrames}>
+                  許可して入力する
+                </button>
+              </div>
+            </div>
+          )}
 
           {summary.aiError && (
             <div className="notice error">

@@ -1,5 +1,6 @@
 import { PREFECTURES } from '../../lib/prefectures';
 import type { Profile } from '../../lib/types';
+import { mountCombo, type ComboOptions } from './combos';
 
 /**
  * 入力エンジンの回帰テスト用のフォーム。
@@ -22,6 +23,12 @@ export interface Case {
 const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 const opts = (items: (string | [string, string])[], empty = '選択してください') =>
   [`<option value="">${empty}</option>`, ...items.map((o) => (Array.isArray(o) ? `<option value="${o[0]}">${o[1]}</option>` : `<option>${o}</option>`))].join('');
+
+
+/** 独自プルダウンを並べたフォーム。html の <div data-combo="name"> の位置に組み立てる */
+const combos = (list: (Omit<ComboOptions, 'name'> & { name: string })[]) => (root: HTMLElement) => {
+  for (const c of list) mountCombo(root.querySelector<HTMLElement>(`[data-combo="${c.name}"]`)!, { clearable: true, ...c });
+};
 
 export const CASES: Case[] = [
   {
@@ -1097,5 +1104,165 @@ export const CASES: Case[] = [
       return { '[name=u1a]': 'サンプル大学大学院', '[name=u1b]': '法学部' };
     },
     expect: { '[name=u1a]': 'サンプル大学', '[name=u1b]': '経済学部', '[name=u1c]': 'taro@example.com' },
+  },
+
+  // ---- 第5弾：独自デザインのプルダウン（MUI・react-select・Ant Design・Radix・Headless UI 風） ----
+  {
+    name: 'C1 MUI 風の都道府県（一覧は body 直下に出る）',
+    html: `<form><div data-combo="c1"></div></form>`,
+    setup: combos([{ style: 'mui', name: 'c1', label: '都道府県', options: PREFECTURES }]),
+    expect: { '[name=c1]': '東京都' },
+  },
+  {
+    name: 'C2 MUI 風の性別',
+    html: `<form><div data-combo="c2"></div></form>`,
+    setup: combos([{ style: 'mui', name: 'c2', label: '性別', options: ['男性', '女性', '回答しない'] }]),
+    profile: { gender: 'female' },
+    expect: { '[name=c2]': '女性' },
+  },
+  {
+    name: 'C3 react-select 風（選択肢に role がない）',
+    html: `<form><div data-combo="c3"></div></form>`,
+    setup: combos([{ style: 'reactSelect', name: 'c3', label: '都道府県', placeholder: 'Select...', options: PREFECTURES }]),
+    expect: { '[name=c3]': '東京都' },
+  },
+  {
+    name: 'C4 Ant Design 風の仮想リスト（最後の沖縄県までスクロール）',
+    html: `<form><div data-combo="c4"></div></form>`,
+    setup: combos([{ style: 'antVirtual', name: 'c4', label: '都道府県', placeholder: '選択してください', options: PREFECTURES }]),
+    profile: { prefecture: '沖縄県' },
+    expect: { '[name=c4]': '沖縄県' },
+  },
+  {
+    name: 'C5 入力候補つきの大学名（候補から選ぶ）',
+    html: `<form><div data-combo="c5"></div></form>`,
+    setup: combos([{ style: 'autocomplete', name: 'c5', label: '大学名', options: ['サンプル大学', 'サンプル工業大学', 'テスト大学'] }]),
+    expect: { '[name=c5]': 'サンプル大学' },
+  },
+  {
+    name: 'C6 入力候補つきの大学名（候補にないので文字のまま）',
+    html: `<form><div data-combo="c6"></div></form>`,
+    setup: combos([{ style: 'autocomplete', name: 'c6', label: '大学名', options: ['テスト大学'] }]),
+    expect: { '[name=c6]': 'サンプル大学' },
+  },
+  {
+    name: 'C7 Headless UI 風（click でだけ開く）の学校区分',
+    html: `<form><div data-combo="c7"></div></form>`,
+    setup: combos([{ style: 'headless', name: 'c7', label: '学校区分', placeholder: '選択してください', options: ['大学院', '大学', '短期大学', '専門学校'] }]),
+    expect: { '[name=c7]': '大学' },
+  },
+  {
+    name: 'C8 Radix 風（pointer で開き、開いた位置からの pointerup では選ばない）の文理区分',
+    html: `<form><div data-combo="c8"></div></form>`,
+    setup: combos([{ style: 'radix', name: 'c8', label: '文理区分', placeholder: '選択してください', options: ['文系', '理系', 'その他'] }]),
+    expect: { '[name=c8]': '文系' },
+  },
+  {
+    name: 'C9 生年月日の年・月・日（月は年を、日は月を選ぶと作られる）',
+    html: `<form><div class="title">生年月日</div><div style="display:flex;gap:8px"><div data-combo="c9y"></div><div data-combo="c9m"></div><div data-combo="c9d"></div></div></form>`,
+    setup(root) {
+      let y = '';
+      let m = '';
+      combos([
+        { style: 'mui', name: 'c9y', label: '年', options: range(1980, 2008).map((v) => `${v}年`), onChange: (v) => (y = v) },
+        { style: 'mui', name: 'c9m', label: '月', options: () => (y ? range(1, 12).map((v) => `${v}月`) : []), onChange: (v) => (m = v) },
+        { style: 'mui', name: 'c9d', label: '日', options: () => (m ? range(1, 30).map((v) => `${v}日`) : []) },
+      ])(root);
+    },
+    profile: { birthDate: '1999-04-30' },
+    expect: { '[name=c9y]': '1999年', '[name=c9m]': '4月', '[name=c9d]': '30日' },
+  },
+  {
+    name: 'C10 自分で選び済みの独自プルダウンは変えない',
+    html: `<form><div data-combo="c10"></div></form>`,
+    setup: combos([{ style: 'mui', name: 'c10', label: '都道府県', options: PREFECTURES, value: '大阪府' }]),
+    expect: { '[name=c10]': '大阪府' },
+  },
+  {
+    name: 'C11 関係のない独自プルダウン（学年）には触らない',
+    html: `<form><div data-combo="c11"></div></form>`,
+    setup: combos([{ style: 'mui', name: 'c11', label: '学年', options: ['1年', '2年', '3年', '4年'] }]),
+    expect: { '[name=c11]': '' },
+  },
+  {
+    name: 'C12 ふつうの欄と独自プルダウンが混ざったフォーム',
+    html: `<form><table>
+      <tr><th>氏名</th><td><input name="c12a"> <input name="c12b"></td></tr>
+      <tr><th>都道府県</th><td><div data-combo="c12p"></div></td></tr>
+      <tr><th>市区町村</th><td><input name="c12c"></td></tr>
+      <tr><th>学校区分</th><td><div data-combo="c12s"></div></td></tr></table></form>`,
+    setup: combos([
+      { style: 'mui', name: 'c12p', label: '', options: PREFECTURES },
+      { style: 'reactSelect', name: 'c12s', label: '', placeholder: 'Select...', options: ['大学', '大学院', '短期大学'] },
+    ]),
+    expect: { '[name=c12a]': '山田', '[name=c12b]': '太郎', '[name=c12p]': '東京都', '[name=c12c]': '渋谷区', '[name=c12s]': '大学' },
+  },
+  {
+    name: 'C13 選択肢に合うものがなければ何も選ばずに閉じる',
+    html: `<form><div data-combo="c13"></div></form>`,
+    setup: combos([{ style: 'mui', name: 'c13', label: '都道府県', options: ['北海道', '大阪府'] }]),
+    expect: { '[name=c13]': '' },
+  },
+
+  // ---- 第6弾：読み取り専用の欄・書式を自動で整える欄・文字数制限 ----
+  {
+    name: 'R2 読み取り専用で値の入ったメールアドレス（登録済み）は変えない',
+    html: `<form><label>メールアドレス <input name="r2" readonly value="old@example.com"></label></form>`,
+    expect: { '[name=r2]': 'old@example.com' },
+  },
+  {
+    name: 'R3 読み取り専用の年齢（自動計算）には入れない',
+    html: `<form><label>年齢 <input name="r3" readonly></label></form>`,
+    expect: { '[name=r3]': '' },
+  },
+  {
+    name: 'R5 電話番号：maxlength=11（ハイフンなし）',
+    html: `<form><label>携帯電話番号 <input name="r5" type="tel" maxlength="11"></label></form>`,
+    expect: { '[name=r5]': '09012345678' },
+  },
+  {
+    name: 'R6 郵便番号：maxlength=7',
+    html: `<form><label>郵便番号 <input name="r6" maxlength="7"></label></form>`,
+    expect: { '[name=r6]': '1500041' },
+  },
+  {
+    name: 'R7 入力マスク（数字だけ残して自動でハイフンを付ける電話番号）',
+    html: `<form><label>電話番号 <input name="r7" type="tel" placeholder="090-0000-0000"></label></form>`,
+    setup(root) {
+      const el = root.querySelector<HTMLInputElement>('[name=r7]')!;
+      el.addEventListener('input', () => {
+        const d = el.value.replace(/\D/g, '').slice(0, 11);
+        el.value = d.length > 7 ? `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}` : d.length > 3 ? `${d.slice(0, 3)}-${d.slice(3)}` : d;
+      });
+    },
+    expect: { '[name=r7]': '090-1234-5678' },
+  },
+  {
+    name: 'R8 入力マスク（数字以外を消す・ハイフンなしの郵便番号）',
+    html: `<form><label>郵便番号 <input name="r8" inputmode="numeric"></label></form>`,
+    setup(root) {
+      const el = root.querySelector<HTMLInputElement>('[name=r8]')!;
+      el.addEventListener('input', () => (el.value = el.value.replace(/\D/g, '')));
+    },
+    expect: { '[name=r8]': '1500041' },
+  },
+  {
+    name: 'R9 貼り付け禁止のメールアドレス確認欄',
+    html: `<form><label>メールアドレス <input name="r9a" type="email"></label><label>メールアドレス（確認） <input name="r9b" type="email" onpaste="return false"></label></form>`,
+    expect: { '[name=r9a]': 'taro@example.com', '[name=r9b]': 'taro@example.com' },
+  },
+  {
+    name: 'R10 全角カナ指定・maxlength のあるフリガナ',
+    html: `<form><label>フリガナ（全角カナ）<input name="r10" maxlength="10"></label></form>`,
+    expect: { '[name=r10]': 'ヤマダ　タロウ' },
+  },
+
+  {
+    name: 'R11 name のないラジオ（Vue の v-model）を1つの質問としてまとめる',
+    html: `<form><table>
+      <tr><th>性別</th><td><label><input type="radio" value="男性" id="r11a">男性</label><label><input type="radio" value="女性" id="r11b">女性</label></td></tr>
+      <tr><th>文理区分</th><td><label><input type="radio" value="文系" id="r11c">文系</label><label><input type="radio" value="理系" id="r11d">理系</label></td></tr></table></form>`,
+    profile: { gender: 'female', bunri: '理系' },
+    expect: { '#r11a': false, '#r11b': true, '#r11c': false, '#r11d': true },
   },
 ];

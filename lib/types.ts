@@ -170,6 +170,8 @@ export interface FrameStatus {
   /** 診断情報（diagnose のときだけ） */
   report?: string;
   aiError?: string;
+  /** ページに埋め込まれた、別のサイトのフォーム枠（iframe）の origin。いちばん外側のページだけが返す */
+  iframeOrigins?: string[];
 }
 
 export interface RemoteQuestion {
