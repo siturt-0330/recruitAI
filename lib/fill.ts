@@ -1,4 +1,5 @@
 import type { ScannedField } from './extract';
+import { comboRoot, comboText } from './combo';
 import { norm } from './japanese';
 
 export type Snapshot =
@@ -46,6 +47,7 @@ function dataUrlToFile(dataUrl: string, name: string): File | null {
 /** 既にユーザーが値を入れている欄かどうか。select は初期値から変わっているときだけ入力済みとみなす */
 export function hasUserValue(field: ScannedField): boolean {
   const el = field.elements[0]!;
+  if (field.combo) return comboText(el) !== '';
   if (el instanceof HTMLSelectElement) {
     const opts = Array.from(el.options);
     const initial = Math.max(0, opts.findIndex((o) => o.defaultSelected));
@@ -71,13 +73,13 @@ function dispatch(el: HTMLElement) {
   el.dispatchEvent(new FocusEvent('blur'));
 }
 
-const normOption = (s: string) => {
+export const normOption = (s: string) => {
   const t = norm(s).replace(/\s/g, '').replace(/[年月日]$/, '');
   return /^\d+$/.test(t) ? String(parseInt(t, 10)) : t;
 };
 
 /** 選択肢の中から候補に合うものを探す。完全一致を優先し、なければ部分一致 */
-function pickOption(options: string[], variants: string[], exactOnly = false): number {
+export function pickOption(options: string[], variants: string[], exactOnly = false): number {
   const normalized = options.map(normOption);
   for (const v of variants.map(normOption)) {
     const i = normalized.indexOf(v);
@@ -177,6 +179,8 @@ function pickTextValue(input: HTMLInputElement | HTMLTextAreaElement, variants: 
 
 /** オーバーレイの枠を付ける要素。非表示のラジオはラベルに付ける */
 export function markTarget(field: ScannedField): HTMLElement {
+  // 独自プルダウンの input は小さいことが多いので、見た目の枠に付ける
+  if (field.combo) return comboRoot(field.elements[0]!);
   if (field.desc.kind === 'file') {
     const input = field.elements[0] as HTMLInputElement;
     if (input.getClientRects().length) return input;

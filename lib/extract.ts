@@ -1,3 +1,5 @@
+import { COMBO_SELECTOR, isCombo } from './combo';
+
 export type FieldKind =
   | 'text' | 'email' | 'tel' | 'number' | 'date' | 'month' | 'select' | 'radio' | 'textarea' | 'file' | 'checkbox';
 
@@ -40,12 +42,16 @@ export interface FieldDescriptor {
 
 export interface ScannedField {
   desc: FieldDescriptor;
+  /** 独自デザインのプルダウン（クリックで開いて選ぶ） */
+  combo?: boolean;
   /** ラジオボタンはグループ内の全要素、それ以外は1要素 */
   elements: HTMLElement[];
 }
 
 const TEXT_TYPES = new Set(['', 'text', 'email', 'tel', 'number', 'date', 'month']);
 const SKIP_TEXT_PARENTS = new Set(['SELECT', 'OPTION', 'TEXTAREA', 'SCRIPT', 'STYLE', 'NOSCRIPT', 'BUTTON']);
+/** 入力欄（独自デザインのプルダウンを含む） */
+const CONTROLS = `input, select, textarea, ${COMBO_SELECTOR}`;
 
 export function textOf(node: Node | null, limit = 120): string {
   if (!node) return '';
@@ -56,6 +62,8 @@ export function textOf(node: Node | null, limit = 120): string {
   while (walker.nextNode() && out.length <= limit) {
     const t = walker.currentNode;
     if (t.parentElement && SKIP_TEXT_PARENTS.has(t.parentElement.tagName)) continue;
+    // 独自プルダウンに表示中の値・「選択してください」は見出しではない
+    if (t.parentElement?.closest(`${COMBO_SELECTOR}, [class*="placeholder" i]`)) continue;
     const v = (t.nodeValue ?? '').replace(/\s+/g, ' ').trim();
     if (v) out += (out ? ' ' : '') + v;
   }
@@ -63,7 +71,7 @@ export function textOf(node: Node | null, limit = 120): string {
 }
 
 function isControl(n: Node): boolean {
-  return n instanceof HTMLElement && /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(n.tagName);
+  return n instanceof HTMLElement && (/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(n.tagName) || isCombo(n));
 }
 
 function isVisible(el: HTMLElement): boolean {
@@ -99,8 +107,9 @@ function isSelect2Source(el: HTMLSelectElement): boolean {
   return el.classList.contains('select2-hidden-accessible') && next instanceof HTMLElement && next.classList.contains('select2') && isVisible(next);
 }
 
-function isCandidate(el: Element): el is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement {
+function isCandidate(el: Element): el is HTMLElement {
   if (el instanceof HTMLSelectElement && isSelect2Source(el)) return true;
+  if (isCombo(el)) return !el.closest('[aria-hidden="true"]') && isVisible(el as HTMLElement) && !(el instanceof HTMLInputElement && el.disabled);
   if (el instanceof HTMLElement && isHoneypot(el)) return false;
   if (el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) {
     return !el.disabled && !(el instanceof HTMLTextAreaElement && el.readOnly) && isVisible(el);
@@ -118,7 +127,7 @@ function isCandidate(el: Element): el is HTMLInputElement | HTMLSelectElement | 
 }
 
 function collectControls(root: Document | ShadowRoot, out: Element[]) {
-  root.querySelectorAll('input, select, textarea').forEach((el) => out.push(el));
+  root.querySelectorAll(CONTROLS).forEach((el) => out.push(el));
   root.querySelectorAll('*').forEach((el) => {
     if (el.shadowRoot) collectControls(el.shadowRoot, out);
   });
@@ -147,7 +156,7 @@ function siblingText(el: HTMLElement, dir: 1 | -1, max: number): string {
     if (t) return t;
     const parent = target.parentElement;
     if (!parent || /^(TD|TH|DD|DT|TR|LI|FORM|BODY|FIELDSET)$/.test(parent.tagName)) break;
-    if (parent.querySelectorAll('input, select, textarea').length > 1) break;
+    if (parent.querySelectorAll(CONTROLS).length > 1) break;
     target = parent;
   }
   return '';
@@ -157,7 +166,7 @@ function adjacentText(el: HTMLElement, dir: 1 | -1, max: number): string {
   let out = '';
   let n: Node | null = dir === 1 ? el.nextSibling : el.previousSibling;
   while (n && out.length < max) {
-    if (isControl(n) || (n instanceof HTMLElement && n.querySelector('input, select, textarea'))) break;
+    if (isControl(n) || (n instanceof HTMLElement && n.querySelector(CONTROLS))) break;
     const t = n.nodeType === Node.TEXT_NODE ? (n.nodeValue ?? '') : textOf(n, max);
     out = dir === 1 ? `${out} ${t}` : `${t} ${out}`;
     n = dir === 1 ? n.nextSibling : n.previousSibling;
@@ -173,7 +182,7 @@ function columnHeader(cell: HTMLTableCellElement): string {
   if (!table || !row) return '';
   const headerRow =
     table.tHead?.rows[0] ??
-    Array.from(table.rows).find((r) => r !== row && r.querySelector('th') && !r.querySelector('input, select, textarea'));
+    Array.from(table.rows).find((r) => r !== row && r.querySelector('th') && !r.querySelector(CONTROLS));
   if (!headerRow || headerRow === row) return '';
   return textOf(headerRow.cells[cell.cellIndex] ?? null, 40);
 }
@@ -187,7 +196,7 @@ function structuralHeader(el: HTMLElement): string {
       const row = cell.parentElement as HTMLTableRowElement | null;
       // 同じ行の、入力欄のないセル（ふつうは th）が行見出し
       const header = Array.from(row?.children ?? []).find(
-        (c) => c !== cell && !c.contains(el) && !c.querySelector('input, select, textarea'),
+        (c) => c !== cell && !c.contains(el) && !c.querySelector(CONTROLS),
       );
       const t = textOf(header ?? null, 60);
       if (t && !/^[\s\-‐ー－~〜()（）]*$/.test(t)) return t;
@@ -281,7 +290,7 @@ function checkboxText(el: HTMLInputElement): string {
   const parts = [labelText(el), siblingText(el, 1, 60), siblingText(el, -1, 30)];
   let node = el.parentElement;
   for (let depth = 0; node && depth < 3; depth++, node = node.parentElement) {
-    if (node.querySelectorAll('input, select, textarea').length > 1) break;
+    if (node.querySelectorAll(CONTROLS).length > 1) break;
     const t = textOf(node, 100);
     if (t && t.length <= 100) parts.push(t);
   }
@@ -326,6 +335,15 @@ export function scanFields(doc: Document): ScannedField[] {
       continue;
     }
 
+    if (isCombo(el)) {
+      // 選択肢は開くまで分からないので、見出しだけで判定する
+      const field = makeField(el, 'select');
+      field.combo = true;
+      fields.push(field);
+      continue;
+    }
+    if (!(el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement)) continue;
+
     const kind: FieldKind =
       el instanceof HTMLSelectElement
         ? 'select'
@@ -366,8 +384,8 @@ function inLoginForm(f: ScannedField): boolean {
   return /ログイン|サインイン|login|log in|sign ?in/i.test(words);
 }
 
-function makeField(el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, kind: FieldKind): ScannedField {
-  const maxLength = 'maxLength' in el && el.maxLength > 0 ? el.maxLength : null;
+function makeField(el: HTMLElement, kind: FieldKind): ScannedField {
+  const maxLength = 'maxLength' in el && typeof el.maxLength === 'number' && el.maxLength > 0 ? el.maxLength : null;
   return {
     elements: [el],
     desc: {
