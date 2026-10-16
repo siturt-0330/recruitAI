@@ -2,6 +2,7 @@
 import { FormFiller } from '../lib/engine';
 import { DEFAULT_SETTINGS } from '../lib/types';
 import { CASES, type Case } from './fixtures/cases';
+import { removeComboPopups } from './fixtures/combos';
 import { testProfile } from './fixtures/profile';
 
 interface Failure {
@@ -30,9 +31,10 @@ function actualValue(root: HTMLElement, selector: string, expected: string | boo
     const checked = root.querySelector<HTMLInputElement>(`input[type=radio][name="${selector.slice(6)}"]:checked`);
     return checked ? (checked.closest('label, span')?.textContent ?? checked.value).trim() : '';
   }
+  if (selector.startsWith('text:')) return (root.querySelector(selector.slice(5))?.textContent ?? '（要素なし）').replace(/\u200b/g, '').trim();
   const el = resolve(root, selector);
   if (!el) return '（要素なし）';
-  if (el instanceof HTMLInputElement && el.type === 'checkbox') return el.checked;
+  if (el instanceof HTMLInputElement && (el.type === 'checkbox' || el.type === 'radio')) return el.checked;
   if (el instanceof HTMLSelectElement) {
     const opt = el.options[el.selectedIndex];
     // 期待値が value かテキストのどちらかに一致すればよい
@@ -68,14 +70,23 @@ async function runCase(c: Case, stage: HTMLElement): Promise<CaseResult> {
       const actual = actualValue(stage, selector, expected);
       if (actual !== expected) result.failures.push({ selector, expected, actual });
     }
+    const edited = c.afterFill?.(stage) ?? {};
     filler.undo();
+    await filler.whenRestored();
+    for (const [sel, v] of Object.entries(edited)) {
+      const now = (stage.querySelector(sel) as HTMLInputElement).value;
+      if (now !== v) result.undoFailures.push(`書き直した ${sel} が消えた: ${v} → ${now}`);
+    }
     for (const [el, v] of snapshotAll(stage)) {
+      if (Object.keys(edited).some((sel) => stage.querySelector(sel) === el)) continue;
       if (before.get(el) !== v) result.undoFailures.push(`${(el as HTMLInputElement).name || el.id}: ${before.get(el)} → ${v}`);
     }
   } catch (e) {
     result.error = e instanceof Error ? `${e.message}\n${e.stack}` : String(e);
   }
   filler.undo();
+  await filler.whenRestored();
+  removeComboPopups(document);
   stage.innerHTML = '';
   return result;
 }

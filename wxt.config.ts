@@ -21,12 +21,17 @@ export default defineConfig({
   vite: () => ({
     define: { __API_URL__: JSON.stringify(apiUrl) },
   }),
-  manifest: {
+  manifest: ({ manifestVersion }) => ({
     name: 'らくらくエントリー｜就活エントリー自動入力',
     // ストアの「概要」はここから取られる（ダッシュボードでは編集できない）。132文字以内
     description: '就活の応募フォームを、登録したプロフィールでワンクリック入力。氏名・フリガナ・生年月日・住所・学歴まで、和暦や全角半角も自動で合わせます。',
     permissions: ['activeTab', 'scripting', 'storage'],
     host_permissions: [`${new URL(apiUrl).origin}/*`],
+    // 企業の採用ページに別のサイトの応募フォームが埋め込まれているとき、そのサイトだけ使う人の許可をもらって入力する。
+    // Firefox（MV2）には optional_host_permissions がないので optional_permissions に書く
+    ...(manifestVersion === 2
+      ? { optional_permissions: ['https://*/*', 'http://*/*'] }
+      : { optional_host_permissions: ['https://*/*', 'http://*/*'] }),
     action: { default_title: 'らくらくエントリー' },
     commands: {
       'fill-page': {
@@ -34,5 +39,5 @@ export default defineConfig({
         description: 'このページのフォームに入力',
       },
     },
-  },
+  }),
 });
