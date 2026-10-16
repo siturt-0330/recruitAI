@@ -286,7 +286,8 @@ function classifyField(d: FieldDescriptor): Classification {
             ? ['fullNameKana', 'lastNameKana', 'firstNameKana']
             : ['fullName', 'lastName', 'firstName']
       ) as [FieldKey, FieldKey, FieldKey];
-      const part = namePart(nearRaw, attrs);
+      // 欄の横にラベルがなければ、行の見出し（「姓」「セイ」だけの th など）で姓・名を分ける
+      const part = namePart(nearRaw.trim() ? nearRaw : d.context, attrs);
       if (part) return r(part === 'last' ? keys[1] : keys[2]);
       if (d.groupSize === 2) return r(d.groupIndex === 0 ? keys[1] : keys[2], byPosition);
       return r(keys[0]);

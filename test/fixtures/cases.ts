@@ -1,5 +1,6 @@
 import { PREFECTURES } from '../../lib/prefectures';
 import type { Profile } from '../../lib/types';
+import { mountCombo, type ComboOptions } from './combos';
 
 /**
  * 入力エンジンの回帰テスト用のフォーム。
@@ -15,11 +16,19 @@ export interface Case {
   expect: Record<string, string | boolean>;
   profile?: Partial<Profile>;
   setup?(root: HTMLElement): void;
+  /** 入力のあとにユーザーが書き直す操作。書き直した欄のセレクタと値を返し、「元に戻す」で消えないことを確かめる */
+  afterFill?(root: HTMLElement): Record<string, string>;
 }
 
 const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 const opts = (items: (string | [string, string])[], empty = '選択してください') =>
   [`<option value="">${empty}</option>`, ...items.map((o) => (Array.isArray(o) ? `<option value="${o[0]}">${o[1]}</option>` : `<option>${o}</option>`))].join('');
+
+
+/** 独自プルダウンを並べたフォーム。html の <div data-combo="name"> の位置に組み立てる */
+const combos = (list: (Omit<ComboOptions, 'name'> & { name: string })[]) => (root: HTMLElement) => {
+  for (const c of list) mountCombo(root.querySelector<HTMLElement>(`[data-combo="${c.name}"]`)!, { clearable: true, ...c });
+};
 
 export const CASES: Case[] = [
   {
@@ -864,5 +873,396 @@ export const CASES: Case[] = [
       </td></tr>
     </table></form>`,
     expect: { '[name=u1a]': '山田', '[name=u2y]': '1999', '[name=u2m]': '4', '[name=u2d]': '1', 'radio:u3': '男' },
+  },
+  // ---- 第4弾：プルダウンの value の罠・遅れて作り直される選択肢・Select2・行見出しだけの姓名・元に戻す ----
+  {
+    name: 'D1 月の value が 0 始まり（JS の月）',
+    html: `<form><table><tr><th>生年月日</th><td>
+      <select name="d1y">${opts(range(1980, 2008).map(String))}</select>
+      <select name="d1m">${opts(range(1, 12).map((m) => [String(m - 1), `${m}月`]))}</select>
+      <select name="d1d">${opts(range(1, 31).map((d) => [String(d), `${d}日`]))}</select></td></tr></table></form>`,
+    expect: { '[name=d1y]': '1999', '[name=d1m]': '4月', '[name=d1d]': '1日' },
+  },
+  {
+    name: 'D2 日の value が 0 始まり',
+    html: `<form><table><tr><th>生年月日</th><td>
+      <select name="d2y">${opts(range(1980, 2008).map(String))}</select>
+      <select name="d2m">${opts(range(1, 12).map(String))}</select>
+      <select name="d2d">${opts(range(1, 31).map((d) => [String(d - 1), `${d}`]))}</select></td></tr></table></form>`,
+    profile: { birthDate: '1999-04-05' },
+    expect: { '[name=d2y]': '1999', '[name=d2m]': '4', '[name=d2d]': '5' },
+  },
+  {
+    name: 'D3 英語の性別プルダウン（Female が先・男性）',
+    html: `<form><label>Gender <select name="d3">${opts(['Female', 'Male', 'Prefer not to say'], 'Select')}</select></label></form>`,
+    expect: { '[name=d3]': 'Male' },
+  },
+  {
+    name: 'D4 英語の性別プルダウン（女性）',
+    html: `<form><label>Gender <select name="d4">${opts(['Male', 'Female'], 'Select')}</select></label></form>`,
+    profile: { gender: 'female' },
+    expect: { '[name=d4]': 'Female' },
+  },
+  {
+    name: 'D5 全角数字の選択肢（１９９９年・４月）',
+    html: `<form><table><tr><th>生年月日</th><td>
+      <select name="d5y">${opts(range(1980, 2008).map((y) => [String(y), `${String(y).replace(/\d/g, (c) => String.fromCharCode(c.charCodeAt(0) + 0xfee0))}年`]))}</select>
+      <select name="d5m">${opts(range(1, 12).map((m) => [String(m), `${String(m).replace(/\d/g, (c) => String.fromCharCode(c.charCodeAt(0) + 0xfee0))}月`]))}</select>
+      <select name="d5d">${opts(range(1, 31).map(String))}</select></td></tr></table></form>`,
+    expect: { '[name=d5y]': '1999', '[name=d5m]': '4', '[name=d5d]': '1' },
+  },
+  {
+    name: 'D6 年を選ぶと月・日の選択肢が非同期で作り直される',
+    html: `<form><table><tr><th>生年月日</th><td>
+      <select name="d6y">${opts(range(1980, 2008).map(String))}</select>
+      <select name="d6m"><option value="">--</option></select>
+      <select name="d6d"><option value="">--</option></select></td></tr></table></form>`,
+    setup(root) {
+      const y = root.querySelector<HTMLSelectElement>('[name=d6y]')!;
+      const m = root.querySelector<HTMLSelectElement>('[name=d6m]')!;
+      const d = root.querySelector<HTMLSelectElement>('[name=d6d]')!;
+      y.addEventListener('change', () => setTimeout(() => (m.innerHTML = opts(range(1, 12).map(String), '--')), 100));
+      m.addEventListener('change', () => setTimeout(() => (d.innerHTML = opts(range(1, 30).map(String), '--')), 100));
+    },
+    expect: { '[name=d6y]': '1999', '[name=d6m]': '4', '[name=d6d]': '1' },
+  },
+  {
+    name: 'D7 月を選ぶと日の選択肢を作り直す（選択がリセットされる）',
+    html: `<form><table><tr><th>生年月日</th><td>
+      <select name="d7y">${opts(range(1980, 2008).map(String))}</select>
+      <select name="d7m">${opts(range(1, 12).map(String))}</select>
+      <select name="d7d">${opts(range(1, 31).map(String))}</select></td></tr></table></form>`,
+    setup(root) {
+      const m = root.querySelector<HTMLSelectElement>('[name=d7m]')!;
+      const y = root.querySelector<HTMLSelectElement>('[name=d7y]')!;
+      const d = root.querySelector<HTMLSelectElement>('[name=d7d]')!;
+      const rebuild = () => setTimeout(() => (d.innerHTML = opts(range(1, new Date(+y.value || 2000, +m.value || 1, 0).getDate()).map(String))), 400);
+      m.addEventListener('change', rebuild);
+      y.addEventListener('change', rebuild);
+    },
+    expect: { '[name=d7y]': '1999', '[name=d7m]': '4', '[name=d7d]': '1' },
+  },
+  {
+    name: 'D8 都道府県を選ぶと市区町村のプルダウンが非同期で読み込まれる',
+    html: `<form><table>
+      <tr><th>都道府県</th><td><select name="d8p">${opts(['北海道', '東京都', '大阪府'])}</select></td></tr>
+      <tr><th>市区町村</th><td><select name="d8c"><option value="">先に都道府県を選択</option></select></td></tr></table></form>`,
+    setup(root) {
+      const p = root.querySelector<HTMLSelectElement>('[name=d8p]')!;
+      const c = root.querySelector<HTMLSelectElement>('[name=d8c]')!;
+      p.addEventListener('change', () => setTimeout(() => (c.innerHTML = opts(['千代田区', '新宿区', '渋谷区'])), 500));
+    },
+    expect: { '[name=d8p]': '東京都', '[name=d8c]': '渋谷区' },
+  },
+  {
+    name: 'D9 都道府県：京都府の人（東京都が先にある）',
+    html: `<form><label>都道府県 <select name="d9">${opts(['東京都', '京都府'])}</select></label></form>`,
+    profile: { prefecture: '京都府' },
+    expect: { '[name=d9]': '京都府' },
+  },
+  {
+    name: 'D10 都道府県：京都の人・「都府県」なしの選択肢',
+    html: `<form><label>都道府県 <select name="d10">${opts(['東京', '京都', '大阪'])}</select></label></form>`,
+    profile: { prefecture: '京都府' },
+    expect: { '[name=d10]': '京都' },
+  },
+  {
+    name: 'D11 卒業年月が1つのプルダウン（2026年3月）',
+    html: `<form><label>卒業予定年月 <select name="d11">${opts(['2025年3月', '2025年9月', '2026年3月', '2026年9月'])}</select></label></form>`,
+    expect: { '[name=d11]': '2026年3月' },
+  },
+  {
+    name: 'D12 卒業年月が1つのプルダウン（2026/03 表記）',
+    html: `<form><label>卒業予定年月 <select name="d12">${opts(['2025/03', '2026/03', '2027/03'])}</select></label></form>`,
+    expect: { '[name=d12]': '2026/03' },
+  },
+  {
+    name: 'D13 Select2 などで本物の select が非表示',
+    html: `<form><label for="d13">都道府県</label><select id="d13" name="d13" class="select2-hidden-accessible" style="position:absolute;width:1px;height:1px;clip:rect(0 0 0 0);overflow:hidden" tabindex="-1" aria-hidden="true">${opts(['北海道', '東京都'])}</select><span class="select2 select2-container">選択してください ▼</span></form>`,
+    expect: { '[name=d13]': '東京都' },
+  },
+  {
+    name: 'D13b display:none で隠れただけの select（Select2 ではない）には入れない',
+    html: `<form><div><label>都道府県 <select name="d13b" style="display:none">${opts(['北海道', '東京都'])}</select></label></div></form>`,
+    expect: { '[name=d13b]': '' },
+  },
+  {
+    name: 'D14 複数選択の select には変な値を入れない',
+    html: `<form><label>希望勤務地 <select name="d14" multiple>${opts(['東京都', '大阪府'], '指定なし')}</select></label></form>`,
+    expect: { '[name=d14]': '' },
+  },
+  {
+    name: 'D15 選択肢の前後にスペース・nbsp',
+    html: `<form><label>都道府県 <select name="d15"><option value="">--</option><option value="13">&nbsp; 東京都 &nbsp;</option></select></label></form>`,
+    expect: { '[name=d15]': '13' },
+  },
+  {
+    name: 'D16 性別の選択肢が「男性」「女性」で value が 0/1',
+    html: `<form><label>性別 <select name="d16">${opts([['0', '男性'], ['1', '女性']])}</select></label></form>`,
+    profile: { gender: 'female' },
+    expect: { '[name=d16]': '1' },
+  },
+  {
+    name: 'D17 学校区分：大学院の人に「大学」を選ばない',
+    html: `<form><label>学校区分 <select name="d17">${opts(['大学', '大学院', '短期大学', '専門学校'])}</select></label></form>`,
+    profile: { schoolType: '大学院（修士）' },
+    expect: { '[name=d17]': '大学院' },
+  },
+  {
+    name: 'D18 文理区分のプルダウン',
+    html: `<form><label>文理区分 <select name="d18">${opts(['文系', '理系', 'その他'])}</select></label></form>`,
+    profile: { bunri: '理系' },
+    expect: { '[name=d18]': '理系' },
+  },
+  {
+    name: 'D19 月の選択肢が「1月(Jan)」形式',
+    html: `<form><table><tr><th>生年月日</th><td>
+      <select name="d19y">${opts(range(1980, 2008).map(String))}</select>
+      <select name="d19m">${opts(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((e, i) => [String(i + 1), `${i + 1}月(${e})`]))}</select>
+      <select name="d19d">${opts(range(1, 31).map(String))}</select></td></tr></table></form>`,
+    expect: { '[name=d19y]': '1999', '[name=d19m]': '4', '[name=d19d]': '1' },
+  },
+  {
+    name: 'D20 生年の選択肢が新しい順・value は index',
+    html: `<form><table><tr><th>生年月日</th><td>
+      <select name="d20y">${opts(range(1980, 2008).reverse().map((y, i) => [String(i), `${y}年`]))}</select>
+      <select name="d20m">${opts(range(1, 12).map(String))}</select>
+      <select name="d20d">${opts(range(1, 31).map(String))}</select></td></tr></table></form>`,
+    expect: { '[name=d20y]': '1999年', '[name=d20m]': '4', '[name=d20d]': '1' },
+  },
+  {
+    name: 'D21 都道府県の value が JIS コード 01〜47',
+    html: `<form><label>都道府県 <select name="d21">${opts([['01', '北海道'], ['04', '宮城県'], ['13', '東京都']])}</select></label></form>`,
+    expect: { '[name=d21]': '13' },
+  },
+  {
+    name: 'D22 ユーザーが選び済みのプルダウン（都道府県）',
+    html: `<form><label>都道府県 <select name="d22">${opts(['北海道', '東京都', '大阪府'])}</select></label></form>`,
+    setup(root) {
+      root.querySelector<HTMLSelectElement>('[name=d22]')!.value = '大阪府';
+    },
+    expect: { '[name=d22]': '大阪府' },
+  },
+  {
+    name: 'D23 国籍プルダウン',
+    html: `<form><label>国籍 <select name="d23">${opts(['日本', 'アメリカ', '中国', '韓国'])}</select></label></form>`,
+    expect: { '[name=d23]': '日本' },
+  },
+  {
+    name: 'D24 datalist 付きの大学名欄',
+    html: `<form><label>大学名 <input name="d24" list="d24l"></label><datalist id="d24l"><option value="サンプル大学"><option value="テスト大学"></datalist></form>`,
+    expect: { '[name=d24]': 'サンプル大学' },
+  },
+  {
+    name: 'D25 卒業見込みのプルダウン',
+    html: `<form><label>卒業区分 <select name="d25">${opts(['卒業', '卒業見込み', '中退'])}</select></label></form>`,
+    expect: { '[name=d25]': '卒業見込み' },
+  },
+  {
+    name: 'D26 学部の選択肢「経済学部」（学校で変わるプルダウン）',
+    html: `<form><label>学部 <select name="d26">${opts(['法学部', '経済学部', '経営学部'])}</select></label></form>`,
+    expect: { '[name=d26]': '経済学部' },
+  },
+  {
+    name: 'D27 経営学部の人に経済学部を選ばない・ない場合は空のまま',
+    html: `<form><label>学部 <select name="d27">${opts(['法学部', '経済学部'])}</select></label></form>`,
+    profile: { faculty: '経営学部' },
+    expect: { '[name=d27]': '' },
+  },
+  {
+    name: 'D28 1月生まれ（「1」が「10」「11」「12」に化けない）',
+    html: `<form><table><tr><th>生年月日</th><td>
+      <select name="d28y">${opts(range(1980, 2008).map(String))}</select>
+      <select name="d28m">${opts(range(1, 12).map((m) => `${m}月`))}</select>
+      <select name="d28d">${opts(range(1, 31).map((d) => `${d}日`))}</select></td></tr></table></form>`,
+    profile: { birthDate: '2001-01-01' },
+    expect: { '[name=d28y]': '2001', '[name=d28m]': '1月', '[name=d28d]': '1日' },
+  },
+  {
+    name: 'N1 「姓」「名」「セイ」「メイ」がそれぞれ別の行の見出し（name は手がかりなし）',
+    html: `<form><table>
+      <tr><th>姓</th><td><input name="q1"></td></tr><tr><th>名</th><td><input name="q2"></td></tr>
+      <tr><th>セイ</th><td><input name="q3"></td></tr><tr><th>メイ</th><td><input name="q4"></td></tr></table></form>`,
+    expect: { '[name=q1]': '山田', '[name=q2]': '太郎', '[name=q3]': 'ヤマダ', '[name=q4]': 'タロウ' },
+  },
+  {
+    name: 'N2 「氏名」の行見出しに2つの欄（従来どおり位置で分ける）',
+    html: `<form><table><tr><th>氏名</th><td><input name="n2a"> <input name="n2b"></td></tr></table></form>`,
+    expect: { '[name=n2a]': '山田', '[name=n2b]': '太郎' },
+  },
+  {
+    name: 'N3 「氏名」の行見出しに1つの欄（姓名をまとめて入れる）',
+    html: `<form><table><tr><th>氏名</th><td><input name="n3"></td></tr></table></form>`,
+    expect: { '[name=n3]': '山田　太郎' },
+  },
+  {
+    name: 'U1 入力後にユーザーが書き直した欄は「元に戻す」で消さない',
+    html: `<form><label>大学名 <input name="u1a"></label><label>学部 <select name="u1b"><option value="">--</option><option>経済学部</option><option>法学部</option></select></label><label>メールアドレス <input name="u1c" type="email"></label></form>`,
+    afterFill(root: HTMLElement) {
+      root.querySelector<HTMLInputElement>('[name=u1a]')!.value = 'サンプル大学大学院';
+      root.querySelector<HTMLSelectElement>('[name=u1b]')!.value = '法学部';
+      return { '[name=u1a]': 'サンプル大学大学院', '[name=u1b]': '法学部' };
+    },
+    expect: { '[name=u1a]': 'サンプル大学', '[name=u1b]': '経済学部', '[name=u1c]': 'taro@example.com' },
+  },
+
+  // ---- 第5弾：独自デザインのプルダウン（MUI・react-select・Ant Design・Radix・Headless UI 風） ----
+  {
+    name: 'C1 MUI 風の都道府県（一覧は body 直下に出る）',
+    html: `<form><div data-combo="c1"></div></form>`,
+    setup: combos([{ style: 'mui', name: 'c1', label: '都道府県', options: PREFECTURES }]),
+    expect: { '[name=c1]': '東京都' },
+  },
+  {
+    name: 'C2 MUI 風の性別',
+    html: `<form><div data-combo="c2"></div></form>`,
+    setup: combos([{ style: 'mui', name: 'c2', label: '性別', options: ['男性', '女性', '回答しない'] }]),
+    profile: { gender: 'female' },
+    expect: { '[name=c2]': '女性' },
+  },
+  {
+    name: 'C3 react-select 風（選択肢に role がない）',
+    html: `<form><div data-combo="c3"></div></form>`,
+    setup: combos([{ style: 'reactSelect', name: 'c3', label: '都道府県', placeholder: 'Select...', options: PREFECTURES }]),
+    expect: { '[name=c3]': '東京都' },
+  },
+  {
+    name: 'C4 Ant Design 風の仮想リスト（最後の沖縄県までスクロール）',
+    html: `<form><div data-combo="c4"></div></form>`,
+    setup: combos([{ style: 'antVirtual', name: 'c4', label: '都道府県', placeholder: '選択してください', options: PREFECTURES }]),
+    profile: { prefecture: '沖縄県' },
+    expect: { '[name=c4]': '沖縄県' },
+  },
+  {
+    name: 'C5 入力候補つきの大学名（候補から選ぶ）',
+    html: `<form><div data-combo="c5"></div></form>`,
+    setup: combos([{ style: 'autocomplete', name: 'c5', label: '大学名', options: ['サンプル大学', 'サンプル工業大学', 'テスト大学'] }]),
+    expect: { '[name=c5]': 'サンプル大学' },
+  },
+  {
+    name: 'C6 入力候補つきの大学名（候補にないので文字のまま）',
+    html: `<form><div data-combo="c6"></div></form>`,
+    setup: combos([{ style: 'autocomplete', name: 'c6', label: '大学名', options: ['テスト大学'] }]),
+    expect: { '[name=c6]': 'サンプル大学' },
+  },
+  {
+    name: 'C7 Headless UI 風（click でだけ開く）の学校区分',
+    html: `<form><div data-combo="c7"></div></form>`,
+    setup: combos([{ style: 'headless', name: 'c7', label: '学校区分', placeholder: '選択してください', options: ['大学院', '大学', '短期大学', '専門学校'] }]),
+    expect: { '[name=c7]': '大学' },
+  },
+  {
+    name: 'C8 Radix 風（pointer で開き、開いた位置からの pointerup では選ばない）の文理区分',
+    html: `<form><div data-combo="c8"></div></form>`,
+    setup: combos([{ style: 'radix', name: 'c8', label: '文理区分', placeholder: '選択してください', options: ['文系', '理系', 'その他'] }]),
+    expect: { '[name=c8]': '文系' },
+  },
+  {
+    name: 'C9 生年月日の年・月・日（月は年を、日は月を選ぶと作られる）',
+    html: `<form><div class="title">生年月日</div><div style="display:flex;gap:8px"><div data-combo="c9y"></div><div data-combo="c9m"></div><div data-combo="c9d"></div></div></form>`,
+    setup(root) {
+      let y = '';
+      let m = '';
+      combos([
+        { style: 'mui', name: 'c9y', label: '年', options: range(1980, 2008).map((v) => `${v}年`), onChange: (v) => (y = v) },
+        { style: 'mui', name: 'c9m', label: '月', options: () => (y ? range(1, 12).map((v) => `${v}月`) : []), onChange: (v) => (m = v) },
+        { style: 'mui', name: 'c9d', label: '日', options: () => (m ? range(1, 30).map((v) => `${v}日`) : []) },
+      ])(root);
+    },
+    profile: { birthDate: '1999-04-30' },
+    expect: { '[name=c9y]': '1999年', '[name=c9m]': '4月', '[name=c9d]': '30日' },
+  },
+  {
+    name: 'C10 自分で選び済みの独自プルダウンは変えない',
+    html: `<form><div data-combo="c10"></div></form>`,
+    setup: combos([{ style: 'mui', name: 'c10', label: '都道府県', options: PREFECTURES, value: '大阪府' }]),
+    expect: { '[name=c10]': '大阪府' },
+  },
+  {
+    name: 'C11 関係のない独自プルダウン（学年）には触らない',
+    html: `<form><div data-combo="c11"></div></form>`,
+    setup: combos([{ style: 'mui', name: 'c11', label: '学年', options: ['1年', '2年', '3年', '4年'] }]),
+    expect: { '[name=c11]': '' },
+  },
+  {
+    name: 'C12 ふつうの欄と独自プルダウンが混ざったフォーム',
+    html: `<form><table>
+      <tr><th>氏名</th><td><input name="c12a"> <input name="c12b"></td></tr>
+      <tr><th>都道府県</th><td><div data-combo="c12p"></div></td></tr>
+      <tr><th>市区町村</th><td><input name="c12c"></td></tr>
+      <tr><th>学校区分</th><td><div data-combo="c12s"></div></td></tr></table></form>`,
+    setup: combos([
+      { style: 'mui', name: 'c12p', label: '', options: PREFECTURES },
+      { style: 'reactSelect', name: 'c12s', label: '', placeholder: 'Select...', options: ['大学', '大学院', '短期大学'] },
+    ]),
+    expect: { '[name=c12a]': '山田', '[name=c12b]': '太郎', '[name=c12p]': '東京都', '[name=c12c]': '渋谷区', '[name=c12s]': '大学' },
+  },
+  {
+    name: 'C13 選択肢に合うものがなければ何も選ばずに閉じる',
+    html: `<form><div data-combo="c13"></div></form>`,
+    setup: combos([{ style: 'mui', name: 'c13', label: '都道府県', options: ['北海道', '大阪府'] }]),
+    expect: { '[name=c13]': '' },
+  },
+
+  // ---- 第6弾：読み取り専用の欄・書式を自動で整える欄・文字数制限 ----
+  {
+    name: 'R2 読み取り専用で値の入ったメールアドレス（登録済み）は変えない',
+    html: `<form><label>メールアドレス <input name="r2" readonly value="old@example.com"></label></form>`,
+    expect: { '[name=r2]': 'old@example.com' },
+  },
+  {
+    name: 'R3 読み取り専用の年齢（自動計算）には入れない',
+    html: `<form><label>年齢 <input name="r3" readonly></label></form>`,
+    expect: { '[name=r3]': '' },
+  },
+  {
+    name: 'R5 電話番号：maxlength=11（ハイフンなし）',
+    html: `<form><label>携帯電話番号 <input name="r5" type="tel" maxlength="11"></label></form>`,
+    expect: { '[name=r5]': '09012345678' },
+  },
+  {
+    name: 'R6 郵便番号：maxlength=7',
+    html: `<form><label>郵便番号 <input name="r6" maxlength="7"></label></form>`,
+    expect: { '[name=r6]': '1500041' },
+  },
+  {
+    name: 'R7 入力マスク（数字だけ残して自動でハイフンを付ける電話番号）',
+    html: `<form><label>電話番号 <input name="r7" type="tel" placeholder="090-0000-0000"></label></form>`,
+    setup(root) {
+      const el = root.querySelector<HTMLInputElement>('[name=r7]')!;
+      el.addEventListener('input', () => {
+        const d = el.value.replace(/\D/g, '').slice(0, 11);
+        el.value = d.length > 7 ? `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}` : d.length > 3 ? `${d.slice(0, 3)}-${d.slice(3)}` : d;
+      });
+    },
+    expect: { '[name=r7]': '090-1234-5678' },
+  },
+  {
+    name: 'R8 入力マスク（数字以外を消す・ハイフンなしの郵便番号）',
+    html: `<form><label>郵便番号 <input name="r8" inputmode="numeric"></label></form>`,
+    setup(root) {
+      const el = root.querySelector<HTMLInputElement>('[name=r8]')!;
+      el.addEventListener('input', () => (el.value = el.value.replace(/\D/g, '')));
+    },
+    expect: { '[name=r8]': '1500041' },
+  },
+  {
+    name: 'R9 貼り付け禁止のメールアドレス確認欄',
+    html: `<form><label>メールアドレス <input name="r9a" type="email"></label><label>メールアドレス（確認） <input name="r9b" type="email" onpaste="return false"></label></form>`,
+    expect: { '[name=r9a]': 'taro@example.com', '[name=r9b]': 'taro@example.com' },
+  },
+  {
+    name: 'R10 全角カナ指定・maxlength のあるフリガナ',
+    html: `<form><label>フリガナ（全角カナ）<input name="r10" maxlength="10"></label></form>`,
+    expect: { '[name=r10]': 'ヤマダ　タロウ' },
+  },
+
+  {
+    name: 'R11 name のないラジオ（Vue の v-model）を1つの質問としてまとめる',
+    html: `<form><table>
+      <tr><th>性別</th><td><label><input type="radio" value="男性" id="r11a">男性</label><label><input type="radio" value="女性" id="r11b">女性</label></td></tr>
+      <tr><th>文理区分</th><td><label><input type="radio" value="文系" id="r11c">文系</label><label><input type="radio" value="理系" id="r11d">理系</label></td></tr></table></form>`,
+    profile: { gender: 'female', bunri: '理系' },
+    expect: { '#r11a': false, '#r11b': true, '#r11c': false, '#r11d': true },
   },
 ];

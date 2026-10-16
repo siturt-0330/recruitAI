@@ -157,6 +157,12 @@ body {
   color: var(--danger-text);
 }
 
+.notice.frame-permission > div {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .notice svg {
   flex-shrink: 0;
   margin-top: 3px;
