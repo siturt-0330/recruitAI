@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="UTF-8" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet" />
+<style>
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1200px; height: 630px; overflow: hidden; }
+body { font-family: "Noto Sans JP", sans-serif; background: #fff; color: #1f2328; display: grid; grid-template-columns: 1fr 460px; align-items: center; gap: 40px; padding: 0 70px; }
+body::before { content: ''; position: absolute; inset: 24px; border-radius: 36px; background: #fffbf2; z-index: -1; }
+.brand { display: flex; align-items: center; gap: 14px; font-size: 30px; font-weight: 900; }
+.brand img { width: 52px; height: 52px; }
+h1 { font-size: 46px; line-height: 1.4; font-weight: 900; margin-top: 26px; }
+.hl { background: linear-gradient(transparent 60%, #ffe45c 60%); }
+.tag { display: inline-block; margin-top: 26px; background: #1f2328; color: #fff; border-radius: 999px; padding: 8px 22px; font-size: 24px; font-weight: 700; }
+.shot { width: 460px; border-radius: 16px; box-shadow: 0 18px 40px rgba(31,35,40,.16); }
+</style></head>
+<body>
+  <div>
+    <div class="brand"><img src="../icon.svg" alt="" />らくらくエントリー</div>
+    <h1>就活の応募フォームを、<br /><span class="hl">ワンクリックで入力。</span></h1>
+    <span class="tag">無料の Chrome 拡張機能</span>
+  </div>
+  <img class="shot" src="../screenshots/screenshot-1.png" alt="" />
+</body></html>

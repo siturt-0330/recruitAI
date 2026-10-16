@@ -1,7 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import { classifyWithOpenAI } from '../../lib/openai';
 import type { RemoteQuestion } from '../../lib/types';
-import privacyHtml from '../../store/privacy.html';
 
 /**
  * 拡張機能の「Sophon 判定」の中継 API。
@@ -81,8 +80,6 @@ export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === '/health') return json({ ok: true });
-    // Chrome ウェブストアに載せるプライバシーポリシー
-    if (url.pathname === '/privacy') return new Response(privacyHtml, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     if (url.pathname === '/v1/sponsor') {
       // ポップアップのスポンサー枠。vars の SPONSOR（JSON）を変えて deploy すれば、拡張機能を出し直さずに差し替えられる
       let sponsor: unknown = null;

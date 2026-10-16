@@ -4,7 +4,12 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-10-16",
   // 拡張機能が使う URL。公開後に変えると拡張機能が止まるので、変えないこと
-  "routes": [{ "pattern": "api.rakuraku-entry.com", "custom_domain": true }],
+  "routes": [
+    { "pattern": "api.rakuraku-entry.com", "custom_domain": true },
+    { "pattern": "rakuraku-entry.com", "custom_domain": true }
+  ],
+  // 公式サイト（site/）。ファイルがある URL はそのまま返し、ないものは下の API の処理に回す
+  "assets": { "directory": "../site", "html_handling": "drop-trailing-slash" },
   "workers_dev": false,
   "observability": {
     "enabled": true,
