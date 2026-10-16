@@ -83,7 +83,7 @@ https://api.rakuraku-entry.com/privacy
 
 ## スクリーンショット（1280×800）
 
-`store/screenshots/` の PNG を使う。
+`store/screenshots/` の PNG を使う（スクリーンショット3枚・`promo-tile-440x280.png`）。ストアアイコンは `store-icon-128.png`。アイコンの元データは `store/icon.svg`。
 
 ## 公開前のチェック
 
