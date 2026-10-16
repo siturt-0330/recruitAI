@@ -68,8 +68,14 @@ async function runCase(c: Case, stage: HTMLElement): Promise<CaseResult> {
       const actual = actualValue(stage, selector, expected);
       if (actual !== expected) result.failures.push({ selector, expected, actual });
     }
+    const edited = c.afterFill?.(stage) ?? {};
     filler.undo();
+    for (const [sel, v] of Object.entries(edited)) {
+      const now = (stage.querySelector(sel) as HTMLInputElement).value;
+      if (now !== v) result.undoFailures.push(`書き直した ${sel} が消えた: ${v} → ${now}`);
+    }
     for (const [el, v] of snapshotAll(stage)) {
+      if (Object.keys(edited).some((sel) => stage.querySelector(sel) === el)) continue;
       if (before.get(el) !== v) result.undoFailures.push(`${(el as HTMLInputElement).name || el.id}: ${before.get(el)} → ${v}`);
     }
   } catch (e) {

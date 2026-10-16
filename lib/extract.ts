@@ -89,7 +89,18 @@ function isHoneypot(el: HTMLElement): boolean {
   return Number(style.opacity) === 0;
 }
 
+/**
+ * Select2 は本物の <select> を隠し、すぐ後ろに見た目用の要素を置く。
+ * Select2 は select の change を受けて表示を更新するので、隠れていても入力してよい
+ */
+function isSelect2Source(el: HTMLSelectElement): boolean {
+  if (el.disabled || el.multiple) return false;
+  const next = el.nextElementSibling;
+  return el.classList.contains('select2-hidden-accessible') && next instanceof HTMLElement && next.classList.contains('select2') && isVisible(next);
+}
+
 function isCandidate(el: Element): el is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement {
+  if (el instanceof HTMLSelectElement && isSelect2Source(el)) return true;
   if (el instanceof HTMLElement && isHoneypot(el)) return false;
   if (el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) {
     return !el.disabled && !(el instanceof HTMLTextAreaElement && el.readOnly) && isVisible(el);

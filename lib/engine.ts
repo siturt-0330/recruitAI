@@ -96,6 +96,15 @@ function skipKiseiWhenSame(fields: ScannedField[], classes: Classification[], pr
 }
 
 /** 入れたプルダウンの選択が、今も残っているか */
+/** 入れた値がそのまま残っているか（入力できなかった欄・ユーザーが書き直した欄は false） */
+function keptAsFilled(r: Result): boolean {
+  if (r.status !== 'ok' && r.status !== 'warn') return false;
+  const el = r.field.elements[0]!;
+  if (r.field.desc.kind === 'radio' || r.field.desc.kind === 'checkbox' || r.field.desc.kind === 'file') return true;
+  if (el instanceof HTMLSelectElement) return stillSelected(r);
+  return (el as HTMLInputElement | HTMLTextAreaElement).value === r.value;
+}
+
 function stillSelected(r: Result): boolean {
   const el = r.field.elements[0] as HTMLSelectElement;
   return el.selectedIndex >= 0 && el.options[el.selectedIndex]?.text.trim() === r.value;
@@ -262,8 +271,8 @@ export class FormFiller {
     for (let attempt = 0; attempt < RETRY_DELAYS.length; attempt++) {
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS[attempt]));
       // 選択肢が後から作られたもの、作り直されて選択が消えたものを入れ直す
+      // 作り直しが遅れて来ることもあるので、待ちきるまで見続ける
       const pending = selects.filter((r) => r.status === 'empty' || !stillSelected(r));
-      if (!pending.length) return;
       for (const r of pending) this.apply(r, threshold);
     }
   }
@@ -353,7 +362,13 @@ export class FormFiller {
   }
 
   undo(): FrameStatus {
-    for (const [field, snap] of this.snapshots) restoreSnapshot(field, snap);
+    const byField = new Map(this.results.map((r) => [r.field, r]));
+    for (const [field, snap] of this.snapshots) {
+      // 入力のあとにユーザーが書き直した欄は、その内容を消さない
+      const r = byField.get(field);
+      if (r && !keptAsFilled(r)) continue;
+      restoreSnapshot(field, snap);
+    }
     this.snapshots.clear();
     this.results = [];
     this.overlay.clear();
