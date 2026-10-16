@@ -80,6 +80,10 @@ export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === '/health') return json({ ok: true });
+    // Google Search Console の所有確認。.html のままリダイレクトせずに返す必要がある
+    if (url.pathname === '/googleb3c282b9a4c4b17b.html') {
+      return new Response('google-site-verification: googleb3c282b9a4c4b17b.html', { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    }
     if (url.pathname === '/v1/sponsor') {
       // ポップアップのスポンサー枠。vars の SPONSOR（JSON）を変えて deploy すれば、拡張機能を出し直さずに差し替えられる
       let sponsor: unknown = null;
