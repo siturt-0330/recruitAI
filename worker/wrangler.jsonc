@@ -9,7 +9,7 @@
     { "pattern": "rakuraku-entry.com", "custom_domain": true }
   ],
   // 公式サイト（site/）。ファイルがある URL はそのまま返し、ないものは下の API の処理に回す
-  "assets": { "directory": "../site", "html_handling": "drop-trailing-slash" },
+  "assets": { "directory": "../site", "html_handling": "drop-trailing-slash", "run_worker_first": ["/google*.html"] },
   "workers_dev": false,
   "observability": {
     "enabled": true,
@@ -23,7 +23,7 @@
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Quota"] }],
   "vars": {
     // 拡張機能を公開して ID が決まったら "chrome-extension://<ID>" を入れる（空なら全部許可）
-    "ALLOWED_ORIGINS": "",
+    "ALLOWED_ORIGINS": "chrome-extension://kdppelkdplekjbiehpodfmmfcpbbfeho",
     // 1日あたりの上限（日本時間0時にリセット）。全体の上限 × 1回の料金 が1日の最大の API 使用料になる
     "LIMIT_PER_INSTALL": "30",
     "LIMIT_PER_IP": "60",
