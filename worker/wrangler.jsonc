@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "recruitai-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-16",
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.05 }
+  },
+  // 1日の利用回数を数える Durable Object（SQLite）
+  "durable_objects": {
+    "bindings": [{ "name": "QUOTA", "class_name": "Quota" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Quota"] }],
+  "vars": {
+    // 拡張機能を公開して ID が決まったら "chrome-extension://<ID>" を入れる（空なら全部許可）
+    "ALLOWED_ORIGINS": "",
+    // 1日あたりの上限（日本時間0時にリセット）。全体の上限 × 1回の料金 が1日の最大の API 使用料になる
+    "LIMIT_PER_INSTALL": "30",
+    "LIMIT_PER_IP": "60",
+    "LIMIT_GLOBAL": "3000",
+    // "1" にすると OpenAI を呼ばずに決まった答えを返す（ローカルの動作確認用）
+    "MOCK_AI": "0",
+    // ポップアップのスポンサー枠。空なら出さない。例：{"title":"〇〇","body":"一言","url":"https://...","cta":"見てみる"}
+    "SPONSOR": ""
+  }
+  // シークレット（リポジトリには書かない）:
+  //   npx wrangler secret put OPENAI_API_KEY
+  //   npx wrangler secret put ADMIN_TOKEN
+}

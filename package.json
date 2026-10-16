@@ -1,8 +1,8 @@
 {
-  "name": "wxt-react-starter",
-  "description": "manifest.json description",
+  "name": "recruitai",
+  "description": "就活の応募フォームを自動で入力する Chrome 拡張機能",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -13,7 +13,9 @@
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
     "postinstall": "wxt prepare",
-    "harness": "vite --config test/vite.config.ts"
+    "harness": "vite --config test/vite.config.ts",
+    "build:release": "wxt build",
+    "zip:release": "wxt zip"
   },
   "dependencies": {
     "@fontsource-variable/noto-sans-jp": "^5.3.1",

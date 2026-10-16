@@ -27,3 +27,18 @@ export async function getActiveProfile(): Promise<Profile | undefined> {
 export const sophonDataItem = storage.defineItem<LinkData | null>('local:sophonData', { fallback: null });
 /** Sophon にまだ届けていない「ボードに記録」 */
 export const sophonOutboxItem = storage.defineItem<LinkRecord[]>('local:sophonOutbox', { fallback: [] });
+
+/** インストールごとのランダムな ID。中継 API の回数制限に使う（個人を特定する情報は含まない） */
+export const installIdItem = storage.defineItem<string>('local:installId', { fallback: '' });
+
+export async function getInstallId(): Promise<string> {
+  let id = await installIdItem.getValue();
+  if (!id) {
+    id = crypto.randomUUID();
+    await installIdItem.setValue(id);
+  }
+  return id;
+}
+
+/** スポンサー枠の中身（半日だけ覚えておき、毎回は取りに行かない） */
+export const sponsorCacheItem = storage.defineItem<{ at: number; sponsor: import('./api').Sponsor | null } | null>('local:sponsorCache', { fallback: null });

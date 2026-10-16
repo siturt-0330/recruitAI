@@ -1,0 +1,18 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1280px; height: 800px; overflow: hidden; }
+body { display: grid; grid-template-columns: 440px 1fr; background: #f1f2fd;
+  font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif; color: #0f1419; }
+.copy { padding: 0 48px 0 64px; display: flex; flex-direction: column; justify-content: center; gap: 18px; }
+.copy .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: #2f3380; }
+.copy .orb { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 50%, #34386a 0%, #23264a 28%, #121322 52%, #0a0a0f 72%); }
+.copy .orb::after { content: ''; width: 42%; height: 42%; border-radius: 50%; background: #0a0a0f; box-shadow: 0 0 0 1.5px #b9bde8, 0 0 5px 1.5px rgba(185,189,232,.55); }
+.copy h1 { margin: 0; font-size: 38px; line-height: 1.35; font-weight: 800; letter-spacing: .01em; }
+.copy p { margin: 0; font-size: 18px; line-height: 1.7; color: #536471; }
+.stage { display: flex; align-items: center; justify-content: center; padding: 40px 48px 40px 0; }
+.window { width: 100%; height: 100%; background: #fff; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;
+  box-shadow: 0 24px 60px rgba(47,51,128,.18), 0 2px 8px rgba(15,20,25,.08); }
+.chrome { flex-shrink: 0; height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 16px; background: #f7f9f9; border-bottom: 1px solid #eff3f4; }
+.chrome i { width: 11px; height: 11px; border-radius: 50%; background: #cfd9de; }
+.chrome span { margin-left: 12px; padding: 4px 14px; border-radius: 999px; background: #fff; font-size: 12px; color: #536471; }
+.page { flex: 1; overflow: hidden; position: relative; }

@@ -4,8 +4,9 @@ import { AlertTriangle, ChevronDown, ChevronRight, Settings as SettingsIcon, Shi
 import { ProfileAvatar } from '@/components/ProfileAvatar';
 import { essentialProgress } from '@/lib/essentials';
 import { FIELD_KEYS, isFieldKey } from '@/lib/fieldKeys';
+import { fetchSponsor, type Sponsor } from '@/lib/api';
 import { SOPHON_URL, matchCompany, type LinkCompany } from '@/lib/sophon-link';
-import { activeProfileIdItem, getProfiles, getSettings, settingsItem, sophonDataItem } from '@/lib/store';
+import { activeProfileIdItem, getProfiles, getSettings, settingsItem, sophonDataItem, sponsorCacheItem } from '@/lib/store';
 import { activeTabId, runInTab, type Action, type FrameResult } from '@/lib/tab';
 import type { Engine, Profile, Settings } from '@/lib/types';
 import { DEFAULT_SETTINGS } from '@/lib/types';
@@ -277,6 +278,8 @@ export default function App() {
         </>
       )}
 
+      <SponsorCard />
+
       <details className="advanced">
         <summary>
           <SlidersHorizontal size={15} />
@@ -297,11 +300,6 @@ export default function App() {
               </button>
             ))}
           </div>
-          {settings.engine === 'openai' && !settings.openaiApiKey && (
-            <button className="link" onClick={() => openOptionsAt('ai')}>
-              Sophon を接続する（API キーの設定）
-            </button>
-          )}
           <div className="label">
             確認なしで入力する確信度 <strong>{Math.round(settings.threshold * 100)}%</strong>
           </div>
@@ -330,6 +328,33 @@ function reviewMessage(r: { keyLabel: string; current: string; alternatives: str
   const choice = r.alternatives.length ? `ほかに「${r.alternatives.join('」「')}」の可能性もあります。` : '';
   const how = r.source === 'ai' ? 'フォームの見出しから判断して、' : '';
   return `「${r.keyLabel}」は、${how}「${r.current}」と入れました。${choice}合っていますか？`;
+}
+
+const SPONSOR_TTL = 12 * 3600_000;
+
+/** スポンサー枠（広告）。中身は中継 API から取り、半日はそのまま使う。なければ何も出さない */
+function SponsorCard() {
+  const [sponsor, setSponsor] = useState<Sponsor | null>(null);
+  useEffect(() => {
+    (async () => {
+      const cache = await sponsorCacheItem.getValue();
+      if (cache && Date.now() - cache.at < SPONSOR_TTL) return setSponsor(cache.sponsor);
+      const s = await fetchSponsor();
+      await sponsorCacheItem.setValue({ at: Date.now(), sponsor: s });
+      setSponsor(s);
+    })();
+  }, []);
+  if (!sponsor) return null;
+  return (
+    <a className="sponsor" href={sponsor.url} target="_blank" rel="noopener sponsored">
+      <span className="sponsor-pr">PR</span>
+      <span className="sponsor-body">
+        <b>{sponsor.title}</b>
+        {sponsor.body && <span>{sponsor.body}</span>}
+      </span>
+      <span className="sponsor-cta">{sponsor.cta}</span>
+    </a>
+  );
 }
 
 function Footer({ linked }: { linked?: boolean }) {
