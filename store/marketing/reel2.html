@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>らくらくエントリー 縦型動画 2</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@700;900&family=Noto+Sans+JP:wght@400;500;700;900&family=Inter:wght@600;800&display=swap" rel="stylesheet" />
+<!--
+  リール・TikTok・ショート用の縦型 PR 動画の 2 本目「10社エントリー対決」（540×960 を 2 倍で 1080×1920 に書き出す）。
+  同じ 10 社のフォームに、上は手入力・下はらくらくエントリーで入力して、上下に並べて比べる。
+  画面はすべて時刻 t（秒）から決まる。ふつうに開くとループ再生、?t=秒 でその時点、?capture で書き出し用、?soon で近日公開版。
+  キー入力の回数は、画面の 5 項目を手で打ったときの数（ローマ字入力・変換・Tab を含めて 1 社 90 回）。
+  下の約 200px と右端はアプリのボタンや説明文に隠れるので、大事な文字は置かない。
+-->
+<style>
+  :root {
+    --ink: #14161a; --sub: #5b6470; --mute: #9aa3ad; --line: #ece9f2; --paper: #fbfaf8;
+    --stamp: #e0563f; --hl: #ffe45c;
+    --head: "Zen Kaku Gothic New", "Noto Sans JP", sans-serif;
+    --emoji: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+    --grad: linear-gradient(100deg, #5b4cf0 0%, #c04fd8 50%, #ff7a59 100%);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: #202228; display: flex; align-items: center; justify-content: center; overflow: hidden;
+    font-family: "Noto Sans JP", sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; line-height: 1.5; }
+  body.capture { display: block; background: var(--paper); }
+  #stage { position: relative; flex-shrink: 0; width: 540px; height: 960px; overflow: hidden; background: var(--paper); }
+  .abs { position: absolute; }
+  .scene { position: absolute; inset: 0; }
+  .blob { border-radius: 50%; filter: blur(64px); opacity: .85; }
+  #b1 { width: 380px; height: 380px; background: #d9d1ff; left: -150px; top: -110px; }
+  #b2 { width: 340px; height: 340px; background: #ffd9c7; left: 320px; top: 360px; }
+  #b3 { width: 360px; height: 360px; background: #c9f0de; left: -80px; top: 700px; }
+
+  .brandrow { left: 0; right: 0; top: 72px; display: flex; justify-content: center; }
+  .brandrow > div { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.85); border: 1px solid rgba(20,22,26,.06);
+    border-radius: 999px; padding: 5px 14px 5px 6px; font: 900 14px var(--head); box-shadow: 0 6px 20px rgba(20,22,26,.06); }
+  .brandrow svg { width: 24px; height: 24px; display: block; }
+  .kicker { display: inline-block; background: var(--ink); color: #fff; border-radius: 999px; padding: 5px 14px; font-size: 14px; font-weight: 700; letter-spacing: .02em; }
+  .h { font-family: var(--head); font-weight: 900; font-size: 40px; line-height: 1.3; letter-spacing: -.025em; }
+  .line { display: block; overflow: hidden; padding-bottom: .04em; }
+  .line > span { display: inline-block; }
+  .mk { background: linear-gradient(transparent 62%, var(--hl) 62%) no-repeat 0 0 / 0% 100%; padding: 0 2px; margin: 0 -2px; }
+  .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .grad2 { background: linear-gradient(100deg, #a59bff 0%, #e48cf2 50%, #ffa184 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .h, .kicker, .brandrow, .chip, .vs-card, .veil, .tip, .end-name, .badge { font-feature-settings: "palt"; }
+
+  /* 1. つかみ */
+  .vs-card { left: 40px; width: 460px; height: 92px; border-radius: 24px; display: flex; align-items: center; gap: 16px; padding: 0 26px; font: 900 30px var(--head); }
+  .vs-card.man { top: 412px; background: #ecebf0; }
+  .vs-card.auto { top: 600px; background: var(--grad); color: #fff; box-shadow: 0 16px 36px rgba(91,76,240,.3); }
+  .vs-card .em { font: 38px/1 var(--emoji); }
+  .vs-card svg { width: 46px; height: 46px; display: block; }
+  .vs-card small { margin-left: auto; font: 700 14px var(--head); opacity: .7; }
+  .vs { width: 58px; height: 58px; border-radius: 50%; background: var(--ink); color: #fff; font: 800 19px Inter, sans-serif; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 7px var(--paper); z-index: 3; }
+
+  /* 2. 対決 */
+  .race-head { left: 0; right: 0; top: 72px; display: flex; justify-content: center; }
+  .lane-head { left: 30px; width: 480px; height: 34px; display: flex; align-items: center; gap: 10px; }
+  .chip { display: flex; align-items: center; gap: 7px; height: 32px; padding: 0 14px; border-radius: 999px; font: 900 15px var(--head); white-space: nowrap; }
+  .chip.man { background: #ecebf0; }
+  .chip.auto { background: var(--grad); color: #fff; padding-left: 5px; }
+  .chip .em { font: 17px/1 var(--emoji); }
+  .chip svg { width: 23px; height: 23px; display: block; }
+  .count { margin-left: auto; display: flex; align-items: baseline; gap: 5px; font-size: 13px; font-weight: 700; color: var(--sub); white-space: nowrap; }
+  .count b { font: 800 30px/1 Inter, sans-serif; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .lwin { left: 30px; width: 480px; height: 256px; background: #fff; border-radius: 16px; box-shadow: 0 18px 44px rgba(60,50,140,.14), 0 2px 6px rgba(20,22,26,.05); }
+  .ltop { height: 30px; background: #f1f3f4; border-bottom: 1px solid #e3e5e8; border-radius: 16px 16px 0 0; display: flex; align-items: center; gap: 5px; padding: 0 8px 0 12px; }
+  .ltop > i { width: 8px; height: 8px; border-radius: 50%; background: #ff5f57; flex-shrink: 0; }
+  .ltop > i:nth-child(2) { background: #febc2e; }
+  .ltop > i:nth-child(3) { background: #28c840; }
+  .lurl { flex: 1; margin-left: 6px; height: 20px; border-radius: 10px; background: #fff; font-size: 10.5px; color: #5f6368; line-height: 20px; padding: 0 10px; white-space: nowrap; overflow: hidden; }
+  .tb { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .tb svg { width: 16px; height: 16px; display: block; }
+  .tb.av { background: #c7b8ff; color: #3b2a8a; font-size: 10px; font-weight: 700; }
+  .lbody { position: relative; padding: 6px 18px 0; }
+  .ltitle { display: flex; align-items: center; gap: 8px; height: 32px; font: 900 14.5px var(--head); }
+  .logo { width: 16px; height: 16px; border-radius: 5px; flex-shrink: 0; }
+  .pips { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+  .pips i { width: 8px; height: 8px; border-radius: 50%; background: #e3e1ea; }
+  .man .pips i.on { background: #8b93a1; }
+  .auto .pips i.on { background: #5b4cf0; }
+  .pips i.cur { box-shadow: 0 0 0 2px rgba(91,76,240,.35); }
+  .row { display: flex; align-items: center; gap: 6px; height: 37px; }
+  .row > b { width: 70px; flex-shrink: 0; font-size: 12px; color: #536471; font-weight: 500; white-space: nowrap; }
+  .inp { position: relative; flex-shrink: 0; height: 28px; border: 1px solid #cfd6dc; border-radius: 6px; background: #fff; padding: 0 8px; font-size: 13px;
+    display: flex; align-items: center; white-space: nowrap; }
+  .inp.sel { padding-right: 18px; }
+  .inp.sel::after { content: ""; position: absolute; right: 6px; top: 11px; border: 3.5px solid transparent; border-top: 4.5px solid #8b93a1; }
+  .inp.focus { border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,.18); }
+  .unit { font-size: 11px; color: #536471; }
+  .comp { text-decoration: underline dotted; text-underline-offset: 3px; }
+  .caret { display: inline-block; width: 1.5px; height: 15px; background: var(--ink); margin-left: 1px; }
+  .stamp { position: absolute; right: -8px; top: -9px; width: 19px; height: 19px; border-radius: 50%; border: 1.4px solid var(--stamp); color: var(--stamp); background: #fffaf4;
+    font: 700 10px/1 "Yu Mincho", "Hiragino Mincho ProN", serif; display: flex; align-items: center; justify-content: center; }
+  .badge { position: absolute; right: 18px; top: 92px; padding: 8px 15px; border-radius: 999px; font: 900 15px var(--head); white-space: nowrap; }
+  .auto .badge { background: #e5f6ec; color: #1f8a5b; box-shadow: inset 0 0 0 2px #1f8a5b; }
+  .man .badge { background: #f1f0f5; color: var(--sub); box-shadow: inset 0 0 0 2px #c9ccd4; }
+  .divider { left: 256px; top: 426px; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: #fff; font: 800 10px Inter, sans-serif;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 4px var(--paper); z-index: 4; }
+  .start { left: 0; right: 0; top: 400px; text-align: center; z-index: 8; }
+  .start span { display: inline-block; font: 800 64px/1 Inter, sans-serif; font-style: italic; letter-spacing: -.02em; color: #fff; background: var(--grad); padding: 8px 26px 10px; border-radius: 18px;
+    box-shadow: 0 16px 40px rgba(91,76,240,.35); }
+  .veil { left: 30px; width: 480px; height: 256px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 6; }
+  .veil.man { top: 166px; background: rgba(236,235,240,.93); }
+  .veil.auto { top: 500px; background: linear-gradient(135deg, rgba(236,232,255,.96), rgba(255,236,226,.96)); box-shadow: 0 0 0 3px rgba(91,76,240,.25); }
+  .veil .em { font: 44px/1 var(--emoji); margin-bottom: 6px; }
+  .veil .big { font: 900 34px/1.3 var(--head); }
+  .veil small { font-size: 15px; color: var(--sub); font-weight: 700; margin-top: 6px; }
+  .bigstamp { position: absolute; right: 22px; top: 12px; width: 76px; height: 76px; border-radius: 50%; border: 4px solid var(--stamp); color: var(--stamp); background: #fffaf4;
+    font: 700 40px/1 "Yu Mincho", "Hiragino Mincho ProN", serif; display: flex; align-items: center; justify-content: center; }
+  .confetti { left: 0; top: 0; z-index: 7; }
+  .confetti i { position: absolute; left: 0; top: 0; width: 8px; height: 14px; border-radius: 2px; }
+
+  /* 3. 浮いた時間 */
+  .stat { left: 0; right: 0; top: 128px; text-align: center; }
+  .stat p { margin: 0; font-size: 17px; font-weight: 700; color: var(--sub); }
+  .statnum { display: inline-flex; align-items: baseline; gap: 6px; margin-top: 2px; font: 900 26px var(--head); }
+  .statnum b { font: 800 88px/1.05 Inter, sans-serif; letter-spacing: -.03em; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent;
+    font-variant-numeric: tabular-nums; min-width: 2.1em; display: inline-block; text-align: center; }
+  .head2 { left: 40px; right: 40px; top: 300px; }
+  .tips { left: 40px; width: 460px; top: 428px; display: flex; gap: 12px; }
+  .tip { flex: 1; height: 116px; background: #fff; border: 1px solid var(--line); border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    font: 900 16px var(--head); box-shadow: 0 10px 28px rgba(60,50,140,.08); }
+  .tip .em { font: 38px/1 var(--emoji); }
+  .note { left: 0; right: 0; top: 572px; margin: 0; text-align: center; font-size: 16px; font-weight: 700; color: var(--sub); }
+
+  /* 4. 最後（暗い背景） */
+  .dark { inset: 0; background: var(--ink); }
+  .glow { border-radius: 50%; filter: blur(80px); opacity: .5; }
+  .end { left: 0; right: 0; top: 196px; display: flex; flex-direction: column; align-items: center; text-align: center; color: #fff; }
+  .end-icon svg { width: 124px; height: 124px; display: block; filter: drop-shadow(0 18px 40px rgba(46,230,197,.25)); }
+  .end-icon svg rect:first-child { stroke: rgba(255,255,255,.14); stroke-width: 2; }
+  .end-name { margin-top: 22px; font: 900 40px/1.3 var(--head); }
+  .end-tag { margin-top: 6px; font: 900 20px var(--head); }
+  .end-label { margin-top: 36px; font-size: 15px; font-weight: 700; color: rgba(255,255,255,.75); }
+  .search { margin-top: 10px; width: 430px; height: 62px; border-radius: 999px; background: #fff; color: var(--ink); display: flex; align-items: center; gap: 12px;
+    padding: 0 22px; font-size: 21px; font-weight: 700; text-align: left; }
+  .search svg { width: 24px; height: 24px; flex-shrink: 0; display: block; }
+  .search .caret { height: 24px; width: 2px; }
+  .cta { margin-top: 26px; height: 54px; padding: 0 34px; border-radius: 999px; background: #1a73e8; color: #fff; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+  .cta.soon { background: #fff; color: var(--ink); }
+  .cta .dot { width: 9px; height: 9px; border-radius: 50%; background: #3ddc97; box-shadow: 0 0 0 4px rgba(61,220,151,.25); }
+  .end-url { margin-top: 18px; font: 600 14px Inter, sans-serif; color: rgba(255,255,255,.5); letter-spacing: .02em; }
+
+  #cursor { left: 0; top: 0; width: 26px; height: 26px; z-index: 20; }
+  #cursor svg { width: 26px; height: 26px; display: block; }
+  #ripple { left: 0; top: 0; width: 40px; height: 40px; border-radius: 50%; border: 3px solid rgba(91,76,240,.6); z-index: 19; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="abs blob" id="b1"></div>
+  <div class="abs blob" id="b2"></div>
+  <div class="abs blob" id="b3"></div>
+
+  <!-- 1. つかみ（0〜3秒） -->
+  <section class="scene" id="s1" data-from="-1" data-to="3.0">
+    <div class="abs brandrow"><div><span class="ico"></span>らくらくエントリー</div></div>
+    <div class="abs h" style="left:40px;top:134px;font-size:46px;line-height:1.34">
+      <span class="line" data-line="0.05"><span>同じ10社に</span></span>
+      <span class="line" data-line="0.17"><span>エントリーしたら、</span></span>
+      <span class="line" data-line="0.29"><span><span class="mk" data-mk="0.75">どれだけ違う？</span></span></span>
+    </div>
+    <div class="abs vs-card man" data-from-left="1.0"><span class="em">⌨️</span>手入力<small>ぜんぶ手で打つ</small></div>
+    <div class="abs vs" style="left:241px;top:517px" data-pop="1.45">VS</div>
+    <div class="abs vs-card auto" data-from-right="1.2"><span class="ico"></span>らくらくエントリー</div>
+  </section>
+
+  <!-- 2. 対決（2.9〜18.9秒） -->
+  <section class="scene" id="race" data-from="2.9" data-to="18.9">
+    <div class="abs race-head"><span class="kicker">同じ10社にエントリー</span></div>
+    <div class="abs lane-head" style="top:124px"><span class="chip man"><span class="em">⌨️</span>手入力</span>
+      <span class="count">キー入力<b id="keys">0</b>回</span></div>
+    <div class="abs lane-head" style="top:458px"><span class="chip auto"><span class="ico"></span>らくらくエントリー</span>
+      <span class="count">入力完了<b id="done">0</b>/10社</span></div>
+    <div class="abs divider">VS</div>
+    <div class="abs veil man" id="veil1"><span class="em">😩</span><span class="big">まだ 2社目…</span><small id="veil1keys">キー入力 0回</small></div>
+    <div class="abs veil auto" id="veil2"><span class="bigstamp" id="bigstamp">済</span><span class="big"><span class="grad">10社</span> 入力完了！</span><small>どのフォームも、ワンクリック。</small></div>
+    <div class="abs confetti" id="confetti"></div>
+    <div class="abs start" id="start"><span>START!</span></div>
+  </section>
+
+  <!-- 3. 浮いた時間（18.9〜22.1秒） -->
+  <section class="scene" id="s3" data-from="18.9" data-to="22.1">
+    <div class="abs brandrow"><div><span class="ico"></span>らくらくエントリー</div></div>
+    <div class="abs stat">
+      <p data-in="19.0">10社ぶんを手で打つと</p>
+      <div class="statnum" data-in="19.1">キー入力 約<b id="statnum">0</b>回</div>
+    </div>
+    <div class="abs head2 h">
+      <span class="line" data-line="19.75"><span>浮いた時間は、</span></span>
+      <span class="line" data-line="19.87"><span><span class="mk" data-mk="20.25">ESと面接対策に。</span></span></span>
+    </div>
+    <div class="abs tips">
+      <div class="tip" data-pop="20.35"><span class="em">📝</span>ES を書く</div>
+      <div class="tip" data-pop="20.5"><span class="em">🎤</span>面接の練習</div>
+      <div class="tip" data-pop="20.65"><span class="em">🏢</span>企業研究</div>
+    </div>
+    <p class="abs note" data-in="20.85">入力は、らくらくエントリーにまかせよう。</p>
+  </section>
+
+  <!-- 4. 最後（22.1秒〜） -->
+  <section class="scene" id="s4" data-from="22.1" data-to="99">
+    <div class="abs dark"></div>
+    <div class="abs glow" style="width:360px;height:360px;background:#5b4cf0;left:-110px;top:90px"></div>
+    <div class="abs glow" style="width:340px;height:340px;background:#ff7a59;left:300px;top:470px"></div>
+    <div class="abs end">
+      <div class="end-icon ico" data-pop="22.3"></div>
+      <div class="end-name" data-in="22.5">らくらくエントリー</div>
+      <div class="end-tag" data-in="22.65"><span class="grad2">10社でも、ワンクリック。</span></div>
+      <div class="end-label" data-in="22.9" id="endLabel">Chrome ウェブストアで検索</div>
+      <div class="search" data-in="23.0"><svg viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span id="q"></span><i class="caret" id="qcaret"></i></div>
+      <div class="cta" data-pop="24.0" id="cta">Chrome に追加</div>
+      <div class="end-url" data-in="24.2">rakuraku-entry.com</div>
+    </div>
+  </section>
+
+  <div class="abs" id="ripple"></div>
+  <div class="abs" id="cursor"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var W = 540;
+  var H = 960;
+  var D = 26.5;
+  var params = new URLSearchParams(location.search);
+  var CAPTURE = params.has('capture');
+  var SOON = params.has('soon');
+
+  var ICON = '<svg viewBox="0 0 128 128" aria-hidden="true"><rect x="4" y="4" width="120" height="120" rx="28" fill="#0F1419"/><rect x="22" y="28" width="84" height="16" rx="8" fill="#2EE6C5"/><rect x="22" y="54" width="84" height="16" rx="8" fill="#2EE6C5"/><rect x="22" y="80" width="46" height="16" rx="8" fill="#2EE6C5" fill-opacity=".35"/><path transform="translate(74 70)" d="M0 0 v34 l8.5 -8 l6.5 14 l6.5 -3 l-6.5 -13.5 h12 z" fill="#fff" stroke="#0F1419" stroke-width="4" stroke-linejoin="round"/></svg>';
+  var CURSOR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2 L3 20 L8 15.5 L11.5 22.5 L14.5 21 L11 14.2 L18 14.2 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function clamp(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  /** a〜b 秒の間の進み具合（0〜1） */
+  function prog(t, a, b) { return clamp((t - a) / (b - a)); }
+  function easeOut(x) { return 1 - Math.pow(1 - clamp(x), 3); }
+  function easeInOut(x) { x = clamp(x); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+  /** 少し行き過ぎてから戻る */
+  function back(x) { x = clamp(x); var c1 = 1.70158; return 1 + (c1 + 1) * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); }
+  /** a 秒から d 秒かけて現れ、b 秒から d 秒かけて消える */
+  function vis(t, a, b, d) { d = d || 0.25; return Math.min(prog(t, a, a + d), 1 - prog(t, b, b + d)); }
+  function typed(text, t, a, b) { var c = Array.from(text); return c.slice(0, Math.round(c.length * prog(t, a, b))).join(''); }
+  function show(e, o, transform) {
+    e.style.opacity = String(o);
+    e.style.visibility = o <= 0.001 ? 'hidden' : 'visible';
+    if (transform != null) e.style.transform = transform;
+  }
+
+  var stage = $('#stage');
+  var race = $('#race');
+  if (CAPTURE) document.body.classList.add('capture');
+  $$('.ico').forEach(function (e) { e.innerHTML = ICON; });
+  $('#cursor').innerHTML = CURSOR;
+  if (SOON) {
+    $('#endLabel').textContent = 'まもなく Chrome ウェブストアで公開';
+    $('#cta').className = 'cta soon';
+    $('#cta').innerHTML = '<span class="dot"></span>近日公開';
+  }
+
+  /** ステージの中での中心座標（変形は無視したレイアウト上の位置） */
+  function center(el) {
+    var x = el.offsetWidth / 2;
+    var y = el.offsetHeight / 2;
+    for (var e = el; e && e !== stage; e = e.offsetParent) {
+      x += e.offsetLeft;
+      y += e.offsetTop;
+    }
+    return [x, y];
+  }
+
+  // 10 社（社名, 種類, ロゴの色）
+  var COMPANIES = [
+    ['A社', 'エントリー', '#1a73e8'], ['B社', '本選考エントリー', '#e0563f'], ['C社', 'インターン応募', '#1f8a5b'], ['D社', 'マイページ登録', '#7a4cf0'], ['E社', 'エントリーシート', '#e8a200'],
+    ['F社', '説明会予約', '#14161a'], ['G社', 'エントリー', '#0f9fb5'], ['H社', '本選考エントリー', '#d6457a'], ['I社', 'インターン応募', '#5f7d2a'], ['J社', 'エントリー', '#3d5afe'],
+  ];
+  var VALUES = ['山田', '花子', 'ヤマダ', 'ハナコ', '2004', '5', '12', '東京都渋谷区神南1-2-3', '090-1234-5678'];
+  // 手で打つときの様子（キーの数, 画面の移り変わり）。「|」より後ろは変換前の文字
+  var PHONE = [];
+  Array.from('090-1234-5678').forEach(function (c, i, a) { PHONE.push(a.slice(0, i + 1).join('') + '|'); });
+  var TYPE = [
+    { keys: 9, st: ['|や', '|やま', '|やまだ', '山田|'] },
+    { keys: 9, st: ['|は', '|はな', '|はなこ', '花子|'] },
+    { keys: 9, st: ['|や', '|やま', '|やまだ', 'ヤマダ|'] },
+    { keys: 9, st: ['|は', '|はな', '|はなこ', 'ハナコ|'] },
+    { keys: 3, st: ['|', '2004|'] },
+    { keys: 3, st: ['|', '5|'] },
+    { keys: 3, st: ['|', '12|'] },
+    { keys: 31, st: ['|と', '|とうきょう', '|とうきょうと', '東京都|', '東京都|しぶや', '東京都|しぶやく', '東京都渋谷区|', '東京都渋谷区|じんなん', '東京都渋谷区神南|', '東京都渋谷区神南1-2|', '東京都渋谷区神南1-2-3|'] },
+    { keys: 14, st: PHONE },
+  ];
+  var RATE = 12; // 1 秒に打つキーの数
+  var PER_FORM = TYPE.reduce(function (s, f) { return s + f.keys; }, 0); // 90
+
+  /** フォームを打ち始めてから tl 秒後の様子 */
+  function manual(tl) {
+    var at = 0;
+    var keys = 0;
+    var fields = TYPE.map(function (f) {
+      var dur = f.keys / RATE;
+      var p = (tl - at) / dur;
+      at += dur;
+      if (p >= 1) { keys += f.keys; return { s: f.st[f.st.length - 1], active: false }; }
+      if (p >= 0) { keys += Math.floor(f.keys * p); return { s: f.st[Math.min(f.st.length - 1, Math.floor(p * f.st.length))], active: true }; }
+      return { s: null, active: false };
+    });
+    return { fields: fields, keys: keys };
+  }
+
+  var ROWS =
+    '<div class="row"><b>氏名</b><span class="inp" style="width:120px"></span><span class="inp" style="width:120px"></span></div>' +
+    '<div class="row"><b>フリガナ</b><span class="inp" style="width:120px"></span><span class="inp" style="width:120px"></span></div>' +
+    '<div class="row"><b>生年月日</b><span class="inp sel" style="width:72px"></span><span class="unit">年</span><span class="inp sel" style="width:52px"></span><span class="unit">月</span><span class="inp sel" style="width:52px"></span><span class="unit">日</span></div>' +
+    '<div class="row"><b>住所</b><span class="inp" style="width:262px"></span></div>' +
+    '<div class="row"><b>電話番号</b><span class="inp" style="width:150px"></span></div>';
+
+  function buildWin(top, auto) {
+    var w = document.createElement('div');
+    w.className = 'abs lwin ' + (auto ? 'auto' : 'man');
+    w.style.top = top + 'px';
+    w.innerHTML =
+      '<div class="ltop"><i></i><i></i><i></i><span class="lurl"></span>' + (auto ? '<span class="tb ext">' + ICON + '</span>' : '') + '<span class="tb av">山</span></div>' +
+      '<div class="lbody"><div class="ltitle"><span class="logo"></span><span class="tt"></span><span class="pips">' + new Array(11).join('<i></i>') + '</span></div>' + ROWS +
+      '<span class="badge"></span></div>';
+    race.insertBefore(w, $('#veil1'));
+    var inputs = $$('.inp', w).map(function (el) {
+      var tx = document.createElement('span');
+      var st = document.createElement('span');
+      st.className = 'stamp';
+      st.textContent = '済';
+      el.appendChild(tx);
+      el.appendChild(st);
+      return { el: el, tx: tx, st: st };
+    });
+    return { win: w, url: $('.lurl', w), logo: $('.logo', w), tt: $('.tt', w), pips: $$('.pips i', w), inputs: inputs, badge: $('.badge', w), ext: $('.ext', w), k: -1 };
+  }
+  function setCompany(r, k) {
+    if (r.k === k) return;
+    r.k = k;
+    var c = COMPANIES[k];
+    r.url.textContent = 'recruit.' + c[0].charAt(0).toLowerCase() + '-sha.co.jp/entry';
+    r.logo.style.background = c[2];
+    r.tt.textContent = c[0] + ' ' + c[1];
+  }
+  function setPips(r, done, cur) {
+    r.pips.forEach(function (p, i) {
+      p.classList.toggle('on', i < done);
+      p.classList.toggle('cur', i === cur && i >= done);
+    });
+  }
+  var win1 = buildWin(166, false);
+  var win2 = buildWin(500, true);
+  win1.badge.textContent = 'やっと1社…😮‍💨';
+  win2.badge.textContent = '✓ 入力完了';
+
+  // 手入力の時間割
+  var M1 = 3.35;     // A社を打ち始める
+  var M1_END = M1 + PER_FORM / RATE; // 10.85
+  var SLIDE1 = 11.4; // 次の会社へ
+  var M2 = 11.7;     // B社を打ち始める
+  var FREEZE = 15.6; // ここで止めて結果を出す
+  // らくらくエントリーの時間割（1 社 1.15 秒）
+  var A0 = 3.35;
+  var P = 1.15;
+  var CLICK_AT = 0.18;
+  var DONE_AT = 0.72;
+  var ALL_DONE = 14.6;
+
+  // 紙吹雪（決まった乱数で、毎回同じ動きにする）
+  var seed = 7;
+  function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+  var COLORS = ['#5b4cf0', '#c04fd8', '#ff7a59', '#ffe45c', '#2ee6c5', '#e0563f'];
+  var confetti = [];
+  for (var i = 0; i < 26; i++) {
+    var e = document.createElement('i');
+    e.style.background = COLORS[i % COLORS.length];
+    $('#confetti').appendChild(e);
+    var ang = -Math.PI / 2 + (rnd() - 0.5) * 2.4;
+    var sp = 260 + rnd() * 260;
+    confetti.push({ el: e, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, rot: rnd() * 360, vr: (rnd() - 0.5) * 900, x0: 200 + rnd() * 140 });
+  }
+
+  // 時刻を data 属性で書いた、決まった動き
+  var INS = $$('[data-in]').map(function (e) { return [e, Number(e.dataset.in)]; });
+  var LINES = $$('[data-line]').map(function (e) { return [e.firstElementChild, Number(e.dataset.line)]; });
+  var POPS = $$('[data-pop]').map(function (e) { return [e, Number(e.dataset.pop), Number(e.dataset.rot || 0)]; });
+  var MKS = $$('[data-mk]').map(function (e) { return [e, Number(e.dataset.mk)]; });
+  var SLIDES = $$('[data-from-left],[data-from-right]').map(function (e) {
+    var left = e.hasAttribute('data-from-left');
+    return [e, Number(left ? e.dataset.fromLeft : e.dataset.fromRight), left ? -1 : 1];
+  });
+  var scenes = $$('.scene');
+
+  var el = {
+    b1: $('#b1'), b2: $('#b2'), b3: $('#b3'), keys: $('#keys'), done: $('#done'),
+    veil1: $('#veil1'), veil1keys: $('#veil1keys'), veil2: $('#veil2'), bigstamp: $('#bigstamp'), start: $('#start'),
+    statnum: $('#statnum'), q: $('#q'), qcaret: $('#qcaret'), cta: $('#cta'), cursor: $('#cursor'), ripple: $('#ripple'),
+  };
+
+  var CLICKS = [];
+  for (var k = 0; k < 10; k++) CLICKS.push(A0 + k * P + CLICK_AT);
+  if (!SOON) CLICKS.push(24.75);
+
+  function cursorAt(t) {
+    var ic = center(win2.ext);
+    var rest = [ic[0] + 3, ic[1] + 5];
+    if (t < 20) return rest;
+    var c = center(el.cta);
+    var a = [430, 880];
+    var b = [c[0] + 64, c[1] + 14];
+    var k = easeInOut(prog(t, 24.15, 24.65));
+    return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+  }
+
+  function render(t) {
+    t = Math.max(0, Math.min(D, t));
+
+    el.b1.style.transform = 'translate(' + Math.sin(t * 0.5) * 26 + 'px,' + Math.cos(t * 0.4) * 18 + 'px)';
+    el.b2.style.transform = 'translate(' + Math.cos(t * 0.45) * 22 + 'px,' + Math.sin(t * 0.35) * 26 + 'px)';
+    el.b3.style.transform = 'translate(' + Math.sin(t * 0.3 + 1) * 28 + 'px,' + Math.cos(t * 0.5) * 16 + 'px)';
+
+    // 場面の切り替え
+    scenes.forEach(function (s) {
+      var a = Number(s.dataset.from);
+      var b = Number(s.dataset.to);
+      var pi = easeOut(prog(t, a, a + 0.3));
+      var po = easeInOut(prog(t, b, b + 0.3));
+      show(s, Math.min(pi, 1 - po), 'translateY(' + ((1 - pi) * 24 - po * 24) + 'px)');
+    });
+    INS.forEach(function (x) {
+      var p = easeOut(prog(t, x[1], x[1] + 0.45));
+      show(x[0], p, 'translateY(' + (1 - p) * 18 + 'px)');
+    });
+    LINES.forEach(function (x) {
+      x[0].style.transform = 'translateY(' + (1 - easeOut(prog(t, x[1], x[1] + 0.5))) * 110 + '%)';
+    });
+    POPS.forEach(function (x) {
+      var p = prog(t, x[1], x[1] + 0.45);
+      show(x[0], clamp(p * 2.5), 'rotate(' + x[2] + 'deg) scale(' + (0.35 + 0.65 * back(p)) + ')');
+    });
+    MKS.forEach(function (x) {
+      x[0].style.backgroundSize = easeInOut(prog(t, x[1], x[1] + 0.4)) * 100 + '% 100%';
+    });
+    SLIDES.forEach(function (x) {
+      var p = easeOut(prog(t, x[1], x[1] + 0.5));
+      show(x[0], clamp(p * 1.5), 'translateX(' + x[2] * (1 - p) * 380 + 'px)');
+    });
+
+    // 2. 上：手入力
+    var tm = Math.min(t, FREEZE);
+    var second = tm >= SLIDE1 + 0.15;
+    setCompany(win1, second ? 1 : 0);
+    var st = second ? manual(tm - M2) : tm >= M1 ? manual(tm - M1) : null;
+    var keys = (second ? PER_FORM : 0) + (st ? st.keys : 0);
+    win1.inputs.forEach(function (f, i) {
+      var s = st ? st.fields[i] : { s: null, active: false };
+      var html = '';
+      if (s.s != null) {
+        var cut = s.s.indexOf('|');
+        html = s.s.slice(0, cut) + (cut < s.s.length - 1 ? '<span class="comp">' + s.s.slice(cut + 1) + '</span>' : '');
+      }
+      if (s.active && t < FREEZE) html += '<i class="caret"></i>';
+      f.tx.innerHTML = html;
+      f.el.classList.toggle('focus', s.active && t < FREEZE);
+      show(f.st, 0);
+    });
+    el.keys.textContent = String(keys);
+    setPips(win1, second ? 1 : tm >= M1_END ? 1 : 0, second ? 1 : 0);
+    var b1 = prog(t, M1_END + 0.05, M1_END + 0.4);
+    show(win1.badge, second ? 0 : clamp(b1 * 2.5), 'scale(' + (0.35 + 0.65 * back(b1)) + ')');
+    var sx = 0;
+    if (tm >= SLIDE1 && !second) sx = -easeInOut(prog(tm, SLIDE1, SLIDE1 + 0.15)) * 560;
+    if (second) sx = (1 - easeOut(prog(tm, SLIDE1 + 0.15, SLIDE1 + 0.3))) * 560;
+    win1.win.style.transform = 'translateX(' + sx + 'px)';
+
+    // 2. 下：らくらくエントリー（1 社ずつ、クリック → 一気に入力 → 次の会社）
+    var k = 0;
+    var p = -1;
+    if (t >= A0) {
+      k = Math.min(9, Math.floor((t - A0) / P));
+      p = t - A0 - k * P;
+    }
+    setCompany(win2, k);
+    win2.inputs.forEach(function (f, i) {
+      var at = 0.28 + i * 0.04;
+      var on = p >= at;
+      f.tx.textContent = on ? VALUES[i] : '';
+      f.el.style.boxShadow = on ? '0 0 0 2px rgba(224,86,63,.22)' : 'none';
+      var s = on ? prog(p, at + 0.03, at + 0.25) : 0;
+      show(f.st, s, 'rotate(-12deg) scale(' + (1.8 - 0.8 * easeOut(s)) + ')');
+    });
+    var finished = p >= DONE_AT;
+    var done = t < A0 ? 0 : k + (finished ? 1 : 0);
+    el.done.textContent = String(done);
+    setPips(win2, done, k);
+    var bp = finished ? prog(p, DONE_AT, DONE_AT + 0.3) : 0;
+    show(win2.badge, clamp(bp * 2.5), 'scale(' + (0.35 + 0.65 * back(bp)) + ')');
+    var x2 = 0;
+    if (k > 0 && p < 0.15) x2 = (1 - easeOut(p / 0.15)) * 560;
+    if (k < 9 && p > 0.97) x2 = -easeInOut((p - 0.97) / 0.18) * 560;
+    win2.win.style.transform = 'translateX(' + x2 + 'px)';
+    win2.ext.style.background = p >= CLICK_AT && p < CLICK_AT + 0.25 ? 'rgba(91,76,240,.18)' : 'transparent';
+
+    // 合図と結果
+    var sp = prog(t, 3.1, 3.45);
+    show(el.start, Math.min(clamp(sp * 2.5), 1 - prog(t, 3.75, 3.95)), 'scale(' + (0.4 + 0.6 * back(sp)) + ') rotate(-4deg)');
+    var v2 = easeOut(prog(t, ALL_DONE, ALL_DONE + 0.35));
+    show(el.veil2, v2, 'scale(' + (0.96 + 0.04 * v2) + ')');
+    var bs = prog(t, ALL_DONE + 0.2, ALL_DONE + 0.45);
+    show(el.bigstamp, clamp(bs * 3), 'rotate(-12deg) scale(' + (1.9 - 0.9 * easeOut(bs)) + ')');
+    var v1 = easeOut(prog(t, FREEZE, FREEZE + 0.35));
+    show(el.veil1, v1, 'scale(' + (0.96 + 0.04 * v1) + ')');
+    el.veil1keys.textContent = 'ここまでキー入力 ' + keys + '回';
+    var ct = t - (ALL_DONE + 0.15);
+    confetti.forEach(function (c) {
+      if (ct < 0 || ct > 2) { show(c.el, 0); return; }
+      var x = c.x0 + c.vx * ct * 0.6;
+      var y = 600 + c.vy * ct + 420 * ct * ct;
+      show(c.el, 1 - prog(ct, 1.4, 2), 'translate(' + x + 'px,' + y + 'px) rotate(' + (c.rot + c.vr * ct) + 'deg)');
+    });
+
+    // 3. キー入力の回数を数え上げる
+    el.statnum.textContent = String(Math.round(PER_FORM * 10 * easeOut(prog(t, 19.25, 20.0))));
+
+    // 4. 検索欄に打ち込む → 「Chrome に追加」
+    el.q.textContent = typed('らくらくエントリー', t, 23.2, 23.9);
+    el.qcaret.style.visibility = t >= 23.0 && (t < 23.9 || Math.floor(t * 2.2) % 2 === 0) ? 'visible' : 'hidden';
+    if (!SOON && t >= 24.75) {
+      var w = ((t - 24.9) % 1.4 + 1.4) % 1.4 / 1.4;
+      el.cta.style.boxShadow = '0 0 0 ' + 14 * w + 'px rgba(26,115,232,' + 0.35 * (1 - w) + ')';
+    } else {
+      el.cta.style.boxShadow = 'none';
+    }
+    if (!SOON && t >= 24.75 && t < 24.87) el.cta.style.transform = 'scale(.96)';
+
+    // カーソルとクリックの波紋
+    var c = cursorAt(t);
+    var pressed = CLICKS.some(function (k) { return t >= k && t < k + 0.12; });
+    var cv = Math.max(vis(t, 3.2, ALL_DONE - 0.2, 0.2), SOON ? 0 : vis(t, 24.1, 99, 0.2));
+    show(el.cursor, cv, 'translate(' + (c[0] - 4) + 'px,' + (c[1] - 3) + 'px) scale(' + (pressed ? 0.85 : 1) + ')');
+    var last = -1;
+    CLICKS.forEach(function (k) { if (t >= k && t < k + 0.4) last = k; });
+    if (last >= 0) {
+      var rp = prog(t, last, last + 0.4);
+      show(el.ripple, 1 - rp, 'translate(' + (c[0] - 20) + 'px,' + (c[1] - 20) + 'px) scale(' + (0.4 + rp) + ')');
+    } else {
+      show(el.ripple, 0);
+    }
+  }
+
+  window.__capture = { width: W, height: H, scale: 2, duration: D };
+  window.__render = render;
+
+  if (CAPTURE) {
+    render(Number(params.get('t') || 0));
+    return;
+  }
+  // プレビュー：画面に収まるように縮めて、ループ再生する
+  function fit() {
+    stage.style.transform = 'scale(' + Math.min(innerWidth / W, innerHeight / H) + ')';
+  }
+  fit();
+  addEventListener('resize', fit);
+  if (params.has('t')) {
+    render(Number(params.get('t')));
+    return;
+  }
+  var start = null;
+  function loop(ts) {
+    if (start === null) start = ts;
+    render(Math.min(((ts - start) / 1000) % (D + 1), D));
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
