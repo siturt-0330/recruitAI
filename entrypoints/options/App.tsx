@@ -24,6 +24,7 @@ export default function App() {
   const [saveState, setSaveState] = useState<'saved' | 'saving'>('saved');
   const [toast, setToast] = useState('');
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const menuRef = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {
     (async () => {
@@ -49,6 +50,23 @@ export default function App() {
     return () => {
       unwatch();
       removeEventListener('hashchange', onHash);
+    };
+  }, []);
+
+  // 操作メニューは、外側を押したとき・Esc を押したときにも閉じる
+  useEffect(() => {
+    const close = () => menuRef.current?.removeAttribute('open');
+    const onDown = (e: PointerEvent) => {
+      if (menuRef.current?.open && !menuRef.current.contains(e.target as Node)) close();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+    };
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
     };
   }, []);
 
@@ -139,11 +157,11 @@ export default function App() {
               ))}
             </select>
           </div>
-          <details className="menu">
+          <details className="menu" ref={menuRef}>
             <summary aria-label="プロフィールの操作">
               <MoreHorizontal size={18} />
             </summary>
-            <div className="menu-pop">
+            <div className="menu-pop" onClick={() => menuRef.current?.removeAttribute('open')}>
               <button onClick={() => addProfile()}>
                 <Plus size={15} />
                 新しいプロフィール

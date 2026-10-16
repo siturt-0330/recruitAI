@@ -845,4 +845,24 @@ export const CASES: Case[] = [
     html: `<form><label>性別 <select name="c44">${opts(['男性', '女性'])}</select></label></form>`,
     expect: { '[name=c44]': '' },
   },
+  {
+    name: '飾りで覆ったプルダウン・ラジオ（-▼- の先頭、◆付きの見出し、リセットボタン）',
+    html: `<style>.u-sel{position:relative;display:inline-block;width:120px;height:40px}.u-sel select{position:absolute;inset:0;opacity:0;width:100%;height:100%}.u-rad{display:inline-block;width:20px;height:20px}.u-rad input{opacity:0;margin:0;width:20px;height:20px}</style>
+    <form><table>
+      <tr><th colspan="2">お名前</th></tr>
+      <tr><th>◆漢字氏名<br><small>（全角入力のみ）</small></th><td>姓：<input name="u1a"> 名：<input name="u1b"></td></tr>
+      <tr><th colspan="2">生年月日・性別</th></tr>
+      <tr><th>◆生年月日</th><td>
+        <div class="u-sel"><span>-▼-</span><select name="u2y">${opts(range(1980, 2008).map(String), '-▼-')}</select></div> 年
+        <div class="u-sel"><span>-▼-</span><select name="u2m">${opts(range(1, 12).map(String), '-▼-')}</select></div> 月
+        <div class="u-sel"><span>-▼-</span><select name="u2d">${opts(range(1, 31).map(String), '-▼-')}</select></div> 日
+      </td></tr>
+      <tr><th>◆性別</th><td>
+        <label><div class="u-rad"><input type="radio" name="u3" value="1"></div>男</label>
+        <label><div class="u-rad"><input type="radio" name="u3" value="2"></div>女</label>
+        <input type="button" value="リセット">
+      </td></tr>
+    </table></form>`,
+    expect: { '[name=u1a]': '山田', '[name=u2y]': '1999', '[name=u2m]': '4', '[name=u2d]': '1', 'radio:u3': '男' },
+  },
 ];

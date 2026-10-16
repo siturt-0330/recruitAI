@@ -65,7 +65,7 @@ export default defineContentScript({
           case 'fill': {
             const [profile, settings] = await Promise.all([getActiveProfile(), getSettings()]);
             if (!profile) {
-              if (window === window.top) filler.notice('プロフィールが未登録です。RecruitAI のアイコンから登録してください');
+              if (window === window.top) filler.notice('プロフィールが未登録です。らくらくエントリー のアイコンから登録してください');
               return { detected: 0, filled: 0, warn: 0, reviews: [], error: 'no-profile' };
             }
             await linkSophon();

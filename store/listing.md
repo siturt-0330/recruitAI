@@ -4,7 +4,7 @@
 
 ## 名前
 
-RecruitAI
+らくらくエントリー｜就活エントリー自動入力
 
 ## 概要（132文字以内）
 
@@ -21,7 +21,7 @@ RecruitAI
 ## 説明
 
 就活のエントリーシートや応募フォーム、何度も同じことを入力していませんか？
-RecruitAI は、一度登録したプロフィールを、企業ごとに違う応募フォームへワンクリックで入力する Chrome 拡張機能です。
+らくらくエントリーは、一度登録したプロフィールを、企業ごとに違う応募フォームへワンクリックで入力する Chrome 拡張機能です。
 
 ■ できること
 ・氏名、フリガナ、ローマ字、生年月日、性別
@@ -79,7 +79,7 @@ RecruitAI は、一度登録したプロフィールを、企業ごとに違う�
 
 ## プライバシーポリシーの URL
 
-`<中継 API の URL>/privacy`（例：https://recruitai-api.＜アカウント名＞.workers.dev/privacy）
+https://api.rakuraku-entry.com/privacy
 
 ## スクリーンショット（1280×800）
 
@@ -87,7 +87,7 @@ RecruitAI は、一度登録したプロフィールを、企業ごとに違う�
 
 ## 公開前のチェック
 
-- [ ] `store/privacy.html` の運営者名と連絡先を入れる
-- [ ] 中継 API を deploy し、`wxt.config.ts` の `PROD_API_URL` に URL を入れる
+- [x] `store/privacy.html` の運営者名と連絡先を入れる
+- [x] 中継 API を deploy し、`wxt.config.ts` の `PROD_API_URL` に URL を入れる
 - [ ] `npm run zip:release` で作った zip をアップロード
 - [ ] 公開後に決まった拡張機能の ID を、`worker/wrangler.jsonc` の `ALLOWED_ORIGINS` に入れて deploy し直す

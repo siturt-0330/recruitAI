@@ -3,6 +3,9 @@
   "name": "recruitai-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-16",
+  // 拡張機能が使う URL。公開後に変えると拡張機能が止まるので、変えないこと
+  "routes": [{ "pattern": "api.rakuraku-entry.com", "custom_domain": true }],
+  "workers_dev": false,
   "observability": {
     "enabled": true,
     "logs": { "enabled": true, "head_sampling_rate": 1 },

@@ -27,7 +27,7 @@ export default defineBackground(() => {
     try {
       await runInTab(tabId, 'fill');
     } catch (e) {
-      console.warn('[RecruitAI] このページには入力できません', e);
+      console.warn('[らくらくエントリー] このページには入力できません', e);
     }
   });
 

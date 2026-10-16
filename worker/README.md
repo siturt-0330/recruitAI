@@ -18,8 +18,8 @@ npx wrangler secret put ADMIN_TOKEN
 npx wrangler deploy
 ```
 
-deploy すると `https://recruitai-api.<アカウント名>.workers.dev` のような URL が出るので、
-リポジトリ直下の `wxt.config.ts` の `PROD_API_URL` に入れてから、拡張機能を `npm run zip:release` で作る。
+中継 API の URL は `https://api.rakuraku-entry.com`（`wrangler.jsonc` の `routes`）。公開後に変えると拡張機能が止まるので変えないこと。
+拡張機能は `npm run zip:release` で作る（`wxt.config.ts` の `PROD_API_URL` と同じ URL）。
 
 ## 上限と料金
 

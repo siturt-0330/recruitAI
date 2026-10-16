@@ -3,7 +3,7 @@
  */
 
 /** 拡張機能の名前（manifest の name とあわせる） */
-export const APP_NAME = 'RecruitAI';
+export const APP_NAME = 'らくらくエントリー';
 
 declare const __API_URL__: string;
 
