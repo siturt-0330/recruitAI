@@ -59,29 +59,53 @@ export default defineContentScript({
       return res.answers;
     };
 
+    /**
+     * 別のサイトから埋め込まれたフォーム枠（応募システムの iframe など）の origin。
+     * activeTab で入力できるのは開いているページのサイトだけなので、ポップアップがこの一覧を見て追加の許可をお願いする
+     */
+    const iframeOrigins = () => {
+      const origins = new Set<string>();
+      for (const frame of Array.from(document.querySelectorAll('iframe'))) {
+        const r = frame.getBoundingClientRect();
+        if (r.width < 150 || r.height < 100) continue;
+        try {
+          const url = new URL(frame.src, location.href);
+          if (/^https?:$/.test(url.protocol) && url.origin !== location.origin) origins.add(url.origin);
+        } catch {
+          // src が壊れている枠は無視する
+        }
+      }
+      return [...origins];
+    };
+
+    const handle = async (action: string, payload: unknown): Promise<FrameStatus> => {
+      switch (action) {
+        case 'fill': {
+          const [profile, settings] = await Promise.all([getActiveProfile(), getSettings()]);
+          if (!profile) {
+            if (window === window.top) filler.notice('プロフィールが未登録です。らくらくエントリー のアイコンから登録してください');
+            return { detected: 0, filled: 0, warn: 0, reviews: [], error: 'no-profile' };
+          }
+          await linkSophon();
+          return filler.fill(profile, settings, settings.engine === 'openai' ? classifyRemote : undefined);
+        }
+        case 'undo':
+          return filler.undo();
+        case 'diagnose':
+          return { ...filler.status(), report: filler.diagnose() };
+        case 'resolve': {
+          const { id, value } = payload as { id: string; value: string };
+          return filler.resolve(id, value);
+        }
+        default:
+          return filler.preview();
+      }
+    };
+
     g.__recruitAI = {
       async run(action, payload) {
-        switch (action) {
-          case 'fill': {
-            const [profile, settings] = await Promise.all([getActiveProfile(), getSettings()]);
-            if (!profile) {
-              if (window === window.top) filler.notice('プロフィールが未登録です。らくらくエントリー のアイコンから登録してください');
-              return { detected: 0, filled: 0, warn: 0, reviews: [], error: 'no-profile' };
-            }
-            await linkSophon();
-            return filler.fill(profile, settings, settings.engine === 'openai' ? classifyRemote : undefined);
-          }
-          case 'undo':
-            return filler.undo();
-          case 'diagnose':
-            return { ...filler.status(), report: filler.diagnose() };
-          case 'resolve': {
-            const { id, value } = payload as { id: string; value: string };
-            return filler.resolve(id, value);
-          }
-          default:
-            return filler.preview();
-        }
+        const status = await handle(action, payload);
+        return window === window.top ? { ...status, iframeOrigins: iframeOrigins() } : status;
       },
     };
   },

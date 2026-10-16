@@ -304,7 +304,7 @@ export function scanFields(doc: Document): ScannedField[] {
   collectControls(doc, controls);
 
   const fields: ScannedField[] = [];
-  const radioGroups = new Map<string, ScannedField>();
+  const radioGroups = new Map<string | Element, ScannedField>();
 
   for (const el of controls) {
     if (!isCandidate(el)) continue;
@@ -321,7 +321,8 @@ export function scanFields(doc: Document): ScannedField[] {
 
     if (el instanceof HTMLInputElement && el.type === 'radio') {
       const optionLabel = labelText(el) || siblingText(el, 1, 20) || el.value;
-      const existing = el.name ? radioGroups.get(el.name) : undefined;
+      const group = radioGroupKey(el);
+      const existing = group ? radioGroups.get(group) : undefined;
       if (existing) {
         existing.elements.push(el);
         existing.desc.options.push(optionLabel);
@@ -330,7 +331,7 @@ export function scanFields(doc: Document): ScannedField[] {
       const field = makeField(el, 'radio');
       field.desc.label = '';
       field.desc.options = [optionLabel];
-      if (el.name) radioGroups.set(el.name, field);
+      if (group) radioGroups.set(group, field);
       fields.push(field);
       continue;
     }
@@ -364,6 +365,15 @@ export function scanFields(doc: Document): ScannedField[] {
   const result = fields.filter((f) => !inLoginForm(f));
   assignGroups(result);
   return result;
+}
+
+/**
+ * ラジオボタンのグループ。ふつうは name でまとめるが、Vue の v-model などは name を付けないので、
+ * 同じ行（表の行・fieldset・radiogroup など）に並ぶ name なしのラジオを1つのグループにする
+ */
+function radioGroupKey(el: HTMLInputElement): string | Element | null {
+  if (el.name) return el.name;
+  return el.closest('[role="radiogroup"], fieldset, tr, dd, li') ?? el.closest('label')?.parentElement ?? el.parentElement;
 }
 
 /** ページ上部などにあるログインフォーム（ID とパスワードだけ）には入れない */

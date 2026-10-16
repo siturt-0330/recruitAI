@@ -34,7 +34,7 @@ function actualValue(root: HTMLElement, selector: string, expected: string | boo
   if (selector.startsWith('text:')) return (root.querySelector(selector.slice(5))?.textContent ?? '（要素なし）').replace(/\u200b/g, '').trim();
   const el = resolve(root, selector);
   if (!el) return '（要素なし）';
-  if (el instanceof HTMLInputElement && el.type === 'checkbox') return el.checked;
+  if (el instanceof HTMLInputElement && (el.type === 'checkbox' || el.type === 'radio')) return el.checked;
   if (el instanceof HTMLSelectElement) {
     const opt = el.options[el.selectedIndex];
     // 期待値が value かテキストのどちらかに一致すればよい

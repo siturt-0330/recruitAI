@@ -97,6 +97,16 @@ function skipKiseiWhenSame(fields: ScannedField[], classes: Classification[], pr
 }
 
 /** 入れたプルダウンの選択が、今も残っているか */
+/** 欄が画面に表示されているか（隠れたページ・消えた要素は false）。飾りで本体を隠したラジオなどはラベルで見る */
+function onScreen(field: ScannedField): boolean {
+  return field.elements.some(
+    (el) =>
+      el.isConnected &&
+      (el.getClientRects().length > 0 ||
+        Array.from((el as HTMLInputElement).labels ?? []).some((l) => l.getClientRects().length > 0)),
+  );
+}
+
 /** 入れた値がそのまま残っているか（入力できなかった欄・ユーザーが書き直した欄は false） */
 function keptAsFilled(r: Result): boolean {
   if (r.status !== 'ok' && r.status !== 'warn') return false;
@@ -181,7 +191,9 @@ export class FormFiller {
   }
 
   async fill(profile: Profile, settings: Settings, classifyRemote?: ClassifyRemote): Promise<FrameStatus> {
-    this.undo();
+    // 前回の入力は、いま画面に見えている欄だけ戻して入れ直す。
+    // 手順型のフォームで隠れた前のページの欄まで戻すと、入力済みの値が消えてしまう
+    this.undo(true);
     await this.restoring;
     const fields = scanFields(this.doc);
     const classes = adjustForForm(
@@ -292,7 +304,11 @@ export class FormFiller {
       result.status = 'empty';
       return false;
     }
-    result.value = applied;
+    // サイト側が書式を整えた（ハイフンを消したなど）ときは、整えたあとの値を覚えておく。
+    // そうしないと「ユーザーが書き直した」と誤って判断し、元に戻せなくなる
+    const el = result.field.elements[0];
+    const typed = (el instanceof HTMLInputElement && !/^(radio|checkbox|file)$/.test(el.type)) || el instanceof HTMLTextAreaElement;
+    result.value = typed && el.value ? el.value : applied;
     result.status = result.confidence >= threshold ? 'ok' : 'warn';
     return true;
   }
@@ -398,16 +414,17 @@ export class FormFiller {
     this.overlay.notice(message);
   }
 
-  undo(): FrameStatus {
+  undo(onScreenOnly = false): FrameStatus {
     const byField = new Map(this.results.map((r) => [r.field, r]));
     for (const [field, snap] of this.snapshots) {
       // 入力のあとにユーザーが書き直した欄は、その内容を消さない
       const r = byField.get(field);
       if (r && !keptAsFilled(r)) continue;
+      if (onScreenOnly && !onScreen(field)) continue;
       restoreSnapshot(field, snap);
     }
     // 独自プルダウンは開いて選び直すので時間がかかる。次の入力はこれが終わるのを待つ
-    const combos = this.results.filter((r) => r.field.combo && keptAsFilled(r));
+    const combos = this.results.filter((r) => r.field.combo && keptAsFilled(r) && (!onScreenOnly || onScreen(r.field)));
     const before = new Map(this.comboBefore);
     this.restoring = this.restoring.then(async () => {
       for (const r of combos) await restoreCombo(r.field.elements[0]!, before.get(r.field) ?? '').catch(() => {});
