@@ -1,3 +1,4 @@
+import { applyCombo, comboStill, comboText, restoreCombo } from './combo';
 import { describeForm, scanFields, type ScannedField } from './extract';
 import { FIELD_KEYS, isFieldKey, type FieldKey } from './fieldKeys';
 import { applyValue, hasUserValue, markTarget, restoreSnapshot, takeSnapshot, type Snapshot } from './fill';
@@ -100,6 +101,7 @@ function skipKiseiWhenSame(fields: ScannedField[], classes: Classification[], pr
 function keptAsFilled(r: Result): boolean {
   if (r.status !== 'ok' && r.status !== 'warn') return false;
   const el = r.field.elements[0]!;
+  if (r.field.combo) return comboStill(el, r.value);
   if (r.field.desc.kind === 'radio' || r.field.desc.kind === 'checkbox' || r.field.desc.kind === 'file') return true;
   if (el instanceof HTMLSelectElement) return stillSelected(r);
   return (el as HTMLInputElement | HTMLTextAreaElement).value === r.value;
@@ -151,6 +153,12 @@ function applyConditions(fields: ScannedField[], classes: Classification[], prof
 export class FormFiller {
   private results: Result[] = [];
   private snapshots = new Map<ScannedField, Snapshot>();
+  /** 独自プルダウンは開いて選ぶのに時間がかかるので、ほかの欄を入れたあとで順に入れる */
+  private comboQueue: Result[] = [];
+  /** 独自プルダウンの、入力前に表示されていた値（元に戻す用） */
+  private comboBefore = new Map<ScannedField, string>();
+  /** 元に戻している途中の独自プルダウン */
+  private restoring: Promise<void> = Promise.resolve();
   private overlay: Overlay;
 
   constructor(private doc: Document) {
@@ -174,6 +182,7 @@ export class FormFiller {
 
   async fill(profile: Profile, settings: Settings, classifyRemote?: ClassifyRemote): Promise<FrameStatus> {
     this.undo();
+    await this.restoring;
     const fields = scanFields(this.doc);
     const classes = adjustForForm(
       fields,
@@ -192,6 +201,7 @@ export class FormFiller {
     applyConditions(fields, classes, profile);
 
     this.results = fields.map((field, i) => this.fillField(field, classes[i]!, profile, settings));
+    await this.fillCombos(settings.threshold);
 
     await this.retryDependentSelects(settings.threshold);
     await this.fillNewlyAvailable(profile, settings);
@@ -212,9 +222,34 @@ export class FormFiller {
       result.noData = true;
       return result;
     }
+    if (field.combo) {
+      this.comboBefore.set(field, comboText(field.elements[0]!));
+      result.status = 'empty';
+      this.comboQueue.push(result);
+      return result;
+    }
     this.snapshots.set(field, takeSnapshot(field));
     this.apply(result, settings.threshold);
     return result;
+  }
+
+  /** 待っている独自プルダウンを、ページの上から順に1つずつ開いて選ぶ（年→月→日の連動にも対応できる） */
+  private async fillCombos(threshold: number) {
+    while (this.comboQueue.length) {
+      const r = this.comboQueue.shift()!;
+      const el = r.field.elements[0]!;
+      // 自由入力の欄（入力候補つきの学校名など）は、候補になくても文字のまま入れてよい
+      const freeText = el instanceof HTMLInputElement && !el.readOnly;
+      let applied: string | null = null;
+      try {
+        applied = await applyCombo(el, r.variants, freeText);
+      } catch {
+        applied = null;
+      }
+      if (applied == null) continue;
+      r.value = applied;
+      r.status = r.confidence >= threshold ? 'ok' : 'warn';
+    }
   }
 
   /**
@@ -224,7 +259,7 @@ export class FormFiller {
   private async reapplyOverwritten(threshold: number) {
     await new Promise((resolve) => setTimeout(resolve, OVERWRITE_CHECK_DELAY));
     for (const r of this.results) {
-      if (r.status !== 'ok' && r.status !== 'warn') continue;
+      if ((r.status !== 'ok' && r.status !== 'warn') || r.field.combo) continue;
       const el = r.field.elements[0];
       if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) continue;
       if (el.type === 'radio' || el.type === 'checkbox' || el.type === 'file') continue;
@@ -247,6 +282,7 @@ export class FormFiller {
       skipKiseiWhenSame(fields, classes, profile);
       applyConditions(fields, classes, profile);
       for (const i of freshIndexes) this.results.push(this.fillField(fields[i]!, classes[i]!, profile, settings));
+      await this.fillCombos(settings.threshold);
     }
   }
 
@@ -266,7 +302,7 @@ export class FormFiller {
    * 選択肢が見つからなかったプルダウンは、少し待ってから入れ直す。
    */
   private async retryDependentSelects(threshold: number) {
-    const selects = this.results.filter((r) => r.field.desc.kind === 'select' && r.variants.length && !r.noData);
+    const selects = this.results.filter((r) => r.field.desc.kind === 'select' && !r.field.combo && r.variants.length && !r.noData);
     if (!selects.length) return;
     for (let attempt = 0; attempt < RETRY_DELAYS.length; attempt++) {
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS[attempt]));
@@ -310,10 +346,11 @@ export class FormFiller {
   }
 
   /** 要確認の欄をユーザーが選んだ値で確定する */
-  resolve(id: string, value: string): FrameStatus {
+  async resolve(id: string, value: string): Promise<FrameStatus> {
     const r = this.results.find((r) => r.field.desc.id === id);
     if (r) {
-      const applied = applyValue(r.field, [value]);
+      const el = r.field.elements[0]!;
+      const applied = r.field.combo ? await applyCombo(el, [value], el instanceof HTMLInputElement) : applyValue(r.field, [value]);
       if (applied != null) {
         r.value = applied;
         r.status = 'ok';
@@ -369,10 +406,23 @@ export class FormFiller {
       if (r && !keptAsFilled(r)) continue;
       restoreSnapshot(field, snap);
     }
+    // 独自プルダウンは開いて選び直すので時間がかかる。次の入力はこれが終わるのを待つ
+    const combos = this.results.filter((r) => r.field.combo && keptAsFilled(r));
+    const before = new Map(this.comboBefore);
+    this.restoring = this.restoring.then(async () => {
+      for (const r of combos) await restoreCombo(r.field.elements[0]!, before.get(r.field) ?? '').catch(() => {});
+    });
+    this.comboBefore.clear();
+    this.comboQueue = [];
     this.snapshots.clear();
     this.results = [];
     this.overlay.clear();
     return this.status();
+  }
+
+  /** 独自プルダウンを元に戻し終わるまで待つ */
+  whenRestored(): Promise<void> {
+    return this.restoring;
   }
 
   status(): FrameStatus {
