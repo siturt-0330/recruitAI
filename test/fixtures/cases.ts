@@ -1203,4 +1203,66 @@ export const CASES: Case[] = [
     setup: combos([{ style: 'mui', name: 'c13', label: '都道府県', options: ['北海道', '大阪府'] }]),
     expect: { '[name=c13]': '' },
   },
+
+  // ---- 第6弾：読み取り専用の欄・書式を自動で整える欄・文字数制限 ----
+  {
+    name: 'R2 読み取り専用で値の入ったメールアドレス（登録済み）は変えない',
+    html: `<form><label>メールアドレス <input name="r2" readonly value="old@example.com"></label></form>`,
+    expect: { '[name=r2]': 'old@example.com' },
+  },
+  {
+    name: 'R3 読み取り専用の年齢（自動計算）には入れない',
+    html: `<form><label>年齢 <input name="r3" readonly></label></form>`,
+    expect: { '[name=r3]': '' },
+  },
+  {
+    name: 'R5 電話番号：maxlength=11（ハイフンなし）',
+    html: `<form><label>携帯電話番号 <input name="r5" type="tel" maxlength="11"></label></form>`,
+    expect: { '[name=r5]': '09012345678' },
+  },
+  {
+    name: 'R6 郵便番号：maxlength=7',
+    html: `<form><label>郵便番号 <input name="r6" maxlength="7"></label></form>`,
+    expect: { '[name=r6]': '1500041' },
+  },
+  {
+    name: 'R7 入力マスク（数字だけ残して自動でハイフンを付ける電話番号）',
+    html: `<form><label>電話番号 <input name="r7" type="tel" placeholder="090-0000-0000"></label></form>`,
+    setup(root) {
+      const el = root.querySelector<HTMLInputElement>('[name=r7]')!;
+      el.addEventListener('input', () => {
+        const d = el.value.replace(/\D/g, '').slice(0, 11);
+        el.value = d.length > 7 ? `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}` : d.length > 3 ? `${d.slice(0, 3)}-${d.slice(3)}` : d;
+      });
+    },
+    expect: { '[name=r7]': '090-1234-5678' },
+  },
+  {
+    name: 'R8 入力マスク（数字以外を消す・ハイフンなしの郵便番号）',
+    html: `<form><label>郵便番号 <input name="r8" inputmode="numeric"></label></form>`,
+    setup(root) {
+      const el = root.querySelector<HTMLInputElement>('[name=r8]')!;
+      el.addEventListener('input', () => (el.value = el.value.replace(/\D/g, '')));
+    },
+    expect: { '[name=r8]': '1500041' },
+  },
+  {
+    name: 'R9 貼り付け禁止のメールアドレス確認欄',
+    html: `<form><label>メールアドレス <input name="r9a" type="email"></label><label>メールアドレス（確認） <input name="r9b" type="email" onpaste="return false"></label></form>`,
+    expect: { '[name=r9a]': 'taro@example.com', '[name=r9b]': 'taro@example.com' },
+  },
+  {
+    name: 'R10 全角カナ指定・maxlength のあるフリガナ',
+    html: `<form><label>フリガナ（全角カナ）<input name="r10" maxlength="10"></label></form>`,
+    expect: { '[name=r10]': 'ヤマダ　タロウ' },
+  },
+
+  {
+    name: 'R11 name のないラジオ（Vue の v-model）を1つの質問としてまとめる',
+    html: `<form><table>
+      <tr><th>性別</th><td><label><input type="radio" value="男性" id="r11a">男性</label><label><input type="radio" value="女性" id="r11b">女性</label></td></tr>
+      <tr><th>文理区分</th><td><label><input type="radio" value="文系" id="r11c">文系</label><label><input type="radio" value="理系" id="r11d">理系</label></td></tr></table></form>`,
+    profile: { gender: 'female', bunri: '理系' },
+    expect: { '#r11a': false, '#r11b': true, '#r11c': false, '#r11d': true },
+  },
 ];
