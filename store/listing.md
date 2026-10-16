@@ -8,6 +8,8 @@
 
 ## 概要（132文字以内）
 
+ダッシュボードでは編集できず、`wxt.config.ts` の `manifest.description` が使われる。変えるときはそちらを直して zip を作り直す。
+
 就活の応募フォームを、登録したプロフィールでワンクリック入力。氏名・フリガナ・生年月日・住所・学歴まで、和暦や全角半角も自動で合わせます。
 
 ## カテゴリ
@@ -77,9 +79,13 @@
   - 拡張機能の単一用途と関係のない目的で使用・転送しない
   - 信用力の判断や貸付の目的で使用・転送しない
 
+## 公式サイト
+
+https://rakuraku-entry.com/ （ダッシュボードの「公式 URL」は、Search Console でドメインの所有を確認すると選べる）
+
 ## プライバシーポリシーの URL
 
-https://api.rakuraku-entry.com/privacy
+https://rakuraku-entry.com/privacy
 
 ## スクリーンショット（1280×800）
 
@@ -90,4 +96,4 @@ https://api.rakuraku-entry.com/privacy
 - [x] `store/privacy.html` の運営者名と連絡先を入れる
 - [x] 中継 API を deploy し、`wxt.config.ts` の `PROD_API_URL` に URL を入れる
 - [ ] `npm run zip:release` で作った zip をアップロード
-- [ ] 公開後に決まった拡張機能の ID を、`worker/wrangler.jsonc` の `ALLOWED_ORIGINS` に入れて deploy し直す
+- [ ] zip をアップロードした時点で決まる拡張機能の ID（ダッシュボードの「アイテム ID」）を、`worker/wrangler.jsonc` の `ALLOWED_ORIGINS` に入れて deploy し直す

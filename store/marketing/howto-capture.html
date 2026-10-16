@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
+    <style>
+      html, body { margin: 0; width: 960px; height: 540px; overflow: hidden; font-family: "Noto Sans JP", sans-serif; }
+      #v { width: 960px; }
+      #v .ht-viewport { border-radius: 0; }
+    </style>
+  </head>
+  <body>
+    <!-- 使い方の動画を 1 コマずつ書き出すためのページ（?t=秒 でその時点を表示） -->
+    <div id="v" data-howto data-capture></div>
+    <script src="../../site/howto.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        window.__howtoRender(Number(new URLSearchParams(location.search).get('t') || 0));
+      });
+    </script>
+  </body>
+</html>

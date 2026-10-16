@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet" />
+<style>
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1350px; overflow: hidden; }
+body { font-family: "Noto Sans JP", sans-serif; background: #FFFFFF; color: #1F2328; position: relative; }
+body::before { content: ''; position: absolute; inset: 36px; border-radius: 48px; background: #FFFBF2; }
+.post { display: none; position: absolute; inset: 0; padding: 120px 100px; flex-direction: column; }
+.post.on { display: flex; }
+.hl { background: linear-gradient(transparent 58%, #FFE45C 58%); padding: 0 4px; }
+.kicker { align-self: flex-start; font-size: 32px; font-weight: 700; background: #1F2328; color: #fff; border-radius: 999px; padding: 12px 30px; }
+h1 { font-size: 88px; line-height: 1.38; font-weight: 900; margin-top: 36px; }
+h2 { font-size: 68px; line-height: 1.42; font-weight: 900; }
+p.lead { font-size: 38px; line-height: 1.75; color: #57606A; margin-top: 36px; font-weight: 500; }
+.foot { position: absolute; left: 100px; right: 100px; bottom: 84px; display: flex; align-items: center; gap: 16px; font-size: 30px; font-weight: 700; }
+.foot img { width: 52px; height: 52px; }
+.foot .page { margin-left: auto; color: #8C959F; font-weight: 500; }
+.field { background: #fff; border: 3px solid #E7E2D6; border-radius: 24px; padding: 26px 32px; font-size: 38px; display: flex; align-items: center; gap: 20px; margin-top: 22px; position: relative; box-shadow: 0 6px 0 #EFE9DC; }
+.field b { width: 220px; color: #8C959F; font-weight: 500; font-size: 30px; }
+.stamp { position: absolute; right: -18px; top: -22px; width: 66px; height: 66px; border-radius: 50%; border: 4px solid #E0563F; color: #E0563F; background: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 900; transform: rotate(-12deg); font-family: "Yu Mincho", serif; }
+.stamp.warn { border-radius: 10px; width: auto; padding: 0 12px; border-color: #F0A500; color: #A06B00; font-size: 26px; }
+.chips { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 52px; }
+.chip { border-radius: 999px; padding: 18px 32px; font-size: 36px; font-weight: 700; background: #E6F2FF; color: #1D4E89; }
+.chip:nth-child(4n+2) { background: #FFE9EF; color: #9A2F4E; }
+.chip:nth-child(4n+3) { background: #FFF4C2; color: #7A5A00; }
+.chip:nth-child(4n+4) { background: #E5F6EC; color: #23704A; }
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 60px; }
+.box { border-radius: 30px; padding: 42px 40px; font-size: 36px; line-height: 1.7; background: #E6F2FF; }
+.box:nth-child(2) { background: #FFE9EF; } .box:nth-child(3) { background: #FFF4C2; } .box:nth-child(4) { background: #E5F6EC; }
+.box h3 { font-size: 38px; margin-bottom: 18px; }
+.cta { margin-top: 64px; background: #1F2328; color: #fff; border-radius: 999px; padding: 34px 48px; font-size: 42px; font-weight: 900; text-align: center; box-shadow: 0 8px 0 #FFE45C; }
+.check { margin-top: 48px; display: flex; flex-direction: column; gap: 22px; }
+.check div { background: #fff; border: 3px solid #E7E2D6; border-radius: 24px; padding: 24px 30px; font-size: 38px; font-weight: 700; display: flex; align-items: center; gap: 20px; }
+.check span { width: 52px; height: 52px; border-radius: 50%; background: #FFE45C; display: flex; align-items: center; justify-content: center; font-size: 30px; flex-shrink: 0; }
+.bubble { align-self: flex-start; margin-top: 70px; background: #fff; border: 3px solid #1F2328; border-radius: 40px; padding: 26px 40px; font-size: 40px; font-weight: 700; position: relative; }
+.bubble::after { content: ''; position: absolute; left: 70px; bottom: -26px; width: 36px; height: 36px; background: #fff; border-right: 3px solid #1F2328; border-bottom: 3px solid #1F2328; transform: rotate(45deg); }
+.emoji { position: absolute; right: 120px; bottom: 150px; font-size: 160px; transform: rotate(8deg); }
+</style>
+</head>
+<body>
+<!-- 1. つかみ -->
+<section class="post" data-n="1">
+  <div class="emoji">😮‍💨</div>
+  <div class="kicker">就活生のみなさん</div>
+  <h1>エントリーのたびに<br/>名前と住所、<br/><span class="hl">何回入力</span>してる？</h1>
+  <p class="lead">氏名、フリガナ、生年月日、住所、大学名…<br/>企業ごとにフォームが違うから、<br/>毎回ぜんぶ手入力。</p>
+  <p class="lead" style="margin-top:70px;font-size:46px;color:#1F2328;font-weight:900">それ、ワンクリックで終わります →</p>
+</section>
+<!-- 2. 何ができる -->
+<section class="post" data-n="2">
+  <div class="kicker">らくらくエントリーとは</div>
+  <h2 style="margin-top:28px">一度登録すれば、<br/>どのフォームにも<br/><span class="hl">ワンクリックで入力。</span></h2>
+  <div class="field done"><b>氏名</b>山田 花子<span class="stamp">済</span></div>
+  <div class="field done"><b>フリガナ</b>ヤマダ ハナコ<span class="stamp">済</span></div>
+  <div class="field done"><b>生年月日</b>2004年 5月 12日<span class="stamp">済</span></div>
+  <div class="field done"><b>大学名</b>〇〇大学 経済学部<span class="stamp">済</span></div>
+</section>
+<!-- 3. 入る項目 -->
+<section class="post" data-n="3">
+  <div class="kicker">入力できる項目</div>
+  <h2 style="margin-top:28px">よく聞かれる項目は、<br/><span class="hl">だいたい全部。</span></h2>
+  <div class="chips">
+    <span class="chip">氏名・フリガナ</span><span class="chip">ローマ字</span><span class="chip">生年月日</span><span class="chip">性別</span>
+    <span class="chip">郵便番号・住所</span><span class="chip">帰省先</span><span class="chip">電話番号</span><span class="chip">メール</span>
+    <span class="chip">学校区分</span><span class="chip">大学・学部・学科</span><span class="chip">入学・卒業年月</span><span class="chip">高校</span>
+    <span class="chip">運転免許</span><span class="chip">TOEIC</span><span class="chip">資格</span><span class="chip">趣味・特技</span>
+  </div>
+</section>
+<!-- 4. 変換 -->
+<section class="post" data-n="4">
+  <div class="kicker">ここが地味にうれしい</div>
+  <h2 style="margin-top:28px">フォームの形式に<br/><span class="hl">自動で合わせる。</span></h2>
+  <div class="vs">
+    <div class="box"><h3>和暦 / 西暦</h3>平成16年<br/>2004年</div>
+    <div class="box"><h3>全角 / 半角</h3>ﾔﾏﾀﾞ<br/>ヤマダ</div>
+    <div class="box"><h3>分割された欄</h3>090 - 1234 - 5678</div>
+    <div class="box"><h3>プルダウン</h3>年・月・日を<br/>それぞれ選択</div>
+  </div>
+</section>
+<!-- 5. 済と確認 -->
+<section class="post" data-n="5">
+  <div class="kicker">送信前も安心</div>
+  <h2 style="margin-top:28px">入れた欄には「済」。<br/>迷った欄は<span class="hl">「確認」</span>。</h2>
+  <div class="field done" style="margin-top:60px"><b>電話番号</b>090-1234-5678<span class="stamp">済</span></div>
+  <div class="field done"><b>卒業年月</b>2027年 3月<span class="stamp">済</span></div>
+  <div class="field" style="border-color:#F0C24B;box-shadow:0 6px 0 #F7E3A8"><b>保護者連絡先</b>090-0000-0000<span class="stamp warn">確認</span></div>
+  <p class="lead">確認の欄だけ見直せばOK。<br/>「元に戻す」でいつでも入力前に戻せます。</p>
+</section>
+<!-- 6. 安心と CTA -->
+<section class="post" data-n="6">
+  <div class="kicker">今なら無料で使えます</div>
+  <h2 style="margin-top:28px">個人情報は、<br/><span class="hl">あなたのPCの中だけ。</span></h2>
+  <div class="check">
+    <div><span>✓</span>プロフィールは端末内にだけ保存</div>
+    <div><span>✓</span>登録・ログイン不要</div>
+    <div><span>✓</span>Chrome に追加するだけ</div>
+  </div>
+  <div class="cta">Chrome ウェブストアで<br/>「らくらくエントリー」を検索</div>
+</section>
+<div class="foot"><img src="../icon.svg" alt="" />らくらくエントリー<span class="page" id="page"></span></div>
+<script>
+  const n = new URLSearchParams(location.search).get('n') || '1';
+  document.querySelector(`.post[data-n="${n}"]`).classList.add('on');
+  document.getElementById('page').textContent = `${n} / 6`;
+</script>
+</body>
+</html>

@@ -23,7 +23,8 @@ export default defineConfig({
   }),
   manifest: {
     name: 'らくらくエントリー｜就活エントリー自動入力',
-    description: '応募フォームの氏名・生年月日などを、保存したプロフィールから自動で入力します',
+    // ストアの「概要」はここから取られる（ダッシュボードでは編集できない）。132文字以内
+    description: '就活の応募フォームを、登録したプロフィールでワンクリック入力。氏名・フリガナ・生年月日・住所・学歴まで、和暦や全角半角も自動で合わせます。',
     permissions: ['activeTab', 'scripting', 'storage'],
     host_permissions: [`${new URL(apiUrl).origin}/*`],
     action: { default_title: 'らくらくエントリー' },
