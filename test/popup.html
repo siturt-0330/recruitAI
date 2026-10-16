@@ -7,6 +7,10 @@
       html { background: #e9e7e1; }
       body { margin: 24px auto !important; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); border-radius: 12px; overflow: hidden; }
     </style>
+    <script>
+      // ストア用スクリーンショットでは、余白と背景をなくす
+      if (location.search.includes('shot')) document.write('<style>html{background:#fff}body{margin:0 !important;box-shadow:none;border-radius:0}</style>');
+    </script>
   </head>
   <body>
     <div id="root"></div>

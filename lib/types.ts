@@ -126,13 +126,11 @@ export interface Settings {
   engine: Engine;
   /** この確信度以上なら確認なしで入力済み扱いにする */
   threshold: number;
-  openaiApiKey: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  engine: 'rules',
+  engine: 'openai',
   threshold: 0.9,
-  openaiApiKey: '',
 };
 
 /** 欄の書式に関するヒント。値の変換に使う */

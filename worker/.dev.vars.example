@@ -1,0 +1,4 @@
+# ローカル（npx wrangler dev）用。.dev.vars にコピーして使う。このファイル自体には本物の値を書かない
+OPENAI_API_KEY=
+ADMIN_TOKEN=
+MOCK_AI=1

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RecruitAI プライバシーポリシー</title>
+    <style>
+      body { max-width: 720px; margin: 40px auto; padding: 0 20px; color: #0f1419; background: #fff;
+        font: 15px/1.8 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif; }
+      h1 { font-size: 24px; }
+      h2 { font-size: 17px; margin-top: 32px; }
+      table { border-collapse: collapse; width: 100%; font-size: 14px; }
+      th, td { border: 1px solid #cfd9de; padding: 8px 10px; text-align: left; vertical-align: top; }
+      th { background: #f7f9f9; width: 30%; }
+      .muted { color: #536471; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <h1>RecruitAI プライバシーポリシー</h1>
+    <p class="muted">最終更新日：2026年10月16日</p>
+
+    <p>
+      RecruitAI（以下「本拡張機能」）は、就職活動の応募フォームに、利用者が登録したプロフィールを自動で入力する Chrome 拡張機能です。
+      本ポリシーでは、本拡張機能が扱う情報と、その取り扱いについて説明します。
+    </p>
+
+    <h2>1. 利用者の端末の中だけに保存する情報</h2>
+    <p>
+      氏名・生年月日・住所・電話番号・メールアドレス・学歴・顔写真など、利用者が登録したプロフィールは、
+      利用者のブラウザ内（Chrome の拡張機能ストレージ）にだけ保存します。運営者のサーバーや第三者に送信することはありません。
+    </p>
+
+    <h2>2. 運営者のサーバーに送信する情報</h2>
+    <p>
+      「ルール + Sophon」がオンのとき、ルールだけでは判定できなかった入力欄について、どのプロフィール項目に当たるかを AI で判定します。
+      その際、次の情報を運営者のサーバー（Cloudflare Workers）に送信します。
+    </p>
+    <table>
+      <tr><th>入力欄の構造</th><td>入力欄の見出し・ラベル・プレースホルダー・name 属性・選択肢など。入力されている値やプロフィールの内容は含みません。ページの URL も送りません。</td></tr>
+      <tr><th>インストール ID</th><td>本拡張機能をインストールしたときに作るランダムな ID。1日の利用回数の制限に使います。個人を特定する情報は含みません。</td></tr>
+      <tr><th>IP アドレス</th><td>通信の性質上サーバーに届きます。不正な大量利用を防ぐための1日ごとの回数の集計にだけ使い、日付が変わると集計から消去します。</td></tr>
+    </table>
+    <p>
+      入力欄の構造は、判定のために OpenAI の API に送信されます。OpenAI での取り扱いは
+      <a href="https://openai.com/policies/" target="_blank" rel="noopener">OpenAI のポリシー</a>に従います。
+      運営者は入力欄の構造を保存しません（障害の調査のため、件数などの記録を一時的に残すことがあります）。
+    </p>
+    <p>「ルールのみ」に切り替えると、サーバーへの送信は一切行いません。</p>
+
+    <h2>3. 広告（PR）について</h2>
+    <p>
+      本拡張機能のポップアップには、「PR」と表示した広告枠があります。広告の内容は運営者のサーバーから取得しますが、
+      その際に利用者の情報は送信しません。広告をクリックしたときに表示されるページでの情報の取り扱いは、各広告主のポリシーに従います。
+    </p>
+
+    <h2>4. 利用目的</h2>
+    <p>取得した情報は、応募フォームの入力欄の判定と、サービスの不正利用の防止のためにだけ使います。販売や、広告のための利用者の追跡には使いません。</p>
+
+    <h2>5. 情報の削除</h2>
+    <p>本拡張機能をアンインストールすると、ブラウザ内に保存したプロフィールなどの情報はすべて削除されます。</p>
+
+    <h2>6. お問い合わせ</h2>
+    <p>運営者：［運営者名］<br />連絡先：［お問い合わせ用のメールアドレス］</p>
+
+    <h2>7. 改定</h2>
+    <p>本ポリシーを変更するときは、このページで告知します。</p>
+  </body>
+</html>

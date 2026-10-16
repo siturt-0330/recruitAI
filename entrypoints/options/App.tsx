@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Copy, Eye, EyeOff, Loader2, MoreHorizontal, Plus, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, Copy, Loader2, MoreHorizontal, Plus, Trash2, X } from 'lucide-react';
 import { ProfileAvatar } from '@/components/ProfileAvatar';
 import { essentialProgress } from '@/lib/essentials';
 import { PREFECTURES } from '@/lib/prefectures';
 import { activeProfileIdItem, emptyProfile, getProfiles, getSettings, normalizeProfile, profilesItem, settingsItem } from '@/lib/store';
 import { DEFAULT_SETTINGS, type Profile, type Settings } from '@/lib/types';
-import ApiKeyGuide from './ApiKeyGuide';
 import { ESSENTIALS, PAGES, isFilled, pageProgress, type FieldDef, type PageDef } from './pages';
 
 type PageId = PageDef['id'] | 'ai';
@@ -537,11 +536,7 @@ function PhotoEditor({ profile, update }: EditorProps) {
 }
 
 function AiSettings({ settings, onSave }: { settings: Settings; onSave(patch: Partial<Settings>): void }) {
-  const [key, setKey] = useState(settings.openaiApiKey);
-  const [show, setShow] = useState(false);
-  useEffect(() => setKey(settings.openaiApiKey), [settings.openaiApiKey]);
-  const connected = !!settings.openaiApiKey;
-
+  const on = settings.engine === 'openai';
   return (
     <>
       {/* Sophon の部屋：白黒の画面の中で、ここだけ濃紺にする */}
@@ -551,50 +546,20 @@ function AiSettings({ settings, onSave }: { settings: Settings; onSave(patch: Pa
           <div className="hero-kicker">POWERED BY</div>
           <div className="hero-name">Sophon</div>
           <div className="hero-row">
-            <span className={connected ? 'hero-status on' : 'hero-status'}>
+            <span className={on ? 'hero-status on' : 'hero-status'}>
               <i />
-              {connected ? '接続済み' : '未接続'}
+              {on ? 'オン' : 'オフ'}
             </span>
             <div className="hero-seg">
-              <button aria-pressed={settings.engine === 'rules'} onClick={() => onSave({ engine: 'rules' })}>
+              <button aria-pressed={!on} onClick={() => onSave({ engine: 'rules' })}>
                 ルールのみ
               </button>
-              <button aria-pressed={settings.engine === 'openai'} onClick={() => onSave({ engine: 'openai' })}>
+              <button aria-pressed={on} onClick={() => onSave({ engine: 'openai' })}>
                 ルール + Sophon
               </button>
             </div>
           </div>
         </div>
-      </section>
-
-      <ApiKeyGuide defaultOpen={!connected} />
-
-      <section className="section">
-        <h2>API キー</h2>
-        <div className="key-row">
-          <label className="field grow">
-            <span className={key ? 'fl filled' : 'fl'}>
-              <span className="fl-label">OpenAI の API キー</span>
-              <input
-                type={show ? 'text' : 'password'}
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-                placeholder="sk-..."
-                autoComplete="off"
-                spellCheck={false}
-              />
-            </span>
-          </label>
-          <button className="icon-round" type="button" onClick={() => setShow((s) => !s)} aria-label={show ? '隠す' : '表示'}>
-            {show ? <EyeOff size={17} /> : <Eye size={17} />}
-          </button>
-          <button className="btn btn-primary" type="button" onClick={() => onSave({ openaiApiKey: key.trim() })}>
-            保存
-          </button>
-        </div>
-        <small className="note">
-          キーはこのブラウザの拡張機能ストレージにだけ保存されます。Sophon は OpenAI の Decisions API（gpt-6-luna）を使って判定します。
-        </small>
       </section>
     </>
   );

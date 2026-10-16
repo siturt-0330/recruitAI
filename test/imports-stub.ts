@@ -21,7 +21,7 @@ export const storage = {
   },
 };
 
-let filled = false;
+let filled = localStorage.getItem('stub:filled') === '1';
 const status = (action: string): FrameStatus => {
   if (action === 'fill') filled = true;
   if (action === 'undo') filled = false;
@@ -43,8 +43,8 @@ const status = (action: string): FrameStatus => {
         keyLabel: '生年月日（年）',
         confidence: 0.78,
         source: 'ai',
-        current: '平成11',
-        alternatives: ['1999'],
+        current: '平成16',
+        alternatives: ['2004'],
       },
     ],
   };

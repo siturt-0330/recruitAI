@@ -4,5 +4,5 @@
     "allowImportingTsExtensions": true,
     "jsx": "react-jsx"
   },
-  "exclude": ["**/node_modules", ".output", "web"]
+  "exclude": ["**/node_modules", ".output", "web", "worker"]
 }
