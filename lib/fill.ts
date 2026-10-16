@@ -43,9 +43,14 @@ function dataUrlToFile(dataUrl: string, name: string): File | null {
   return new File([bytes], name, { type: m[1] });
 }
 
-/** 既にユーザーが値を入れている欄かどうか（テキスト系のみ。select は初期値が入っていることが多いので見ない） */
+/** 既にユーザーが値を入れている欄かどうか。select は初期値から変わっているときだけ入力済みとみなす */
 export function hasUserValue(field: ScannedField): boolean {
   const el = field.elements[0]!;
+  if (el instanceof HTMLSelectElement) {
+    const opts = Array.from(el.options);
+    const initial = Math.max(0, opts.findIndex((o) => o.defaultSelected));
+    return el.selectedIndex >= 0 && el.selectedIndex !== initial && el.value !== '';
+  }
   if (el instanceof HTMLInputElement && el.type === 'file') return (el.files?.length ?? 0) > 0;
   if (el instanceof HTMLInputElement && (el.type === 'radio' || el.type === 'checkbox')) return false;
   if (el instanceof HTMLInputElement) return el.value.trim() !== '';
@@ -72,12 +77,13 @@ const normOption = (s: string) => {
 };
 
 /** 選択肢の中から候補に合うものを探す。完全一致を優先し、なければ部分一致 */
-function pickOption(options: string[], variants: string[]): number {
+function pickOption(options: string[], variants: string[], exactOnly = false): number {
   const normalized = options.map(normOption);
   for (const v of variants.map(normOption)) {
     const i = normalized.indexOf(v);
     if (i >= 0) return i;
   }
+  if (exactOnly) return -1;
   for (const v of variants.map(normOption)) {
     // 「1」が「10」「11」に部分一致しないよう、短い数字は部分一致させない
     if (/^\d{1,3}$/.test(v) || v.length < 2) continue;
@@ -126,8 +132,12 @@ export function applyValue(field: ScannedField, variants: string[]): string | nu
 
   if (el instanceof HTMLSelectElement) {
     const opts = Array.from(el.options);
-    const byValue = opts.findIndex((o) => variants.some((v) => normOption(o.value) === normOption(v)));
-    const i = byValue >= 0 ? byValue : pickOption(opts.map((o) => o.text), variants);
+    const texts = opts.map((o) => o.text);
+    // 見えている文字の完全一致を value より優先する。value は「0 始まりの月」「並び順の番号」のことがあり、
+    // 和暦の年「11」などの候補が別の選択肢の value に当たってしまう
+    let i = pickOption(texts, variants, true);
+    if (i < 0) i = opts.findIndex((o) => o.value !== '' && variants.some((v) => normOption(o.value) === normOption(v)));
+    if (i < 0) i = pickOption(texts, variants);
     const opt = opts[i];
     if (!opt || opt.disabled) return null;
     el.selectedIndex = i;
