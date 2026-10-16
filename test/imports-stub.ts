@@ -26,8 +26,12 @@ const status = (action: string): FrameStatus => {
   if (action === 'fill') filled = true;
   if (action === 'undo') filled = false;
   if (action === 'resolve') return { detected: 12, filled: 12, warn: 0, reviews: [] };
-  if (!filled) return { detected: 12, filled: 0, warn: 0, reviews: [] };
+  // 別のサイトのフォーム枠がある表示の確認用：localStorage の stub:iframe に origin を入れる
+  const frame = localStorage.getItem('stub:iframe');
+  const iframeOrigins = frame ? [frame] : undefined;
+  if (!filled) return { detected: 12, filled: 0, warn: 0, reviews: [], iframeOrigins };
   return {
+    iframeOrigins,
     detected: 12,
     filled: 11,
     warn: 1,
@@ -55,6 +59,13 @@ export const browser = {
     // Sophon 連携の確認用に、開いているページの URL を localStorage の stub:tabUrl で変えられる
     query: async () => [{ id: 1, url: localStorage.getItem('stub:tabUrl') ?? 'https://example.com/' }],
     create: async ({ url }: { url: string }) => window.open(url.replace('/options.html', '/test/options.html'), '_blank'),
+  },
+  permissions: {
+    contains: async () => localStorage.getItem('stub:iframeGranted') === '1',
+    request: async () => {
+      localStorage.setItem('stub:iframeGranted', '1');
+      return true;
+    },
   },
   commands: { getAll: async () => [{ name: 'fill-page', shortcut: 'Alt+Shift+F' }] },
   runtime: {
