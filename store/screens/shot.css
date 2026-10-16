@@ -3,6 +3,7 @@ html, body { margin: 0; width: 1280px; height: 800px; overflow: hidden; }
 body { display: grid; grid-template-columns: 440px 1fr; background: #f1f2fd;
   font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif; color: #0f1419; }
 .copy { padding: 0 48px 0 64px; display: flex; flex-direction: column; justify-content: center; gap: 18px; }
+.copy .logo { width: 36px; height: 36px; }
 .copy .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: #2f3380; }
 .copy .orb { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   background: radial-gradient(circle at 50% 50%, #34386a 0%, #23264a 28%, #121322 52%, #0a0a0f 72%); }

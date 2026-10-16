@@ -6,6 +6,7 @@
       html, body { margin: 0; width: 440px; height: 280px; overflow: hidden; }
       body { background: #f1f2fd; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 0 36px; box-sizing: border-box;
         font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif; color: #0f1419; }
+      .logo { width: 42px; height: 42px; }
       .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 26px; color: #2f3380; }
       .orb { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
         background: radial-gradient(circle at 50% 50%, #34386a 0%, #23264a 28%, #121322 52%, #0a0a0f 72%); }
@@ -16,7 +17,7 @@
     </style>
   </head>
   <body>
-    <div class="brand"><span class="orb"></span>らくらくエントリー</div>
+    <div class="brand"><img class="logo" src="../icon.svg" alt="" />らくらくエントリー</div>
     <h1>応募フォームを、<br />ワンクリックで。<span class="stamp">済</span></h1>
   </body>
 </html>
