@@ -61,7 +61,7 @@ export const useStore = create<Store>()(
       addIndustry: (name) => set((s) => (s.industries.includes(name) ? {} : { industries: [...s.industries, name] })),
 
       patchProfile: (p) =>
-        set((s) => ({ profile: { ...(s.profile ?? emptyProfile('Sophon')), ...p, updatedAt: nowIso() } })),
+        set((s) => ({ profile: { ...(s.profile ?? emptyProfile('メイン')), ...p, updatedAt: nowIso() } })),
       replaceProfile: (p) => set({ profile: normalizeProfile(p) }),
       applyRecords: (records) =>
         set((s) => {

@@ -404,7 +404,7 @@ function Footer({ linked }: { linked?: boolean }) {
       個人情報はこの端末から出ません
       {linked && (
         <a className="sophon-link" href={SOPHON_URL} target="_blank" rel="noreferrer">
-          Sophon を開く
+          Web版を開く
         </a>
       )}
     </footer>

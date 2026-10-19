@@ -19,7 +19,7 @@ export function Sidebar() {
     <aside className="sticky top-0 flex h-screen flex-col items-center gap-1 px-3 py-4 xl:items-stretch">
       <Link href="/" className="mb-4 flex items-center gap-2.5 px-2 py-1">
         <span className="orb h-8 w-8" />
-        <span className="hidden text-lg font-extrabold xl:inline">Sophon</span>
+        <span className="hidden whitespace-nowrap text-[15px] font-extrabold xl:inline">らくらくエントリー</span>
       </Link>
       {NAV.map(({ href, label, icon: Icon }) => {
         const on = active(href);

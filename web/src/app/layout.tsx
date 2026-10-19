@@ -6,7 +6,7 @@ import './globals.css';
 const noto = Noto_Sans_JP({ variable: '--font-noto', subsets: ['latin'], weight: ['400', '500', '700', '800'] });
 
 export const metadata: Metadata = {
-  title: 'Sophon',
+  title: 'らくらくエントリー',
   description: '就活の情報をひとつにまとめる',
 };
 
