@@ -335,7 +335,7 @@
       show(opt, onOptions ? 1 : 0);
       show(form, t >= 16.9 ? 1 : 0);
       el.addr.textContent = onStore
-        ? 'chromewebstore.google.com/detail/rakuraku-entry'
+        ? 'chromewebstore.google.com/detail/kdppelkdplekjbiehpodfmmfcpbbfeho'
         : onOptions
           ? 'らくらくエントリー 設定'
           : 'recruit.example.co.jp/entry';
