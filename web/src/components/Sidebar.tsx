@@ -2,21 +2,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, FileText, Home, IdCard, LayoutGrid, MessageCircle, UserSearch } from 'lucide-react';
+import { Building2, Calendar, Home, IdCard } from 'lucide-react';
 
 const NAV = [
   { href: '/', label: 'ホーム', icon: Home },
-  { href: '/board', label: '企業ボード', icon: LayoutGrid },
-  { href: '/interviews', label: '面接ログ', icon: MessageCircle },
-  { href: '/self-analysis', label: '自己分析', icon: UserSearch },
-  { href: '/es', label: 'ES', icon: FileText },
+  { href: '/companies', label: '企業', icon: Building2 },
   { href: '/schedule', label: '予定', icon: Calendar },
   { href: '/profile', label: 'プロフィール', icon: IdCard },
 ];
 
 export function Sidebar() {
   const path = usePathname();
-  const active = (href: string) => (href === '/' ? path === '/' : path.startsWith(href) || (href === '/board' && path.startsWith('/companies')));
+  const active = (href: string) => (href === '/' ? path === '/' : path.startsWith(href) || (href === '/companies' && path.startsWith('/board')));
 
   return (
     <aside className="sticky top-0 flex h-screen flex-col items-center gap-1 px-3 py-4 xl:items-stretch">
@@ -41,5 +38,24 @@ export function Sidebar() {
         );
       })}
     </aside>
+  );
+}
+
+/** スマホの下のタブ（移動だけ） */
+export function TabBar() {
+  const path = usePathname();
+  const active = (href: string) => (href === '/' ? path === '/' : path.startsWith(href) || (href === '/companies' && path.startsWith('/board')));
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t-[0.5px] border-[#d1d1d6] bg-[rgba(249,249,251,.94)] pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+      {NAV.map(({ href, label, icon: Icon }) => {
+        const on = active(href);
+        return (
+          <Link key={href} href={href} className={`flex h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${on ? 'text-ind' : 'text-[#8e8e93]'}`}>
+            <Icon size={23} strokeWidth={on ? 2.3 : 1.8} />
+            {label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }

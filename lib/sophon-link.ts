@@ -14,6 +14,10 @@ export interface LinkCompany {
   name: string;
   url: string;
   mypageUrl: string;
+  /** マイページのログイン ID（パスワードは渡さない） */
+  loginId?: string;
+  /** Sophon で最後に直した日時（ログイン情報とどちらが新しいかを比べる） */
+  updatedAt?: string;
   stageLabel: string;
   deadline: string;
   deadlineLabel: string;
@@ -47,17 +51,35 @@ export interface LinkRecord {
   esAnswerIds: string[];
 }
 
+/**
+ * 拡張機能に保存したマイページのログイン情報の「見出し」。パスワードそのものは含めない。
+ * 拡張機能 → Sophon に渡し、Sophon の一覧に会社・マイページ・ID・保存済みの印を出す
+ */
+export interface LinkMypage {
+  companyId: string;
+  companyName: string;
+  url: string;
+  loginId: string;
+  hasPassword: boolean;
+  updatedAt: string;
+}
+
 /** ページ（Sophon）→ 拡張機能 */
 export type AppMessage =
   | { source: 'sophon-app'; type: 'ping' }
   | { source: 'sophon-app'; type: 'sync'; data: LinkData; profile: Profile | null }
-  | { source: 'sophon-app'; type: 'ack'; ids: string[] };
+  | { source: 'sophon-app'; type: 'ack'; ids: string[] }
+  /** その会社のマイページを開いて、ID とパスワードを入れる */
+  | { source: 'sophon-app'; type: 'openMypage'; companyId: string }
+  /** 会社を消したので、保存したログイン情報も消す */
+  | { source: 'sophon-app'; type: 'forgetMypage'; companyId: string };
 
 /** 拡張機能 → ページ（Sophon） */
 export type ExtMessage =
   | { source: 'sophon-ext'; type: 'hello'; version: string }
   | { source: 'sophon-ext'; type: 'profile'; profile: Profile }
-  | { source: 'sophon-ext'; type: 'records'; records: LinkRecord[] };
+  | { source: 'sophon-ext'; type: 'records'; records: LinkRecord[] }
+  | { source: 'sophon-ext'; type: 'mypages'; mypages: LinkMypage[] };
 
 /** 新しく保存したほうを残す（更新日時がないものは古い扱い） */
 export const isNewer = (a: { updatedAt?: string } | null | undefined, b: { updatedAt?: string } | null | undefined) =>
@@ -67,6 +89,8 @@ export const isNewer = (a: { updatedAt?: string } | null | undefined, b: { updat
 
 /** 複数の企業が同じドメインを使う採用管理サービス。パスの1段目まで一致したときだけ同じ企業とみなす */
 const SHARED_HOSTS = [/(^|\.)i-web\.jpn\.com$/, /(^|\.)axol\.jp$/, /(^|\.)e2r\.jp$/, /(^|\.)snar\.jp$/, /(^|\.)mynavi\.jp$/, /(^|\.)rikunabi\.com$/, /(^|\.)hrmos\.co$/, /(^|\.)herp\.cloud$/, /(^|\.)talentio\.com$/, /(^|\.)n-ext\.jp$/];
+
+export const isSharedHost = (host: string) => SHARED_HOSTS.some((re) => re.test(host));
 
 function parse(url: string): URL | null {
   if (!url.trim()) return null;

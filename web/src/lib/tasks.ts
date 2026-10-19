@@ -21,17 +21,13 @@ export interface CalendarEvent {
   kind: 'deadline' | 'interview' | 'event';
 }
 
-const isReviewed = (i: AppData['interviews'][number]) => i.rating > 0 || i.questions.length > 0 || !!i.review;
-
 /**
- * 「今日やること」を、締切・面接の予定・未記入の振り返りから優先順に作る。
+ * 「今日やること」を、締切と面接の予定から優先順に作る。
  * Sophon（AI）を使わずにルールで作るので、キーがなくても動く。
  */
 export function todayTasks(data: AppData): Task[] {
   const t = today();
   const tasks: Task[] = [];
-  const byId = new Map(data.companies.map((c) => [c.id, c]));
-
   for (const c of data.companies) {
     if (c.stage === 'closed') continue;
     if (c.deadline) {
@@ -54,7 +50,7 @@ export function todayTasks(data: AppData): Task[] {
         tasks.push({
           id: `prepare:${c.id}:${c.nextAt}`,
           title: `${c.name}の${c.nextLabel.replace(/（.*）/, '')}の準備`,
-          detail: `${n === 0 ? '今日' : n === 1 ? '明日' : md(c.nextAt, true)} ${c.nextAt.slice(11, 16)} · これまでの面接ログを見直す`,
+          detail: `${n === 0 ? '今日' : n === 1 ? '明日' : md(c.nextAt, true)} ${c.nextAt.slice(11, 16)}`,
           href: `/companies/${c.id}`,
           action: '見る',
           priority: n + 0.5,
@@ -63,29 +59,12 @@ export function todayTasks(data: AppData): Task[] {
     }
   }
 
-  // 終わった面接で、振り返りがまだのもの
-  for (const i of data.interviews) {
-    const n = daysUntil(i.at, t);
-    if (n > 0 || n < -14 || isReviewed(i)) continue;
-    const c = byId.get(i.companyId);
-    if (!c) continue;
-    tasks.push({
-      id: `review:${i.id}`,
-      title: `${c.name}の${i.round}を振り返る`,
-      detail: '記憶が新しいうちに · 3分で終わります',
-      href: `/companies/${c.id}?interview=${i.id}`,
-      action: '書く',
-      priority: 0.8 - n * 0.01,
-    });
-  }
-
   return tasks.sort((a, b) => a.priority - b.priority);
 }
 
 /** 期間内の予定（締切・面接・説明会など） */
 export function eventsBetween(data: AppData, from: string, to: string): CalendarEvent[] {
   const events: CalendarEvent[] = [];
-  const byId = new Map(data.companies.map((c) => [c.id, c]));
   const within = (d: string) => d >= from && d <= to;
   for (const c of data.companies) {
     if (c.deadline && within(c.deadline)) {
@@ -100,13 +79,6 @@ export function eventsBetween(data: AppData, from: string, to: string): Calendar
         kind: /面接/.test(c.nextLabel) ? 'interview' : 'event',
       });
     }
-  }
-  for (const i of data.interviews) {
-    const d = i.at.slice(0, 10);
-    const c = byId.get(i.companyId);
-    // 企業の「次の予定」と同じ面接は二重に出さない
-    if (!c || !within(d) || (c.nextAt && c.nextAt.slice(0, 10) === d)) continue;
-    events.push({ date: d, time: i.at.slice(11, 16), label: i.round, company: c, kind: 'interview' });
   }
   return events.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useExtensionBridge } from '@/lib/extension';
 import { useStore } from '@/lib/store';
-import { Sidebar } from './Sidebar';
+import { Sidebar, TabBar } from './Sidebar';
 
 /**
  * データは localStorage にあるので、読み込みが終わってから画面を描く
@@ -16,9 +16,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="mx-auto grid min-h-screen max-w-[1280px] grid-cols-[72px_minmax(0,1fr)] xl:grid-cols-[232px_minmax(0,1fr)]">
-      <Sidebar />
-      <main className="min-w-0 border-l border-line">
+    <div className="mx-auto min-h-screen max-w-[1440px] md:grid md:grid-cols-[72px_minmax(0,1fr)] xl:grid-cols-[232px_minmax(0,1fr)]">
+      <div className="hidden md:block">
+        <Sidebar />
+      </div>
+      <main className="min-w-0 pb-[72px] md:border-l md:border-line md:pb-0">
         {ready ? (
           <>
             <ExtensionBridge />
@@ -30,6 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         )}
       </main>
+      <TabBar />
     </div>
   );
 }

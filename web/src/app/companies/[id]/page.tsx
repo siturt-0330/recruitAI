@@ -1,19 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Suspense, useState } from 'react';
-import { ArrowLeft, Check, ExternalLink, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, ExternalLink, Loader2, RefreshCw, Trash2 } from 'lucide-react';
 import { fetchLogo } from '@/components/AddCompanyDialog';
 import { IndustrySelect } from '@/components/IndustrySelect';
-import { InterviewEditor, InterviewStrip, SophonReviewPanel } from '@/components/InterviewEditor';
 import { Button, CompanyLogo, Empty, Field, Select, TextArea } from '@/components/ui';
-import { emptyEsAnswer, emptyInterview } from '@/lib/seed';
 import { STAGES, stageOrder } from '@/lib/stages';
 import { useStore } from '@/lib/store';
 import type { Company, Stage } from '@/lib/types';
-
-type Tab = 'overview' | 'interviews' | 'es';
 
 export default function CompanyPage() {
   return (
@@ -25,32 +21,19 @@ export default function CompanyPage() {
 
 function CompanyView() {
   const { id } = useParams<{ id: string }>();
-  const search = useSearchParams();
   const router = useRouter();
   const data = useStore();
   const company = data.companies.find((c) => c.id === id);
-  const interviews = data.interviews.filter((i) => i.companyId === id).sort((a, b) => b.at.localeCompare(a.at));
-  const [tab, setTab] = useState<Tab>(search.get('interview') || interviews.length ? 'interviews' : 'overview');
-  const [selected, setSelected] = useState(search.get('interview') ?? interviews[0]?.id ?? '');
 
   if (!company) {
-    return <Empty title="企業が見つかりません" action={<Link href="/board" className="font-bold text-ind">企業ボードへ</Link>} />;
+    return <Empty title="企業が見つかりません" action={<Link href="/companies" className="font-bold text-ind">企業へ</Link>} />;
   }
-  const current = interviews.find((i) => i.id === selected) ?? interviews[0];
-
-  const addInterview = () => {
-    const rounds = ['一次面接', '二次面接', '三次面接', '最終面接'];
-    const i = emptyInterview(company.id, rounds[Math.min(interviews.length, rounds.length - 1)]);
-    data.upsertInterview(i);
-    setSelected(i.id);
-    setTab('interviews');
-  };
 
   return (
     <div className="px-6 py-4">
-      <Link href="/board" className="mb-3 inline-flex items-center gap-1 text-[13px] text-sub hover:text-ink">
+      <Link href="/companies" className="mb-3 inline-flex items-center gap-1 text-[13px] text-sub hover:text-ink">
         <ArrowLeft size={14} />
-        企業ボード
+        企業
       </Link>
       <div className="flex items-center gap-3">
         <CompanyLogo company={company} size={52} />
@@ -59,7 +42,7 @@ function CompanyView() {
           <div className="flex items-center gap-2 text-[13px] text-sub">
             {company.industry}
             {company.mypageUrl && (
-              <a href={company.mypageUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-ind hover:underline">
+              <a href={company.mypageUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-link hover:underline">
                 マイページを開く <ExternalLink size={12} />
               </a>
             )}
@@ -68,39 +51,7 @@ function CompanyView() {
       </div>
 
       <Stepper stage={company.stage} onChange={(stage) => data.patchCompany(company.id, { stage })} />
-
-      <nav className="mb-5 flex gap-6 border-b border-line text-sm">
-        {(
-          [
-            ['overview', '概要'],
-            ['interviews', `面接ログ ${interviews.length}`],
-            ['es', 'ES'],
-          ] as [Tab, string][]
-        ).map(([t, label]) => (
-          <button key={t} onClick={() => setTab(t)} className={`-mb-px border-b-[3px] pb-2.5 ${tab === t ? 'border-[#1D9BF0] font-bold' : 'border-transparent text-sub hover:text-ink'}`}>
-            {label}
-          </button>
-        ))}
-      </nav>
-
-      {tab === 'overview' && <Overview company={company} onDeleted={() => router.push('/board')} />}
-
-      {tab === 'interviews' &&
-        (current ? (
-          <div className="flex flex-col gap-5">
-            <InterviewStrip interviews={interviews} selected={current.id} onSelect={setSelected} onAdd={addInterview} />
-            <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6">
-              <InterviewEditor key={current.id} interview={current} />
-              <div className="sticky top-4">
-                <SophonReviewPanel interview={current} />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <Empty title="面接ログはまだありません" action={<Button variant="primary" onClick={addInterview}><Plus size={15} />面接を追加</Button>} />
-        ))}
-
-      {tab === 'es' && <CompanyEs company={company} />}
+      <Overview company={company} onDeleted={() => router.push('/companies')} />
     </div>
   );
 }
@@ -192,7 +143,7 @@ function Overview({ company, onDeleted }: { company: Company; onDeleted(): void 
         <Button
           variant="danger"
           onClick={() => {
-            if (!confirm(`「${company.name}」と、その面接ログを削除しますか？`)) return;
+            if (!confirm(`「${company.name}」を削除しますか？`)) return;
             onDeleted();
             removeCompany(company.id);
           }}
@@ -201,43 +152,6 @@ function Overview({ company, onDeleted }: { company: Company; onDeleted(): void 
           企業を削除
         </Button>
       </div>
-    </div>
-  );
-}
-
-function CompanyEs({ company }: { company: Company }) {
-  const { esAnswers, upsertEsAnswer } = useStore();
-  const linked = esAnswers.filter((a) => a.companyIds.includes(company.id));
-  return (
-    <div className="max-w-3xl">
-      <ul className="flex flex-col gap-2">
-        {linked.map((a) => (
-          <li key={a.id}>
-            <Link href={`/es?id=${a.id}`} className="block rounded-2xl border border-line p-4 hover:bg-fill">
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-indbg px-2 py-0.5 text-xs text-indtext">{a.category}</span>
-                <b className="text-sm">{a.title || '無題'}</b>
-                <span className="ml-auto text-xs text-mute">
-                  {[...a.text].length}
-                  {a.charLimit ? ` / ${a.charLimit}字` : '字'}
-                </span>
-              </div>
-              <p className="mt-1.5 line-clamp-2 text-sm text-sub">{a.text}</p>
-            </Link>
-          </li>
-        ))}
-      </ul>
-      <Button
-        className="mt-3"
-        onClick={() => {
-          const a = { ...emptyEsAnswer('志望動機'), title: `${company.name} 志望動機`, companyIds: [company.id] };
-          upsertEsAnswer(a);
-          location.href = `/es?id=${a.id}`;
-        }}
-      >
-        <Plus size={15} />
-        この企業の ES を書く
-      </Button>
     </div>
   );
 }

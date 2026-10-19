@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { browser } from '#imports';
 import { AlertTriangle, ChevronDown, ChevronRight, Settings as SettingsIcon, ShieldCheck, SlidersHorizontal } from 'lucide-react';
 import { ProfileAvatar } from '@/components/ProfileAvatar';
+import { MypageCard } from './MypageCard';
 import { essentialProgress } from '@/lib/essentials';
 import { FIELD_KEYS, isFieldKey } from '@/lib/fieldKeys';
 import { fetchSponsor, type Sponsor } from '@/lib/api';
@@ -26,6 +27,8 @@ export default function App() {
   /** Sophon とつながっているか・このページの企業 */
   const [linked, setLinked] = useState(false);
   const [company, setCompany] = useState<LinkCompany>();
+  const [companies, setCompanies] = useState<LinkCompany[]>([]);
+  const [tabUrl, setTabUrl] = useState('');
 
   const copyDiagnosis = async () => {
     if (tabId == null) return;
@@ -51,6 +54,8 @@ export default function App() {
         browser.tabs.query({ active: true, currentWindow: true }),
       ]);
       setLinked(!!link);
+      setCompanies(link?.companies ?? []);
+      setTabUrl(current?.url ?? '');
       if (link && current?.url) setCompany(matchCompany(current.url, link.companies));
       setProfiles(ps);
       setActiveId(ps.some((p) => p.id === id) ? id : (ps[0]?.id ?? ''));
@@ -151,6 +156,7 @@ export default function App() {
             プロフィールを作成
           </button>
         </div>
+        {tabUrl && <MypageCard tabId={tabId} tabUrl={tabUrl} companies={companies} />}
         <Footer />
       </div>
     );
@@ -193,6 +199,8 @@ export default function App() {
           <ChevronRight size={16} />
         </a>
       )}
+
+      {tabUrl && !pageError && <MypageCard tabId={tabId} tabUrl={tabUrl} companies={companies} />}
 
       {pageError ? (
         <div className="notice">{pageError}</div>

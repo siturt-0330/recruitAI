@@ -1,7 +1,8 @@
 import { browser, defineContentScript } from '#imports';
 import { normalizeProfile } from '@/lib/profile';
-import { SOPHON_MATCHES, isNewer, type AppMessage, type ExtMessage } from '@/lib/sophon-link';
-import { activeProfileIdItem, getActiveProfile, getProfiles, profilesItem, sophonDataItem, sophonOutboxItem } from '@/lib/store';
+import { summarize } from '@/lib/mypages';
+import { SOPHON_MATCHES, isNewer, type AppMessage, type ExtMessage, type LinkCompany } from '@/lib/sophon-link';
+import { activeProfileIdItem, getActiveProfile, getProfiles, mypagesItem, profilesItem, sophonDataItem, sophonOutboxItem } from '@/lib/store';
 import type { Profile } from '@/lib/types';
 
 /**
@@ -54,12 +55,42 @@ export default defineContentScript({
       } else if (msg.type === 'sync') {
         await sophonDataItem.setValue(msg.data);
         await mergeProfile(msg.profile);
+        await applyCompanyEdits(msg.data.companies);
         await sendRecords();
+        await sendMypages();
       } else if (msg.type === 'ack') {
         const done = new Set(msg.ids);
         await sophonOutboxItem.setValue((await sophonOutboxItem.getValue()).filter((r) => !done.has(r.id)));
+      } else if (msg.type === 'openMypage') {
+        // マイページを開いて入力するのはバックグラウンド（新しいタブへの入力は、ここからはできない）
+        await browser.runtime.sendMessage({ type: 'openMypage', companyId: msg.companyId });
+      } else if (msg.type === 'forgetMypage') {
+        const list = await mypagesItem.getValue();
+        if (list.some((m) => m.companyId === msg.companyId)) await mypagesItem.setValue(list.filter((m) => m.companyId !== msg.companyId));
       }
     });
+
+    /** 保存したログイン情報の見出し（パスワードは渡さない） */
+    const sendMypages = async () => {
+      post({ source: 'sophon-ext', type: 'mypages', mypages: (await mypagesItem.getValue()).map(summarize) });
+    };
+
+    /** Sophon の画面で会社名・マイページの URL・ID を直したら、保存したログイン情報にも反映する */
+    const applyCompanyEdits = async (companies: LinkCompany[]) => {
+      const list = await mypagesItem.getValue();
+      let changed = false;
+      const next = list.map((m) => {
+        const c = companies.find((x) => x.id === m.companyId);
+        // Sophon 側の変更のほうが新しいときだけ反映する（拡張機能で保存した直後の古い同期で戻さないため）
+        if (!c || (c.updatedAt ?? '') <= m.updatedAt) return m;
+        const patch = { companyName: c.name, url: c.mypageUrl || m.url, loginId: c.loginId ?? m.loginId };
+        if (patch.companyName === m.companyName && patch.url === m.url && patch.loginId === m.loginId) return m;
+        changed = true;
+        return { ...m, ...patch, updatedAt: new Date().toISOString() };
+      });
+      if (changed) await mypagesItem.setValue(next);
+    };
+    mypagesItem.watch(() => void sendMypages());
 
     // 拡張機能の設定画面でプロフィールを直したら、Sophon にも伝える
     profilesItem.watch(async (profiles) => {

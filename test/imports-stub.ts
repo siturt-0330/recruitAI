@@ -26,6 +26,11 @@ const status = (action: string): FrameStatus => {
   if (action === 'fill') filled = true;
   if (action === 'undo') filled = false;
   if (action === 'resolve') return { detected: 12, filled: 12, warn: 0, reviews: [] };
+  // マイページのログイン画面の確認用：localStorage の stub:login を 1 にする
+  if (action === 'readLogin' || action === 'fillLogin') {
+    const found = localStorage.getItem('stub:login') === '1';
+    return { detected: 0, filled: 0, warn: 0, reviews: [], login: { found, loginId: found ? 'taro@example.com' : '', password: found ? 'secret' : '' } };
+  }
   // 別のサイトのフォーム枠がある表示の確認用：localStorage の stub:iframe に origin を入れる
   const frame = localStorage.getItem('stub:iframe');
   const iframeOrigins = frame ? [frame] : undefined;

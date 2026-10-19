@@ -3,11 +3,11 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { nowIso } from './dates';
-import { EMPTY_SHEETS, sampleData } from './seed';
 import { emptyProfile, normalizeProfile } from '@ext/profile';
-import type { LinkRecord } from '@ext/sophon-link';
+import type { LinkMypage, LinkRecord } from '@ext/sophon-link';
+import { emptyCompany, sampleData } from './seed';
 import { stageOrder } from './stages';
-import type { AppData, Company, EsAnswer, Episode, Interview, Profile, SheetId } from './types';
+import type { AppData, Company, Profile } from './types';
 
 /**
  * アプリのデータ。今はこのブラウザの localStorage にだけ保存する。
@@ -17,16 +17,6 @@ interface Actions {
   upsertCompany(c: Company): void;
   patchCompany(id: string, patch: Partial<Company>): void;
   removeCompany(id: string): void;
-  upsertInterview(i: Interview): void;
-  patchInterview(id: string, patch: Partial<Interview>): void;
-  removeInterview(id: string): void;
-  upsertEpisode(e: Episode): void;
-  patchEpisode(id: string, patch: Partial<Episode>): void;
-  removeEpisode(id: string): void;
-  setSheetAnswer(sheet: SheetId, questionId: string, value: string): void;
-  upsertEsAnswer(a: EsAnswer): void;
-  patchEsAnswer(id: string, patch: Partial<EsAnswer>): void;
-  removeEsAnswer(id: string): void;
   toggleTask(date: string, taskId: string): void;
   addIndustry(name: string): void;
   /** 画面で編集したプロフィール（更新日時を付ける） */
@@ -35,6 +25,8 @@ interface Actions {
   replaceProfile(p: Profile): void;
   /** 拡張機能の「ボードに記録」を反映する */
   applyRecords(records: LinkRecord[]): void;
+  /** 拡張機能で保存したマイページを反映する。新しく入った・変わった会社名を返す */
+  applyMypages(list: LinkMypage[]): string[];
   clearSample(): void;
   loadSample(): void;
 }
@@ -49,33 +41,14 @@ const patch = <T extends { id: string; updatedAt: string }>(list: T[], id: strin
 
 export const useStore = create<Store>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...sampleData(),
       boardView: 'board',
       setBoardView: (boardView) => set({ boardView }),
 
       upsertCompany: (c) => set((s) => ({ companies: upsert(s.companies, c) })),
       patchCompany: (id, p) => set((s) => ({ companies: patch(s.companies, id, p) })),
-      removeCompany: (id) =>
-        set((s) => ({
-          companies: s.companies.filter((c) => c.id !== id),
-          interviews: s.interviews.filter((i) => i.companyId !== id),
-          esAnswers: s.esAnswers.map((a) => ({ ...a, companyIds: a.companyIds.filter((x) => x !== id) })),
-        })),
-
-      upsertInterview: (i) => set((s) => ({ interviews: upsert(s.interviews, i) })),
-      patchInterview: (id, p) => set((s) => ({ interviews: patch(s.interviews, id, p) })),
-      removeInterview: (id) => set((s) => ({ interviews: s.interviews.filter((i) => i.id !== id) })),
-
-      upsertEpisode: (e) => set((s) => ({ episodes: upsert(s.episodes, e) })),
-      patchEpisode: (id, p) => set((s) => ({ episodes: patch(s.episodes, id, p) })),
-      removeEpisode: (id) => set((s) => ({ episodes: s.episodes.filter((e) => e.id !== id) })),
-
-      setSheetAnswer: (sheet, q, v) => set((s) => ({ sheets: { ...s.sheets, [sheet]: { ...s.sheets[sheet], [q]: v } } })),
-
-      upsertEsAnswer: (a) => set((s) => ({ esAnswers: upsert(s.esAnswers, a) })),
-      patchEsAnswer: (id, p) => set((s) => ({ esAnswers: patch(s.esAnswers, id, p) })),
-      removeEsAnswer: (id) => set((s) => ({ esAnswers: s.esAnswers.filter((a) => a.id !== id) })),
+      removeCompany: (id) => set((s) => ({ companies: s.companies.filter((c) => c.id !== id) })),
 
       toggleTask: (date, taskId) =>
         set((s) => {
@@ -93,27 +66,44 @@ export const useStore = create<Store>()(
       applyRecords: (records) =>
         set((s) => {
           const submitted = stageOrder('esSubmitted');
-          let { companies, esAnswers } = s;
+          let { companies } = s;
           for (const r of records) {
             companies = companies.map((c) =>
               c.id === r.companyId
                 ? touch({ ...c, submittedAt: r.at, stage: stageOrder(c.stage) < submitted ? 'esSubmitted' : c.stage })
                 : c,
             );
-            esAnswers = esAnswers.map((a) =>
-              r.esAnswerIds.includes(a.id) && !a.companyIds.includes(r.companyId) ? touch({ ...a, companyIds: [...a.companyIds, r.companyId] }) : a,
-            );
           }
-          return { companies, esAnswers };
+          return { companies };
         }),
 
+      applyMypages: (list) => {
+        const changed: string[] = [];
+        let companies = get().companies;
+        for (const m of list) {
+          const fields = { name: m.companyName, mypageUrl: m.url, loginId: m.loginId, hasPassword: m.hasPassword };
+          const c = companies.find((x) => x.id === m.companyId);
+          if (!c) {
+            companies = [...companies, { ...emptyCompany(m.companyName), ...fields, id: m.companyId }];
+            changed.push(m.companyName);
+          } else if (c.updatedAt < m.updatedAt && (Object.keys(fields) as (keyof typeof fields)[]).some((k) => c[k] !== fields[k])) {
+            companies = companies.map((x) => (x.id === c.id ? touch({ ...x, ...fields }) : x));
+            changed.push(m.companyName);
+          } else if (c.hasPassword !== m.hasPassword) {
+            companies = companies.map((x) => (x.id === c.id ? { ...x, hasPassword: m.hasPassword } : x));
+          }
+        }
+        if (companies !== get().companies) set({ companies });
+        return changed;
+      },
+
       clearSample: () =>
-        set({ companies: [], interviews: [], episodes: [], esAnswers: [], sheets: EMPTY_SHEETS, doneTasks: {}, sample: false }),
+        set({ companies: [], doneTasks: {}, sample: false }),
       loadSample: () => set({ ...sampleData() }),
     }),
     {
       name: 'sophon-data',
-      version: 3,
+      version: 5,
       // v2: 「気になる」をなくし、業界の選択肢を持つようにした
       migrate: (state, version) => {
         const s = state as AppData;
@@ -126,6 +116,16 @@ export const useStore = create<Store>()(
           s.profile = s.profile ?? null;
           s.companies = s.companies.map((c) => ({ ...c, submittedAt: c.submittedAt ?? '' }));
         }
+        // v4: 自己分析・ES・面接ログをやめ、企業と予定の管理に絞った
+        if (version < 4) {
+          const old = s as AppData & Record<string, unknown>;
+          delete old.interviews;
+          delete old.episodes;
+          delete old.sheets;
+          delete old.esAnswers;
+        }
+        // v5: マイページのパスワードを拡張機能に保存したか
+        if (version < 5) s.companies = s.companies.map((c) => ({ ...c, hasPassword: c.hasPassword ?? false }));
         return s as Store;
       },
       storage: createJSONStorage(() => localStorage),

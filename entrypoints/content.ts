@@ -1,6 +1,8 @@
 import { browser, defineContentScript } from '#imports';
 import { FormFiller, type ClassifyRemote } from '@/lib/engine';
 import { EsAssist } from '@/lib/es-assist';
+import { findLoginFields, setNativeValue } from '@/lib/login';
+import { Overlay } from '@/lib/overlay';
 import { matchCompany } from '@/lib/sophon-link';
 import { getActiveProfile, getSettings, sophonDataItem, sophonOutboxItem } from '@/lib/store';
 import type { FrameStatus, RemoteAnswer } from '@/lib/types';
@@ -15,6 +17,40 @@ export default defineContentScript({
     if (g.__recruitAI) return;
 
     const filler = new FormFiller(document);
+
+    // マイページのログイン情報の入力（応募フォームの入力とは別に、元に戻せるようにしておく）
+    let loginUndo: (() => void) | null = null;
+    const loginOverlay: Overlay = new Overlay(document, {
+      onUndo: () => {
+        loginUndo?.();
+        loginUndo = null;
+        loginOverlay.clear();
+      },
+      onClose: () => loginOverlay.clear(),
+    });
+
+    const readLogin = () => {
+      const f = findLoginFields(document);
+      return { found: !!f, loginId: f?.user?.value.trim() ?? '', password: f?.pass.value ?? '' };
+    };
+
+    const fillLogin = ({ loginId, password, company }: { loginId: string; password: string; company: string }) => {
+      const f = findLoginFields(document);
+      if (!f) return { found: false, loginId: '', password: '' };
+      const targets: [HTMLInputElement, string][] = [];
+      if (f.user && loginId) targets.push([f.user, loginId]);
+      if (password) targets.push([f.pass, password]);
+      const before = targets.map(([el]) => [el, el.value] as const);
+      for (const [el, value] of targets) setNativeValue(el, value);
+      loginUndo = () => before.forEach(([el, value]) => setNativeValue(el, value));
+      loginOverlay.render(
+        targets.map(([el]) => ({ el, status: 'ok' as const, ai: false })),
+        { filled: targets.length, warn: 0 },
+        `${company} のログイン情報を入力しました`,
+      );
+      // パスワードはポップアップに返さない
+      return { found: true, loginId, password: '' };
+    };
     let assist: EsAssist | null = null;
     let recorded = false;
 
@@ -91,6 +127,12 @@ export default defineContentScript({
         }
         case 'undo':
           return filler.undo();
+        case 'readLogin':
+          return { detected: 0, filled: 0, warn: 0, reviews: [], login: readLogin() };
+        case 'fillLogin': {
+          const login = fillLogin(payload as { loginId: string; password: string; company: string });
+          return { detected: 0, filled: login.found ? 1 : 0, warn: 0, reviews: [], login };
+        }
         case 'diagnose':
           return { ...filler.status(), report: filler.diagnose() };
         case 'resolve': {

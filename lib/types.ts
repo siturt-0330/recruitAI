@@ -172,6 +172,8 @@ export interface FrameStatus {
   aiError?: string;
   /** ページに埋め込まれた、別のサイトのフォーム枠（iframe）の origin。いちばん外側のページだけが返す */
   iframeOrigins?: string[];
+  /** ログイン画面だったとき：ID 欄・パスワード欄に入っている値（readLogin / fillLogin のとき） */
+  login?: { found: boolean; loginId: string; password: string };
 }
 
 export interface RemoteQuestion {

@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 /**
  * 企業のサイトからロゴ（アイコン）を取得する。
  * 外部のロゴ検索サービスは使わず、企業のサイトに直接アクセスする（どの企業を見ているかを第三者に送らないため）。
+ * 会社名しかないときは、公開データベースの Wikidata で公式サイトを調べる（送るのは会社名だけ）。
  */
 
 const MAX_BYTES = 400_000;
@@ -15,11 +16,22 @@ function isPublicHttpUrl(u: URL): boolean {
   return !/^(localhost|127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|0\.|\[?::1\]?$)/.test(host) && host.includes('.');
 }
 
+/**
+ * 独自の User-Agent だとボットとして断る企業サイトが多いので、ふつうのブラウザと同じにする。
+ * Wikidata はブラウザの User-Agent だと制限されるので、規約どおり名乗る
+ */
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
+const BOT_UA = 'SophonLogoFetcher/1.0 (https://rakuraku-entry.com; contact@geek-app.com)';
+
 async function fetchWithTimeout(url: string): Promise<Response> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
-    return await fetch(url, { signal: ctrl.signal, redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0 (Sophon logo fetcher)' } });
+    return await fetch(url, {
+      signal: ctrl.signal,
+      redirect: 'follow',
+      headers: { 'User-Agent': url.startsWith('https://www.wikidata.org/') ? BOT_UA : BROWSER_UA, 'Accept-Language': 'ja,en;q=0.8' },
+    });
   } finally {
     clearTimeout(timer);
   }
@@ -45,8 +57,37 @@ function iconCandidates(html: string, base: URL): string[] {
   return [...scored.map((s) => s.href), new URL('/apple-touch-icon.png', base).toString(), new URL('/favicon.ico', base).toString()];
 }
 
+/** 「株式会社〇〇」→「〇〇」 */
+const bareName = (name: string) => name.replace(/株式会社|有限会社|合同会社|[（(]株[）)]|㈱/g, '').replace(/\s+/g, '').trim();
+
+/** 会社名から公式サイトの URL を調べる（Wikidata の「公式ウェブサイト」） */
+async function officialSite(name: string): Promise<string | null> {
+  const q = bareName(name);
+  if (!q) return null;
+  const api = 'https://www.wikidata.org/w/api.php';
+  try {
+    const search = await fetchWithTimeout(`${api}?action=wbsearchentities&search=${encodeURIComponent(q)}&language=ja&uselang=ja&type=item&limit=5&format=json`);
+    const ids = ((await search.json()) as { search?: { id: string }[] }).search?.map((x) => x.id) ?? [];
+    if (!ids.length) return null;
+    const got = await fetchWithTimeout(`${api}?action=wbgetentities&ids=${ids.join('|')}&props=claims&format=json`);
+    type Claim = { mainsnak?: { datavalue?: { value?: unknown } } };
+    const entities = ((await got.json()) as { entities?: Record<string, { claims?: Record<string, Claim[]> }> }).entities ?? {};
+    // 検索で上に出たものから順に、公式サイトがあるものを使う
+    for (const id of ids) {
+      const v = entities[id]?.claims?.P856?.[0]?.mainsnak?.datavalue?.value;
+      if (typeof v === 'string') return v;
+    }
+  } catch {
+    // 調べられなければ頭文字のまま
+  }
+  return null;
+}
+
 export async function GET(request: NextRequest) {
-  const raw = request.nextUrl.searchParams.get('url') ?? '';
+  const name = request.nextUrl.searchParams.get('name') ?? '';
+  let raw = request.nextUrl.searchParams.get('url') ?? '';
+  if (!raw && name) raw = (await officialSite(name)) ?? '';
+  if (!raw) return Response.json({ error: 'ロゴが見つかりませんでした' }, { status: 404 });
   let site: URL;
   try {
     site = new URL(/^https?:\/\//.test(raw) ? raw : `https://${raw}`);
