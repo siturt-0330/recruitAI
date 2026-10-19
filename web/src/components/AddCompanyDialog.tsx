@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
+import { API_URL } from '@/lib/api-url';
 import { emptyCompany } from '@/lib/seed';
 import { STAGES } from '@/lib/stages';
 import { useStore } from '@/lib/store';
@@ -20,7 +21,7 @@ const hostOf = (url: string) => {
 
 export async function fetchLogo(url: string): Promise<{ logo?: string; error?: string }> {
   try {
-    const res = await fetch(`/api/logo?url=${encodeURIComponent(url)}`);
+    const res = await fetch(`${API_URL}/v1/logo?url=${encodeURIComponent(url)}`);
     return (await res.json()) as { logo?: string; error?: string };
   } catch {
     return { error: 'ロゴを取得できませんでした' };

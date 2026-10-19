@@ -1,5 +1,3 @@
-import type { NextRequest } from 'next/server';
-
 /**
  * 企業のサイトからロゴ（アイコン）を取得する。
  * 外部のロゴ検索サービスは使わず、企業のサイトに直接アクセスする（どの企業を見ているかを第三者に送らないため）。
@@ -104,18 +102,29 @@ async function officialSite(name: string): Promise<string | null> {
   return null;
 }
 
-export async function GET(request: NextRequest) {
-  const name = request.nextUrl.searchParams.get('name') ?? '';
-  let raw = request.nextUrl.searchParams.get('url') ?? '';
+export type LogoResult = { logo: string; source: string } | { error: string; status: number };
+
+const NOT_FOUND = { error: 'ロゴが見つかりませんでした', status: 404 };
+
+/** 画像を data URL にする（Workers には Buffer がないので、少しずつ文字にしてから base64 にする） */
+function toBase64(bytes: Uint8Array): string {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+/** 会社名か URL からロゴを探す */
+export async function findLogo(name: string, url: string): Promise<LogoResult> {
+  let raw = url;
   if (!raw && name) raw = (await officialSite(name)) ?? '';
-  if (!raw) return Response.json({ error: 'ロゴが見つかりませんでした' }, { status: 404 });
+  if (!raw) return NOT_FOUND;
   let site: URL;
   try {
     site = new URL(/^https?:\/\//.test(raw) ? raw : `https://${raw}`);
   } catch {
-    return Response.json({ error: 'URL が正しくありません' }, { status: 400 });
+    return { error: 'URL が正しくありません', status: 400 };
   }
-  if (!isPublicHttpUrl(site)) return Response.json({ error: 'このアドレスからは取得できません' }, { status: 400 });
+  if (!isPublicHttpUrl(site)) return { error: 'このアドレスからは取得できません', status: 400 };
 
   let html = '';
   try {
@@ -144,12 +153,12 @@ export async function GET(request: NextRequest) {
       const res = await fetchWithTimeout(candidate);
       const type = res.headers.get('content-type') ?? '';
       if (!res.ok || !/^image\//.test(type)) continue;
-      const buf = Buffer.from(await res.arrayBuffer());
+      const buf = new Uint8Array(await res.arrayBuffer());
       if (!buf.length || buf.length > MAX_BYTES) continue;
-      return Response.json({ logo: `data:${type.split(';')[0]};base64,${buf.toString('base64')}`, source: candidate });
+      return { logo: `data:${type.split(';')[0]};base64,${toBase64(buf)}`, source: candidate };
     } catch {
       // 次の候補へ
     }
   }
-  return Response.json({ error: 'ロゴが見つかりませんでした' }, { status: 404 });
+  return NOT_FOUND;
 }

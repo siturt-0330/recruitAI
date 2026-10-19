@@ -7,6 +7,7 @@ import { Button, CompanyLogo, PageHeader } from '@/components/ui';
 import { addDays, md, today, weekday } from '@/lib/dates';
 import { useStore } from '@/lib/store';
 import { eventsBetween } from '@/lib/tasks';
+import { companyHref } from '@/lib/links';
 
 const KIND = {
   deadline: { label: '締切', cls: 'bg-dangerbg text-danger' },
@@ -56,7 +57,7 @@ export default function SchedulePage() {
               {events
                 .filter((e) => e.date === d)
                 .map((e, i) => (
-                  <Link key={i} href={`/companies/${e.company.id}`} className={`mt-1.5 block truncate rounded-md px-1.5 py-1 text-[11px] ${KIND[e.kind].cls}`} title={`${e.company.name} ${e.label}`}>
+                  <Link key={i} href={companyHref(e.company.id)} className={`mt-1.5 block truncate rounded-md px-1.5 py-1 text-[11px] ${KIND[e.kind].cls}`} title={`${e.company.name} ${e.label}`}>
                     {e.time && `${e.time} `}
                     {e.company.name} {e.label}
                   </Link>
@@ -72,7 +73,7 @@ export default function SchedulePage() {
           <ul className="divide-y divide-line rounded-2xl border border-line">
             {upcoming.map((e, i) => (
               <li key={i}>
-                <Link href={`/companies/${e.company.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-fill">
+                <Link href={companyHref(e.company.id)} className="flex items-center gap-3 px-4 py-3 hover:bg-fill">
                   <div className="w-24 shrink-0 text-sm">
                     <b>{md(e.date)}</b>
                     <span className="text-sub">（{weekday(e.date)}）</span>

@@ -28,7 +28,12 @@ export function emptyCompany(name: string): Company {
   };
 }
 
-/** はじめて開いたときに入れる架空のサンプル。日付は今日を基準に作る */
+/** 公開版をはじめて開いたときの空のデータ */
+export function emptyData(): AppData {
+  return { companies: [], industries: [], profile: null, doneTasks: {}, sample: false, removedIds: [] };
+}
+
+/** 手元で開発するときに入れる架空のサンプル。日付は今日を基準に作る */
 export function sampleData(): AppData {
   const t = today();
   const c = (patch: Partial<Company> & { name: string }): Company => ({ ...emptyCompany(patch.name), ...patch });

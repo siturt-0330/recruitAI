@@ -13,6 +13,7 @@ import { COLUMNS, STAGES, stageOrder } from '@/lib/stages';
 import { useStore } from '@/lib/store';
 import { nextEventText } from '@/lib/tasks';
 import type { Company, Stage } from '@/lib/types';
+import { companyHref } from '@/lib/links';
 
 type Filter = 'all' | 'interview' | 'due' | 'offer';
 
@@ -98,7 +99,7 @@ export default function BoardPage() {
           defaultStage={adding}
           onClose={(id) => {
             setAdding(null);
-            if (id && boardView === 'board') router.prefetch(`/companies/${id}`);
+            if (id && boardView === 'board') router.prefetch(companyHref(id));
           }}
         />
       )}
@@ -143,7 +144,7 @@ function Board({ companies, onAdd }: { companies: Company[]; onAdd(stage: Stage)
               return (
                 <Link
                   key={c.id}
-                  href={`/companies/${c.id}`}
+                  href={companyHref(c.id)}
                   draggable
                   onDragStart={() => setDragging(c.id)}
                   onDragEnd={() => setDragging(null)}
@@ -243,7 +244,7 @@ function CompanyTable({ companies }: { companies: Company[] }) {
           {rows.map((c) => (
             <tr key={c.id} className="hover:bg-[#FAFBFB]">
               <td className={cell}>
-                <Link href={`/companies/${c.id}`} className="flex min-w-0 items-center gap-2.5">
+                <Link href={companyHref(c.id)} className="flex min-w-0 items-center gap-2.5">
                   <CompanyLogo company={c} size={30} />
                   <span className="min-w-0">
                     <span className="block truncate font-bold hover:underline">{c.name}</span>

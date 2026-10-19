@@ -7,6 +7,7 @@ import { DueBadge, Empty, SophonCard } from '@/components/ui';
 import { addDays, md, today, weekday } from '@/lib/dates';
 import { useStore } from '@/lib/store';
 import { eventsBetween, todayTasks } from '@/lib/tasks';
+import { companyHref } from '@/lib/links';
 
 const KIND_STYLE = {
   deadline: 'bg-dangerbg text-danger',
@@ -52,7 +53,7 @@ export default function HomePage() {
           {hits.length > 0 && (
             <div className="absolute left-0 right-0 top-12 z-20 rounded-2xl border border-line bg-white py-2 shadow-xl">
               {hits.map((c) => (
-                <Link key={c.id} href={`/companies/${c.id}`} className="block px-4 py-2 text-sm hover:bg-fill">
+                <Link key={c.id} href={companyHref(c.id)} className="block px-4 py-2 text-sm hover:bg-fill">
                   {c.name}
                   <span className="ml-2 text-xs text-mute">{c.industry}</span>
                 </Link>
@@ -105,7 +106,7 @@ export default function HomePage() {
         </Link>
       </div>
       {data.companies.length === 0 ? (
-        <Empty title="まずは企業を追加しましょう" action={<Link href="/companies" className="font-bold text-ind">企業へ</Link>} />
+        <Empty title="まずは企業を追加しましょう" action={<Link href="/companies" className="font-bold text-link">マイページへ</Link>} />
       ) : (
         <div className="grid grid-cols-7 gap-2">
           {days.map((d, i) => (
@@ -117,7 +118,7 @@ export default function HomePage() {
                 .map((e, j) => (
                   <Link
                     key={j}
-                    href={`/companies/${e.company.id}`}
+                    href={companyHref(e.company.id)}
                     title={`${e.company.name} ${e.label}`}
                     className={`mt-1.5 block truncate rounded-md px-1.5 py-1 text-[11px] ${KIND_STYLE[e.kind]}`}
                   >

@@ -1,5 +1,6 @@
 import { daysUntil, md, mdTime, today } from './dates';
 import type { AppData, Company } from './types';
+import { companyHref } from './links';
 
 export interface Task {
   id: string;
@@ -38,7 +39,7 @@ export function todayTasks(data: AppData): Task[] {
           title: `${c.name}の${c.deadlineLabel || '締切'}${/ES|エントリー/.test(c.deadlineLabel) ? 'を提出' : ''}`,
           detail: `締切 ${n === 0 ? '今日' : n === 1 ? '明日' : md(c.deadline, true)}`,
           badge: n <= 1 ? { label: n === 0 ? '今日まで' : 'あと1日', tone: 'red' } : { label: `あと${n}日`, tone: 'amber' },
-          href: `/companies/${c.id}`,
+          href: companyHref(c.id),
           action: '開く',
           priority: n,
         });
@@ -51,7 +52,7 @@ export function todayTasks(data: AppData): Task[] {
           id: `prepare:${c.id}:${c.nextAt}`,
           title: `${c.name}の${c.nextLabel.replace(/（.*）/, '')}の準備`,
           detail: `${n === 0 ? '今日' : n === 1 ? '明日' : md(c.nextAt, true)} ${c.nextAt.slice(11, 16)}`,
-          href: `/companies/${c.id}`,
+          href: companyHref(c.id),
           action: '見る',
           priority: n + 0.5,
         });
