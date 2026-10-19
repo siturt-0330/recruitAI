@@ -1,5 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import { classifyWithOpenAI } from '../../lib/openai';
+import { findLogo } from './logo';
 import type { RemoteQuestion } from '../../lib/types';
 
 /**
@@ -76,8 +77,45 @@ async function readLimited(request: Request): Promise<string | null> {
   return new TextDecoder().decode(all);
 }
 
+/**
+ * Web 版（app.rakuraku-entry.com）の会社のロゴ。会社名か URL を受け取り、企業サイトのアイコンを data URL で返す。
+ * 結果はキャッシュし、取りに行く回数には上限を付ける（このサーバーを踏み台に、ほかのサイトへ大量にアクセスさせないため）
+ */
+async function logo(request: Request, env: Env, ctx: ExecutionContext, url: URL): Promise<Response> {
+  const origin = request.headers.get('Origin') ?? '';
+  const allowed = env.APP_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
+  if (!allowed.includes(origin)) return json({ error: 'forbidden' }, 403);
+  const cors = { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' };
+  if (request.method !== 'GET') return json({ error: 'method not allowed' }, 405);
+
+  const name = (url.searchParams.get('name') ?? '').trim().slice(0, 80);
+  const target = (url.searchParams.get('url') ?? '').trim().slice(0, 300);
+  if (!name && !target) return json({ error: 'name or url' }, 400);
+
+  // 同じ会社は何度も取りに行かない（どの Origin から来ても同じ結果なので、キャッシュの鍵には Origin を入れない）
+  const key = new Request(`${url.origin}/__logo-cache?name=${encodeURIComponent(name)}&url=${encodeURIComponent(target)}`);
+  const cache = caches.default;
+  const hit = await cache.match(key);
+  if (hit) return new Response(hit.body, { status: hit.status, headers: { ...Object.fromEntries(hit.headers), ...cors } });
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+  const verdict = await env.QUOTA.getByName('global').takeLogo(dayJst(), ip, Number(env.LOGO_LIMIT_PER_IP), Number(env.LOGO_LIMIT_GLOBAL));
+  if (!verdict.ok) return new Response(JSON.stringify({ error: 'quota' }), { status: 429, headers: { 'Content-Type': 'application/json; charset=utf-8', ...cors } });
+
+  const result = await findLogo(name, target);
+  const status = 'error' in result ? result.status : 200;
+  const body = 'error' in result ? { error: result.error } : result;
+  // 見つかったものは1週間、見つからなかったものは1日おいてから探し直す
+  const res = new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': `public, max-age=${status === 200 ? 7 * 86400 : 86400}` },
+  });
+  if (status === 200 || status === 404) ctx.waitUntil(cache.put(key, res.clone()));
+  return new Response(res.body, { status, headers: { ...Object.fromEntries(res.headers), ...cors } });
+}
+
 export default {
-  async fetch(request, env): Promise<Response> {
+  async fetch(request, env, ctx): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === '/health') return json({ ok: true });
     // Google Search Console の所有確認。.html のままリダイレクトせずに返す必要がある
@@ -101,6 +139,7 @@ export default {
       if (!(await isAdmin(request, env))) return json({ error: 'unauthorized' }, 401);
       return json({ day: dayJst(), ...(await env.QUOTA.getByName('global').today(dayJst())) });
     }
+    if (url.pathname === '/v1/logo') return logo(request, env, ctx, url);
     if (url.pathname !== '/v1/classify') return json({ error: 'not found' }, 404);
     if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
 
@@ -178,6 +217,23 @@ export class Quota extends DurableObject<Env> {
     }
     // 古い日の記録は消す
     sql.exec('DELETE FROM usage WHERE day < ?', day);
+    return { ok: true };
+  }
+
+  /** ロゴ取得の回数を数える（AI 判定とは別の上限） */
+  async takeLogo(day: string, ip: string, perIp: number, global: number): Promise<{ ok: boolean }> {
+    const sql = this.ctx.storage.sql;
+    const checks: [string, number][] = [
+      ['logo', global],
+      [`logo-ip:${ip}`, perIp],
+    ];
+    for (const [key, limit] of checks) {
+      const n = sql.exec<{ n: number }>('SELECT n FROM usage WHERE day = ? AND key = ?', day, key).toArray()[0]?.n ?? 0;
+      if (n >= limit) return { ok: false };
+    }
+    for (const [key] of checks) {
+      sql.exec('INSERT INTO usage (day, key, n) VALUES (?, ?, 1) ON CONFLICT (day, key) DO UPDATE SET n = n + 1', day, key);
+    }
     return { ok: true };
   }
 

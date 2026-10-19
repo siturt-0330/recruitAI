@@ -5,7 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { nowIso } from './dates';
 import { emptyProfile, normalizeProfile } from '@ext/profile';
 import type { LinkMypage, LinkRecord } from '@ext/sophon-link';
-import { emptyCompany, sampleData } from './seed';
+import { emptyCompany, emptyData, sampleData } from './seed';
 import { stageOrder } from './stages';
 import type { AppData, Company, Profile } from './types';
 
@@ -42,7 +42,8 @@ const patch = <T extends { id: string; updatedAt: string }>(list: T[], id: strin
 export const useStore = create<Store>()(
   persist(
     (set, get) => ({
-      ...sampleData(),
+      // 公開版は空から始める。手元の開発では、画面を確かめやすいようにサンプルを入れる
+      ...(process.env.NODE_ENV === 'production' ? emptyData() : sampleData()),
       boardView: 'board',
       setBoardView: (boardView) => set({ boardView }),
 

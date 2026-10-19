@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Web 版（web/ を next build で書き出した HTML）を配信するだけの Worker。スクリプトはない
+  "name": "rakuraku-app",
+  "compatibility_date": "2026-10-16",
+  "routes": [{ "pattern": "app.rakuraku-entry.com", "custom_domain": true }],
+  // /companies → companies.html のように .html を付けて返す。ないページは 404.html
+  "assets": { "directory": "../web/out", "html_handling": "auto-trailing-slash", "not_found_handling": "404-page" },
+  "workers_dev": false
+}

@@ -23,6 +23,7 @@ import { BlockEditor } from './BlockEditor';
 import { DEFAULT_INDUSTRIES } from './IndustrySelect';
 import { CompanyLogo } from './ui';
 import { forgetMypage, openMypage, useExtension } from '@/lib/extension';
+import { companyHref } from '@/lib/links';
 import { logoFor } from '@/lib/logo';
 import { uid } from '@/lib/seed';
 import { STAGES, stageInfo } from '@/lib/stages';
@@ -69,7 +70,7 @@ export function CompanyPage({ company, mode, onClose }: { company: Company; mode
         ) : (
           <>
             <span className="mr-auto" />
-            <Link href={`/companies/${company.id}`} aria-label="全画面で開く" className="rounded-md p-1.5 hover:bg-fill">
+            <Link href={companyHref(company.id, true)} aria-label="全画面で開く" className="rounded-md p-1.5 hover:bg-fill">
               <Maximize2 size={16} />
             </Link>
           </>

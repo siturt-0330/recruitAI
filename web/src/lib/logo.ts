@@ -1,6 +1,7 @@
 'use client';
 
 import { isSharedHost, siteOf } from '@ext/sophon-link';
+import { API_URL } from './api-url';
 import type { Company } from './types';
 
 /** 同じ会社名で何度も問い合わせないよう、このページを開いている間は結果を覚えておく */
@@ -8,7 +9,7 @@ const cache = new Map<string, Promise<string>>();
 
 async function request(query: string): Promise<string> {
   try {
-    const res = await fetch(`/api/logo?${query}`);
+    const res = await fetch(`${API_URL}/v1/logo?${query}`);
     return ((await res.json()) as { logo?: string }).logo ?? '';
   } catch {
     return '';

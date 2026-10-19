@@ -9,7 +9,20 @@ npm install
 npm run dev -- --port 3100
 ```
 
-http://localhost:3100 を開きます。最初はサンプルデータが入っています（ホームの「消して始める」で消せます）。
+http://localhost:3100 を開きます。手元ではサンプルデータが入っています（ホームの「消して始める」で消せます）。公開版は空から始まります。
+
+会社のロゴは中継 API（`worker/`）の `/v1/logo` から取ります。手元で確かめるときは、別のターミナルで `worker/` の `npx wrangler dev --port 8787` を動かしてください（動いていなければ頭文字のまま表示します）。
+
+## 公開（app.rakuraku-entry.com）
+
+サーバーは使わず、`next build` で `out/` に書き出した HTML を Cloudflare Workers で配信します（設定は `worker/app.wrangler.jsonc`）。
+
+```bash
+cd worker
+npm run deploy:app
+```
+
+ロゴの取得を変えたときは、中継 API も `npm run deploy` で出し直します。
 
 ## データの保存先
 

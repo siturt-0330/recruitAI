@@ -1,11 +1,13 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import { Building2, ExternalLink, KeyRound, Plus } from 'lucide-react';
 import { CompanyPage, openCompanyMypage } from '@/components/CompanyPage';
-import { Button, CompanyLogo } from '@/components/ui';
+import { Button, CompanyLogo, Empty } from '@/components/ui';
 import { useExtension } from '@/lib/extension';
+import { companyHref } from '@/lib/links';
 import { logoByName, logoFor } from '@/lib/logo';
 import { emptyCompany } from '@/lib/seed';
 import { useStore } from '@/lib/store';
@@ -23,18 +25,40 @@ const host = (url: string) => {
 const tried = new Set<string>();
 
 /** 会社のページを右に出せる幅か（狭い画面では1ページ全体で開く） */
-const wide = () => window.innerWidth >= 1024;
+function useWide() {
+  const [wide, setWide] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const on = () => setWide(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return wide;
+}
 
 /**
  * 受けている企業のマイページ一覧。会社を押すと、右側に Notion のような会社のページが開く。
  * パスワードはこのページには来ない（拡張機能の中にだけある）。
  */
 export default function CompaniesPage() {
+  // URL の ?id= を読むので Suspense で包む（HTML を書き出すときの決まり）
+  return (
+    <Suspense>
+      <CompaniesView />
+    </Suspense>
+  );
+}
+
+function CompaniesView() {
   const router = useRouter();
+  const params = useSearchParams();
+  const wide = useWide();
+  // 開いている会社は URL（/companies?id=...）で持つ。ホームや予定のリンクからも開ける
+  const selected = params.get('id') ?? '';
+  const full = params.get('full') === '1' || !wide;
   const { companies, upsertCompany } = useStore();
   const { connected, notice } = useExtension();
   const [name, setName] = useState('');
-  const [selected, setSelected] = useState('');
 
   useEffect(() => {
     if (!notice) return;
@@ -72,10 +96,8 @@ export default function CompaniesPage() {
     })();
   }, [companies]);
 
-  const select = (id: string) => {
-    if (wide()) setSelected(id);
-    else router.push(`/companies/${id}`);
-  };
+  const select = (id: string) => router.push(companyHref(id));
+  const close = () => router.push('/companies');
 
   const add = () => {
     const n = name.trim();
@@ -89,6 +111,21 @@ export default function CompaniesPage() {
   // 新しく追加した会社が上に来るように（並びは作った順。書き換えても動かない）
   const sorted = [...companies].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const current = companies.find((c) => c.id === selected);
+
+  if (selected && full) {
+    return current ? (
+      <CompanyPage key={current.id} company={current} mode="full" onClose={close} />
+    ) : (
+      <Empty
+        title="企業が見つかりません"
+        action={
+          <Link href="/companies" className="font-bold text-link">
+            マイページへ
+          </Link>
+        }
+      />
+    );
+  }
 
   return (
     <div className={current ? 'lg:grid lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]' : ''}>
@@ -145,7 +182,7 @@ export default function CompaniesPage() {
       {current && (
         <aside className="hidden border-l border-line lg:block">
           <div className="sticky top-0 h-screen overflow-y-auto">
-            <CompanyPage key={current.id} company={current} mode="peek" onClose={() => setSelected('')} />
+            <CompanyPage key={current.id} company={current} mode="peek" onClose={close} />
           </div>
         </aside>
       )}

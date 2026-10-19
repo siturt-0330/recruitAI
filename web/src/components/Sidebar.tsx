@@ -6,7 +6,7 @@ import { Building2, Calendar, Home, IdCard } from 'lucide-react';
 
 const NAV = [
   { href: '/', label: 'ホーム', icon: Home },
-  { href: '/companies', label: '企業', icon: Building2 },
+  { href: '/companies', label: 'マイページ', icon: Building2 },
   { href: '/schedule', label: '予定', icon: Calendar },
   { href: '/profile', label: 'プロフィール', icon: IdCard },
 ];
