@@ -19,7 +19,7 @@ export default function ProfilePageView() {
   const connected = useExtension((s) => s.connected);
   const [pageId, setPageId] = useState<ProfilePage>('basic');
   // まだ保存していなければ空のプロフィールを表示し、最初の入力で作る
-  const blank = useMemo(() => emptyProfile('Sophon'), []);
+  const blank = useMemo(() => emptyProfile('メイン'), []);
   const profile = stored ?? blank;
   const page = PROFILE_PAGES.find((p) => p.id === pageId)!;
 
