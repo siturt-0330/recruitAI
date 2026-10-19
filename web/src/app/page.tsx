@@ -83,7 +83,7 @@ export default function HomePage() {
                     <div className="text-xs text-sub">{task.detail}</div>
                   </div>
                   <DueBadge badge={task.badge} />
-                  <Link href={task.href} className="text-[13px] font-bold text-ind hover:underline">
+                  <Link href={task.href} className="text-[13px] font-bold text-link hover:underline">
                     {task.action}
                   </Link>
                 </li>
@@ -100,12 +100,12 @@ export default function HomePage() {
 
       <div className="mb-3 flex items-baseline justify-between">
         <h2 className="text-[17px] font-extrabold">今週の予定</h2>
-        <Link href="/schedule" className="text-[13px] text-ind hover:underline">
+        <Link href="/schedule" className="text-[13px] text-link hover:underline">
           予定をすべて見る
         </Link>
       </div>
       {data.companies.length === 0 ? (
-        <Empty title="まずは企業を追加しましょう" action={<Link href="/board" className="font-bold text-ind">企業ボードへ</Link>} />
+        <Empty title="まずは企業を追加しましょう" action={<Link href="/companies" className="font-bold text-ind">企業へ</Link>} />
       ) : (
         <div className="grid grid-cols-7 gap-2">
           {days.map((d, i) => (

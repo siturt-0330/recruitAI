@@ -7,21 +7,17 @@ import { ArrowDown, ArrowUp, ArrowUpDown, CalendarClock, Download, LayoutGrid, P
 import { AddCompanyDialog } from '@/components/AddCompanyDialog';
 import { IndustrySelect } from '@/components/IndustrySelect';
 import { Button, Chip, CompanyLogo, DueBadge, PageHeader, StagePill } from '@/components/ui';
-import { dueBadge, md, mdTime, today, ymd } from '@/lib/dates';
+import { dueBadge, md, mdTime, ymd } from '@/lib/dates';
 import { emptyCompany } from '@/lib/seed';
 import { COLUMNS, STAGES, stageOrder } from '@/lib/stages';
 import { useStore } from '@/lib/store';
 import { nextEventText } from '@/lib/tasks';
-import type { Company, Interview, Stage } from '@/lib/types';
+import type { Company, Stage } from '@/lib/types';
 
 type Filter = 'all' | 'interview' | 'due' | 'offer';
 
-/** 終わった面接で、振り返りがまだのものがあるか */
-const needsReview = (interviews: Interview[], companyId: string) =>
-  interviews.some((i) => i.companyId === companyId && i.at.slice(0, 10) <= today() && !i.rating && !i.questions.length && !i.review);
-
 export default function BoardPage() {
-  const { companies, interviews, boardView, setBoardView } = useStore();
+  const { companies, boardView, setBoardView } = useStore();
   const [adding, setAdding] = useState<Stage | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const router = useRouter();
@@ -91,9 +87,9 @@ export default function BoardPage() {
         </div>
 
         {boardView === 'board' ? (
-          <Board companies={visible} interviews={interviews} onAdd={setAdding} />
+          <Board companies={visible} onAdd={setAdding} />
         ) : (
-          <CompanyTable companies={visible} interviews={interviews} />
+          <CompanyTable companies={visible} />
         )}
       </div>
 
@@ -110,7 +106,7 @@ export default function BoardPage() {
   );
 }
 
-function Board({ companies, interviews, onAdd }: { companies: Company[]; interviews: Interview[]; onAdd(stage: Stage): void }) {
+function Board({ companies, onAdd }: { companies: Company[]; onAdd(stage: Stage): void }) {
   const patchCompany = useStore((s) => s.patchCompany);
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
@@ -144,7 +140,6 @@ function Board({ companies, interviews, onAdd }: { companies: Company[]; intervi
             </div>
             {items.map((c) => {
               const badge = dueBadge(c.deadline);
-              const review = needsReview(interviews, c.id);
               return (
                 <Link
                   key={c.id}
@@ -176,12 +171,6 @@ function Board({ companies, interviews, onAdd }: { companies: Company[]; intervi
                       {md(ymd(new Date(c.submittedAt)))} フォームから
                     </div>
                   )}
-                  {review && (
-                    <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-indbg px-2 py-0.5 text-[11px] text-indtext">
-                      <span className="orb h-3.5 w-3.5" />
-                      振り返りを書く
-                    </div>
-                  )}
                 </Link>
               );
             })}
@@ -201,7 +190,7 @@ function Board({ companies, interviews, onAdd }: { companies: Company[]; intervi
 
 type SortKey = 'name' | 'stage' | 'next' | 'deadline' | 'industry';
 
-function CompanyTable({ companies, interviews }: { companies: Company[]; interviews: Interview[] }) {
+function CompanyTable({ companies }: { companies: Company[] }) {
   const { patchCompany, upsertCompany } = useStore();
   const [sort, setSort] = useState<{ key: SortKey; asc: boolean }>({ key: 'deadline', asc: true });
   const [newName, setNewName] = useState('');
@@ -278,17 +267,9 @@ function CompanyTable({ companies, interviews }: { companies: Company[]; intervi
               </td>
               <td className={cell}>
                 <div className="flex items-center gap-1">
-                  {needsReview(interviews, c.id) ? (
-                    <Link href={`/companies/${c.id}`} className="inline-flex items-center gap-1.5 text-xs text-indtext">
-                      <span className="orb h-3.5 w-3.5" />
-                      振り返り未記入
-                    </Link>
-                  ) : (
-                    <>
-                      <DateCell type="datetime-local" value={c.nextAt} onChange={(v) => patchCompany(c.id, { nextAt: v })} format={mdTime} className="w-[44%] shrink-0" />
+                                        <DateCell type="datetime-local" value={c.nextAt} onChange={(v) => patchCompany(c.id, { nextAt: v })} format={mdTime} className="w-[44%] shrink-0" />
                       <input value={c.nextLabel} placeholder="—" onChange={(e) => patchCompany(c.id, { nextLabel: e.target.value })} className={`${inputCls} text-sub`} />
-                    </>
-                  )}
+
                 </div>
               </td>
               <td className={cell}>

@@ -133,7 +133,7 @@ export function SophonCard({ title, sub, children, className = '' }: { title: st
         <span className="orb h-8 w-8" />
         <div className="min-w-0">
           <div className="text-[15px] font-extrabold text-indtext">{title}</div>
-          {sub && <div className="text-xs text-[#6B6FB0]">{sub}</div>}
+          {sub && <div className="text-xs text-[#536471]">{sub}</div>}
         </div>
       </div>
       {children}

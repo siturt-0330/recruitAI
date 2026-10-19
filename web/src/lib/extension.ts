@@ -8,9 +8,18 @@ import { useStore } from './store';
 import type { AppData } from './types';
 
 /** 拡張機能とつながっているか（保存しない） */
-export const useExtension = create<{ connected: boolean; version: string }>(() => ({ connected: false, version: '' }));
+export const useExtension = create<{ connected: boolean; version: string; /** 拡張機能でマイページが保存されたときのお知らせ */ notice: string }>(() => ({
+  connected: false,
+  version: '',
+  notice: '',
+}));
 
 const post = (msg: AppMessage) => window.postMessage(msg, location.origin);
+
+/** マイページを開いて、拡張機能に保存した ID とパスワードを入れてもらう */
+export const openMypage = (companyId: string) => post({ source: 'sophon-app', type: 'openMypage', companyId });
+/** 会社を消したとき、拡張機能に保存したログイン情報も消す */
+export const forgetMypage = (companyId: string) => post({ source: 'sophon-app', type: 'forgetMypage', companyId });
 
 /** 拡張機能に渡すのは、応募フォームで使う分だけ（ロゴやメモは渡さない） */
 function linkData(s: AppData): LinkData {
@@ -20,13 +29,16 @@ function linkData(s: AppData): LinkData {
       name: c.name,
       url: c.url,
       mypageUrl: c.mypageUrl,
+      loginId: c.loginId,
+      updatedAt: c.updatedAt,
       stageLabel: stageInfo(c.stage).label,
       deadline: c.deadline,
       deadlineLabel: c.deadlineLabel,
       nextAt: c.nextAt,
       nextLabel: c.nextLabel,
     })),
-    esAnswers: s.esAnswers.map((a) => ({ id: a.id, category: a.category, title: a.title, text: a.text, charLimit: a.charLimit, companyIds: a.companyIds })),
+    // ES の管理はやめたので、拡張機能に渡す回答はない
+    esAnswers: [],
     syncedAt: new Date().toISOString(),
   };
 }
@@ -59,14 +71,17 @@ export function useExtensionBridge() {
       } else if (msg.type === 'records') {
         store.applyRecords(msg.records);
         post({ source: 'sophon-app', type: 'ack', ids: msg.records.map((r) => r.id) });
+      } else if (msg.type === 'mypages') {
+        const changed = store.applyMypages(msg.mypages);
+        if (changed.length) useExtension.setState({ notice: `${changed.join('、')} のマイページを保存しました` });
       }
     };
     window.addEventListener('message', onMessage);
 
-    // 企業・ES・プロフィールが変わったら送り直す（つながっているときだけ）
+    // 企業・プロフィールが変わったら送り直す（つながっているときだけ）
     const unsubscribe = useStore.subscribe((s, prev) => {
       if (!useExtension.getState().connected) return;
-      if (s.companies !== prev.companies || s.esAnswers !== prev.esAnswers || s.profile !== prev.profile) scheduleSync();
+      if (s.companies !== prev.companies || s.profile !== prev.profile) scheduleSync();
     });
 
     post({ source: 'sophon-app', type: 'ping' });

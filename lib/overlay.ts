@@ -30,8 +30,8 @@ const CSS = `
 .bar .warn { color: #ffc53d; }
 .bar button { all: unset; cursor: pointer; font-size: 13px; font-weight: 700; padding: 7px 14px; border-radius: 999px; background: #fff; color: #0f1419; }
 .bar button:hover { background: #e7e9ea; }
-.bar button.primary { background: #4a4fbf; color: #fff; }
-.bar button.primary:hover { background: #3d42a8; }
+.bar button.primary { background: #0f1419; color: #fff; }
+.bar button.primary:hover { background: #272c30; }
 .bar button.done { background: transparent; color: #9fe1cb; cursor: default; }
 .bar .company { font-weight: 700; }
 .bar button.icon { padding: 7px 10px; background: transparent; color: #8b98a5; font-weight: 400; }
@@ -64,7 +64,8 @@ export class Overlay {
     this.link = link;
   }
 
-  render(marks: Mark[], summary: { filled: number; warn: number }) {
+  /** text を渡すと、バーには件数の代わりにその文を出す（ログイン情報の入力など） */
+  render(marks: Mark[], summary: { filled: number; warn: number }, text?: string) {
     this.clear();
     const host = this.doc.createElement('div');
     host.setAttribute('data-recruitai', '');
@@ -85,7 +86,7 @@ export class Overlay {
       this.boxes.push({ mark, box });
     }
 
-    if (summary.filled > 0) root.append(this.makeBar(summary));
+    if (summary.filled > 0) root.append(this.makeBar(summary, text));
 
     this.doc.documentElement.append(host);
     this.host = host;
@@ -132,7 +133,7 @@ export class Overlay {
     this.boxes = [];
   }
 
-  private makeBar({ filled, warn }: { filled: number; warn: number }) {
+  private makeBar({ filled, warn }: { filled: number; warn: number }, message?: string) {
     const bar = this.doc.createElement('div');
     bar.className = 'bar';
     const text = this.doc.createElement('span');
@@ -144,14 +145,18 @@ export class Overlay {
       s.append(b, label);
       return s;
     };
-    if (this.link) {
+    if (message) {
+      text.textContent = message;
+    } else if (this.link) {
       const name = this.doc.createElement('span');
       name.className = 'company';
       name.textContent = this.link.company;
       text.append(name, ' · ');
     }
-    text.append(count(filled, ' 件入力'));
-    if (warn) text.append(' · ', count(warn, ' 件要確認', 'warn'));
+    if (!message) {
+      text.append(count(filled, ' 件入力'));
+      if (warn) text.append(' · ', count(warn, ' 件要確認', 'warn'));
+    }
     const undo = this.doc.createElement('button');
     undo.textContent = '元に戻す';
     undo.onclick = () => this.handlers.onUndo();
@@ -164,7 +169,7 @@ export class Overlay {
     orb.className = 'orb';
     orb.title = 'Sophon';
     bar.append(orb, text);
-    if (this.link) bar.append(this.recordButton(this.link));
+    if (this.link && !message) bar.append(this.recordButton(this.link));
     bar.append(undo, close);
     return bar;
   }

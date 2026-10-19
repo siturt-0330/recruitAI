@@ -5,17 +5,17 @@ import { charCount, limitOf, rankEsAnswers, type LinkEsAnswer } from './sophon-l
 const CSS = `
 :host { all: initial; }
 .panel { position: absolute; z-index: 2147483647; width: 320px; box-sizing: border-box; padding: 10px; border-radius: 14px;
-  background: #f1f2fd; border: 1px solid #dde0f8; box-shadow: 0 10px 30px rgba(15,20,25,.16);
+  background: #f7f9f9; border: 1px solid #eff3f4; box-shadow: 0 10px 30px rgba(15,20,25,.16);
   font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif; color: #0f1419; }
-.head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #2f3380; font-weight: 700; }
+.head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #0f1419; font-weight: 700; }
 .head span { flex: 1; }
 .orb { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
   background: radial-gradient(circle at 50% 50%, #34386a 0%, #23264a 28%, #121322 52%, #0a0a0f 72%); }
 .orb::after { content: ''; width: 42%; height: 42%; border-radius: 50%; background: #0a0a0f; box-shadow: 0 0 0 1px #b9bde8; }
-.x { all: unset; cursor: pointer; color: #6b6fb0; padding: 0 4px; }
+.x { all: unset; cursor: pointer; color: #536471; padding: 0 4px; }
 .item { all: unset; box-sizing: border-box; display: block; width: 100%; cursor: pointer; margin-top: 4px; padding: 7px 9px;
-  border-radius: 10px; background: #fff; border: 1px solid #dde0f8; }
-.item:hover { border-color: #4a4fbf; }
+  border-radius: 10px; background: #fff; border: 1px solid #eff3f4; }
+.item:hover { border-color: #0f1419; }
 .row { display: flex; gap: 8px; align-items: baseline; }
 .title { flex: 1; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .count { font-size: 11px; color: #0f6e56; white-space: nowrap; }

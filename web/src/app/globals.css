@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* 白を基本に、選択中やボタンは Sophon の藍色。グラデーションはプロフィールのリングだけ */
+/* X や Instagram のように白と黒が基本。色を使うのは文字のリンク（青）と状態の色だけ。グラデーションはプロフィールのリングだけ */
 @theme {
   --color-ink: #0f1419;
   --color-sub: #536471;
@@ -8,11 +8,13 @@
   --color-line: #eff3f4;
   --color-box: #cfd9de;
   --color-fill: #f7f9f9;
-  --color-ind: #4a4fbf;
-  --color-ind-hover: #3d42a8;
-  --color-indbg: #f1f2fd;
-  --color-indline: #dde0f8;
-  --color-indtext: #2f3380;
+  --color-ind: #0f1419;
+  /* 文字のリンクは X と同じ青 */
+  --color-link: #1d9bf0;
+  --color-ind-hover: #272c30;
+  --color-indbg: #f7f9f9;
+  --color-indline: #eff3f4;
+  --color-indtext: #0f1419;
   --color-ok: #00875a;
   --color-okbg: #e6f8f1;
   --color-warn: #8a5a00;
@@ -28,7 +30,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Sophon のロゴ（濃紺の光の中に薄紫の輪） */
+/* Sophon のロゴ（濃紺の光の中に薄紫の輪）。ここだけは最初の色のまま */
 .orb {
   position: relative;
   border-radius: 9999px;

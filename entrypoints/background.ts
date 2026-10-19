@@ -1,6 +1,7 @@
 import { browser, defineBackground } from '#imports';
 import { classifyViaApi } from '@/lib/api';
-import { getInstallId, settingsItem } from '@/lib/store';
+import { originPattern } from '@/lib/mypages';
+import { getInstallId, mypagesItem, settingsItem } from '@/lib/store';
 import { activeTabId, runInTab } from '@/lib/tab';
 import type { RemoteQuestion } from '@/lib/types';
 
@@ -31,6 +32,12 @@ export default defineBackground(() => {
     }
   });
 
+  // Sophon で会社を押したとき：マイページを開き、許可があれば ID とパスワードを入れる
+  browser.runtime.onMessage.addListener((msg: { type?: string; companyId?: string }) => {
+    if (msg?.type !== 'openMypage' || !msg.companyId) return;
+    void openMypage(msg.companyId);
+  });
+
   // AI への問い合わせは、ページ側からではなくバックグラウンドから中継 API に送る
   browser.runtime.onMessage.addListener((msg: ClassifyMessage, _sender, sendResponse) => {
     if (msg?.type !== 'classify') return;
@@ -41,3 +48,35 @@ export default defineBackground(() => {
     return true;
   });
 });
+
+/** タブの読み込みが終わるまで待つ（長くても 20 秒） */
+function waitForLoad(tabId: number): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      browser.tabs.onUpdated.removeListener(onUpdated);
+      clearTimeout(timer);
+      resolve();
+    };
+    const onUpdated = (id: number, info: { status?: string }) => {
+      if (id === tabId && info.status === 'complete') done();
+    };
+    const timer = setTimeout(done, 20_000);
+    browser.tabs.onUpdated.addListener(onUpdated);
+  });
+}
+
+async function openMypage(companyId: string) {
+  const m = (await mypagesItem.getValue()).find((x) => x.companyId === companyId);
+  if (!m) return;
+  const tab = await browser.tabs.create({ url: m.url });
+  if (tab.id == null) return;
+  await waitForLoad(tab.id);
+  // 保存したときにこのサイトへの許可をもらっていなければ、開くだけ（アイコンを押せば入力できる）
+  const pattern = originPattern(m.url);
+  if (!pattern || !(await browser.permissions.contains({ origins: [pattern] }))) return;
+  try {
+    await runInTab(tab.id, 'fillLogin', { loginId: m.loginId, password: m.password, company: m.companyName });
+  } catch (e) {
+    console.warn('[らくらくエントリー] ログイン情報を入力できませんでした', e);
+  }
+}

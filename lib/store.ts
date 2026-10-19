@@ -1,6 +1,7 @@
 import { storage } from '#imports';
 import { DEFAULT_SETTINGS, type Profile, type Settings } from './types';
 import { emptyProfile, normalizeProfile } from './profile';
+import type { Mypage } from './mypages';
 import type { LinkData, LinkRecord } from './sophon-link';
 
 export { emptyProfile, normalizeProfile };
@@ -42,3 +43,6 @@ export async function getInstallId(): Promise<string> {
 
 /** スポンサー枠の中身（半日だけ覚えておき、毎回は取りに行かない） */
 export const sponsorCacheItem = storage.defineItem<{ at: number; sponsor: import('./api').Sponsor | null } | null>('local:sponsorCache', { fallback: null });
+
+/** マイページのログイン情報（パスワードを含む）。この PC の中だけに保存し、外には送らない */
+export const mypagesItem = storage.defineItem<Mypage[]>('local:mypages', { fallback: [] });

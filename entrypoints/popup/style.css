@@ -430,8 +430,8 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: #f1f2fd;
-  color: #2f3380;
+  background: var(--surface-1);
+  color: var(--text);
   font-weight: 800;
 }
 
@@ -453,7 +453,7 @@ body {
 
 .sophon-link {
   margin-left: auto;
-  color: #4a4fbf;
+  color: var(--link);
   font-weight: 700;
   text-decoration: none;
 }
@@ -506,4 +506,150 @@ body {
   color: var(--bg);
   font-size: 12px;
   font-weight: 700;
+}
+
+.mypage {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.mypage-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+/* iOS の設定画面のような、左に見出し・右に値の一覧 */
+.mypage-group {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.mypage-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 12px;
+  cursor: text;
+}
+
+.mypage-row + .mypage-row {
+  border-top: 1px solid var(--border);
+}
+
+.mypage-row > span {
+  flex-shrink: 0;
+  width: 64px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.mypage-row input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  padding: 10px 0;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text);
+  text-overflow: ellipsis;
+}
+
+.mypage-row input::placeholder {
+  color: var(--text-3);
+}
+
+.mypage-eye {
+  display: flex;
+  border: none;
+  background: none;
+  padding: 4px;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.mypage-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mypage-save {
+  flex: 1;
+  height: 38px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 下の「このページに入力」（黒）と並んでも迷わないよう、白地に黒い枠の控えめなボタンにする */
+.mypage-save {
+  border: 1.5px solid var(--text);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.mypage-save:hover {
+  background: var(--surface-1);
+}
+
+
+.mypage-saved {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.mypage-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mypage-saved .mypage-save {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.mypage-head .link {
+  margin: 0;
+  cursor: pointer;
+}
+
+.mypage .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.mypage .block-note {
+  margin: 0;
+  padding: 0 4px;
+}
+
+.mypage-save.is-done,
+.mypage-save:disabled {
+  border-color: var(--border);
+  background: var(--surface-1);
+  color: var(--text-2);
+  cursor: default;
 }
