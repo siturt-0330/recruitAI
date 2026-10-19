@@ -62,12 +62,16 @@
     '.ht-controls{display:flex;align-items:center;gap:12px;margin-top:14px}',
     '.ht-play{flex-shrink:0;width:40px;height:40px;border-radius:50%;border:1px solid #ece9f2;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}',
     '.ht-play svg{width:16px;height:16px}',
-    '.ht-segs{flex:1;display:flex;gap:8px}',
-    '.ht-seg{position:relative;border:0;padding:0;background:none;cursor:pointer;text-align:left;font:inherit;color:#57606a}',
+    // min-width:0 がないと、手順名の長さより縮まず、スマホでページが横にはみ出す
+    '.ht-segs{flex:1;min-width:0;display:flex;gap:8px}',
+    '.ht-seg{position:relative;min-width:0;border:0;padding:0;background:none;cursor:pointer;text-align:left;font:inherit;color:#57606a}',
     '.ht-seg i{display:block;height:5px;border-radius:999px;background:#ece9f2;overflow:hidden}',
     '.ht-seg i span{display:block;height:100%;width:0;background:linear-gradient(90deg,#5b4cf0,#ff7a59)}',
     '.ht-seg em{display:block;font-style:normal;font-size:12px;font-weight:700;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     '.ht-seg.on em{color:#14161a}',
+    '.ht-seg em b{font-weight:inherit}',
+    // スマホでは手順名が入りきらないので「STEP 1」だけにする
+    '@media (max-width:600px){.ht-seg em b{display:none}}',
   ].join('\n');
 
   function clamp(x) {
@@ -309,7 +313,7 @@
       el.play.type = 'button';
       var segs = controls.appendChild(h('div', 'ht-segs'));
       el.segs = STEPS.map(function (s, i) {
-        var b = segs.appendChild(h('button', 'ht-seg', '<i><span></span></i><em>STEP ' + (i + 1) + '　' + s.title + '</em>'));
+        var b = segs.appendChild(h('button', 'ht-seg', '<i><span></span></i><em>STEP ' + (i + 1) + '<b>　' + s.title + '</b></em>'));
         b.type = 'button';
         b.style.flex = String(s.to - s.from);
         b.setAttribute('aria-label', 'STEP ' + (i + 1) + ' ' + s.title + ' から再生');
