@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>らくらくエントリー 縦型動画 4</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@700;900&family=Noto+Sans+JP:wght@400;500;700;900&family=Inter:wght@600;800&display=swap" rel="stylesheet" />
+<!--
+  リール・TikTok・ショート用の縦型 PR 動画の 4 本目「呼び方がバラバラでも」（540×960 を 2 倍で 1080×1920 に書き出す）。
+  同じ電話番号の欄でも会社ごとに見出しが違う → AI「Sophon」が見出しを読んで判断 → 迷った欄は確認してくれて、候補から選び直せる
+  → 和暦・半角カナ・分割欄にも合わせる → 公式サイトへ。会社名・番号はすべて架空。絵文字は使わない。
+  画面はすべて時刻 t（秒）から決まる。ふつうに開くとループ再生、?t=秒 でその時点、?capture で書き出し用。
+  下の約 200px と右端はアプリのボタンや説明文に隠れるので、大事な文字は置かない。
+-->
+<style>
+  :root {
+    --ink: #14161a; --sub: #5b6470; --mute: #9aa3ad; --line: #ece9f2; --paper: #fbfaf8;
+    --stamp: #e0563f; --warn: #f4a100; --hl: #ffe45c; --accent: #5b4cf0;
+    --head: "Zen Kaku Gothic New", "Noto Sans JP", sans-serif;
+    --grad: linear-gradient(100deg, #5b4cf0 0%, #c04fd8 50%, #ff7a59 100%);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: #202228; display: flex; align-items: center; justify-content: center; overflow: hidden;
+    font-family: "Noto Sans JP", sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; line-height: 1.5; }
+  body.capture { display: block; background: var(--paper); }
+  #stage { position: relative; flex-shrink: 0; width: 540px; height: 960px; overflow: hidden; background: var(--paper); }
+  .abs { position: absolute; }
+  .scene { position: absolute; inset: 0; }
+  .blob { border-radius: 50%; filter: blur(64px); opacity: .85; }
+  #b1 { width: 380px; height: 380px; background: #d9d1ff; left: -150px; top: -110px; }
+  #b2 { width: 340px; height: 340px; background: #ffd9c7; left: 320px; top: 360px; }
+  #b3 { width: 360px; height: 360px; background: #c9f0de; left: -80px; top: 700px; }
+
+  .brandrow { left: 0; right: 0; top: 72px; display: flex; justify-content: center; }
+  .brandrow > div { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.85); border: 1px solid rgba(20,22,26,.06);
+    border-radius: 999px; padding: 5px 14px 5px 6px; font: 900 14px var(--head); box-shadow: 0 6px 20px rgba(20,22,26,.06); }
+  .brandrow svg { width: 24px; height: 24px; display: block; }
+  .h { font-family: var(--head); font-weight: 900; font-size: 40px; line-height: 1.3; letter-spacing: -.025em; }
+  .line { display: block; overflow: hidden; padding-bottom: .04em; }
+  .line > span { display: inline-block; }
+  .mk { background: linear-gradient(transparent 62%, var(--hl) 62%) no-repeat 0 0 / 0% 100%; padding: 0 2px; margin: 0 -2px; }
+  .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .grad2 { background: linear-gradient(100deg, #a59bff 0%, #e48cf2 50%, #ffa184 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .h, .brandrow, .lab, .tag, .pp-head, .pp-h, .conv, .end-name, .toast { font-feature-settings: "palt"; }
+
+  /* Sophon の目（サイトと同じ形） */
+  .orb { position: relative; display: inline-block; border-radius: 50%; flex-shrink: 0; background: radial-gradient(circle at 50% 50%, #34386a 0%, #23264a 28%, #121322 52%, #0a0a0f 72%); }
+  .orb::after { content: ''; position: absolute; inset: 29%; border-radius: 50%; background: #0a0a0f; box-shadow: 0 0 0 1.3px #b9bde8, 0 0 5px 1.5px rgba(185,189,232,.6); }
+
+  /* 1. つかみ：見出しがバラバラ */
+  .lab { width: 222px; padding: 12px 14px 14px; background: #fff; border-radius: 16px; box-shadow: 0 14px 34px rgba(60,50,140,.12), 0 0 0 1px rgba(20,22,26,.04); }
+  .lab b { display: block; font: 900 17px var(--head); margin-bottom: 8px; white-space: nowrap; }
+  .lab i { display: block; height: 30px; border: 1px solid #cfd6dc; border-radius: 7px; }
+  .lab small { display: inline-block; margin-left: 4px; font: 700 11px "Noto Sans JP", sans-serif; color: #fff; background: var(--stamp); border-radius: 4px; padding: 1px 5px; vertical-align: 2px; }
+  .q { left: 0; right: 0; top: 724px; text-align: center; font: 900 22px var(--head); }
+
+  /* 見出し（手順） */
+  .step { left: 30px; right: 30px; top: 92px; }
+  .step .h { font-size: 34px; margin-top: 10px; }
+  .kick { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 14px 0 5px; border-radius: 999px; background: var(--ink); color: #fff; font: 800 13px Inter, sans-serif; letter-spacing: .04em; }
+  .kick .orb { width: 22px; height: 22px; box-shadow: 0 0 0 1.5px rgba(255,255,255,.25); }
+
+  /* ブラウザの窓 */
+  .win { left: 30px; width: 480px; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 18px 44px rgba(60,50,140,.14), 0 2px 6px rgba(20,22,26,.05); }
+  .wtop { height: 32px; background: #f1f3f4; border-bottom: 1px solid #e3e5e8; display: flex; align-items: center; gap: 5px; padding: 0 8px 0 12px; }
+  .wtop > i { width: 8px; height: 8px; border-radius: 50%; background: #ff5f57; flex-shrink: 0; }
+  .wtop > i:nth-child(2) { background: #febc2e; }
+  .wtop > i:nth-child(3) { background: #28c840; }
+  .wurl { flex: 1; margin-left: 6px; height: 21px; border-radius: 10px; background: #fff; font-size: 11px; color: #5f6368; line-height: 21px; padding: 0 10px; white-space: nowrap; overflow: hidden; }
+  .tb { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .tb svg { width: 17px; height: 17px; display: block; }
+  .tb.av { background: #c7b8ff; color: #3b2a8a; font-size: 10px; font-weight: 700; }
+  .page { position: relative; padding: 14px 22px 18px; }
+  .ptitle { display: flex; align-items: center; gap: 8px; font: 900 16px var(--head); margin-bottom: 6px; }
+  .logo { width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0; color: #fff; font: 900 11px/20px var(--head); text-align: center; }
+  .sec { font-size: 12px; font-weight: 700; color: var(--mute); margin: 4px 0 2px; }
+  .fld { margin-top: 12px; }
+  .flab { position: relative; display: inline-flex; align-items: center; height: 26px; padding: 0 6px; margin-left: -6px; border-radius: 6px; font-size: 13.5px; font-weight: 700; color: #3c4650; }
+  .scanbar { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 6px; background: rgba(91,76,240,.14); box-shadow: inset 0 0 0 1.5px rgba(91,76,240,.45); }
+  .tag { position: absolute; left: calc(100% + 8px); top: 1px; display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px 0 4px; border-radius: 999px; background: #f1efff; color: #3b2a8a;
+    font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+  .tag .orb { width: 17px; height: 17px; }
+  .tag.warn { background: #fff5dc; color: #8a5a00; }
+  .inp { position: relative; height: 34px; border: 1px solid #cfd6dc; border-radius: 7px; background: #fff; padding: 0 10px; font-size: 14px; display: flex; align-items: center; white-space: nowrap; margin-top: 4px; }
+  .stamp { position: absolute; right: -8px; top: -9px; width: 20px; height: 20px; border-radius: 50%; border: 1.4px solid var(--stamp); color: var(--stamp); background: #fffaf4;
+    font: 700 10.5px/1 "Yu Mincho", "Hiragino Mincho ProN", serif; display: flex; align-items: center; justify-content: center; }
+  .chk { position: absolute; right: -10px; top: -10px; height: 20px; padding: 0 7px; border-radius: 999px; background: var(--warn); color: #fff; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; }
+  .toast { position: absolute; left: 50%; display: flex; align-items: center; gap: 10px; background: var(--ink); color: #fff; border-radius: 999px; padding: 8px 16px;
+    font-size: 13px; font-weight: 700; white-space: nowrap; box-shadow: 0 12px 30px rgba(20,22,26,.25); }
+  .toast b { color: #ffc94d; }
+
+  /* 2. ポップアップ（サイトの画面に寄せる） */
+  .pp { left: 60px; top: 236px; width: 420px; background: #fff; border-radius: 18px; padding: 18px 18px 20px; font-size: 14px; line-height: 1.5;
+    box-shadow: 0 24px 60px rgba(60,50,140,.18), 0 0 0 1px rgba(20,22,26,.05); }
+  .pp-head { display: flex; align-items: center; gap: 12px; }
+  .pp-av { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; background: #eff3f4; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #c04fd8; }
+  .pp-head b { display: block; font-size: 15px; }
+  .pp-head small { color: var(--sub); font-size: 12.5px; }
+  .pp-stats { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; margin: 14px 0 10px; font-size: 12px; color: var(--sub); }
+  .pp-stats b { display: block; font: 800 20px Inter, sans-serif; color: var(--ink); }
+  .pp-stats b.warn { color: var(--warn); }
+  .pp-bar { height: 4px; border-radius: 4px; background: #eff3f4; overflow: hidden; }
+  .pp-bar i { display: block; height: 100%; background: linear-gradient(90deg, #5b4cf0, #ff7a59); }
+  .pp-h { font-weight: 700; font-size: 15px; margin: 12px 0 6px; }
+  .pp-rev { display: flex; gap: 10px; border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px 14px 12px; }
+  .pp-rev > .orb { width: 34px; height: 34px; }
+  .pp-who { font-size: 12px; color: var(--sub); }
+  .pp-who b { color: var(--ink); }
+  .pp-rev p { margin: 4px 0 2px; font-size: 13.5px; line-height: 1.65; }
+  .pp-label { font-size: 12px; color: var(--mute); }
+  .pp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .pp-chips span { border: 1px solid #cfd9de; border-radius: 999px; padding: 5px 14px; font-size: 13.5px; font-weight: 700; }
+  .pp-chips span.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .pp-ok { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: #eef8f2; color: #1f8a5b; font-size: 13.5px; font-weight: 700; }
+  .pp-ok svg { width: 18px; height: 18px; flex-shrink: 0; display: block; }
+  .strip { left: 60px; width: 420px; top: 684px; padding: 12px 16px 14px; background: #fff; border-radius: 14px; box-shadow: 0 10px 28px rgba(60,50,140,.1), 0 0 0 1px rgba(20,22,26,.04); }
+  .strip .flab { font-size: 12.5px; height: 20px; }
+
+  /* 3. 書き方の変換 */
+  .convs { left: 40px; width: 460px; top: 304px; }
+  .conv { position: relative; height: 104px; margin-bottom: 12px; padding: 14px 20px 0; background: #fff; border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 10px 28px rgba(60,50,140,.08); }
+  .conv > small { display: block; font-size: 12.5px; font-weight: 700; color: var(--sub); }
+  .conv .pair { position: relative; height: 54px; margin-top: 4px; display: flex; align-items: center; gap: 12px; }
+  .conv .from { font: 700 17px "Noto Sans JP", sans-serif; color: var(--mute); white-space: nowrap; }
+  .conv .arrow { width: 26px; height: 26px; flex-shrink: 0; }
+  .conv .to { font: 700 22px "Noto Sans JP", sans-serif; white-space: nowrap; display: flex; gap: 4px; align-items: center; }
+  .conv .to em { font-style: normal; display: inline-flex; align-items: center; height: 38px; padding: 0 9px; border: 1.5px solid #cfd6dc; border-radius: 8px; font: 700 17px Inter, sans-serif; }
+  .conv .to .dash { color: var(--mute); font-weight: 500; }
+  .note { left: 0; right: 0; top: 662px; margin: 0; text-align: center; font-size: 15.5px; font-weight: 700; color: var(--sub); }
+
+  /* 4. 最後（暗い背景） */
+  .dark { inset: 0; background: var(--ink); }
+  .glow { border-radius: 50%; filter: blur(80px); opacity: .5; }
+  .end { left: 0; right: 0; top: 170px; display: flex; flex-direction: column; align-items: center; text-align: center; color: #fff; }
+  .end-icon svg { width: 116px; height: 116px; display: block; filter: drop-shadow(0 18px 40px rgba(46,230,197,.25)); }
+  .end-icon svg rect:first-child { stroke: rgba(255,255,255,.14); stroke-width: 2; }
+  .end-name { margin-top: 20px; font: 900 40px/1.3 var(--head); }
+  .end-label { margin-top: 34px; font-size: 14px; font-weight: 700; color: rgba(255,255,255,.75); }
+  .urlbar { margin-top: 10px; width: 430px; height: 58px; border-radius: 999px; background: #fff; color: var(--ink); display: flex; align-items: center; gap: 10px;
+    padding: 0 24px; font: 600 21px Inter, sans-serif; text-align: left; }
+  .urlbar svg { width: 18px; height: 18px; flex-shrink: 0; display: block; }
+  .caret { display: inline-block; width: 2px; height: 22px; background: var(--ink); margin-left: 1px; }
+  .cta { margin-top: 24px; height: 56px; padding: 0 34px; border-radius: 999px; background: var(--grad); color: #fff; font-size: 18px; font-weight: 700; display: flex; align-items: center; }
+  .end-sub { margin-top: 18px; font-size: 13.5px; font-weight: 700; color: rgba(255,255,255,.6); }
+
+  #cursor { left: 0; top: 0; width: 26px; height: 26px; z-index: 20; }
+  #cursor svg { width: 26px; height: 26px; display: block; }
+  #ripple { left: 0; top: 0; width: 40px; height: 40px; border-radius: 50%; border: 3px solid rgba(91,76,240,.6); z-index: 19; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="abs blob" id="b1"></div>
+  <div class="abs blob" id="b2"></div>
+  <div class="abs blob" id="b3"></div>
+
+  <!-- 1. つかみ（0〜3.6秒） -->
+  <section class="scene" id="s1" data-from="-1" data-to="3.6">
+    <div class="abs brandrow"><div><span class="ico"></span>らくらくエントリー</div></div>
+    <div class="abs h" style="left:40px;top:134px;font-size:42px;line-height:1.34">
+      <span class="line" data-line="0.05"><span>同じ電話番号の欄でも、</span></span>
+      <span class="line" data-line="0.17"><span>呼び方は</span></span>
+      <span class="line" data-line="0.29"><span><span class="mk" data-mk="0.8">会社ごとにバラバラ。</span></span></span>
+    </div>
+    <div class="abs lab" style="left:36px;top:392px" data-pop="0.9" data-rot="-3"><b>携帯電話<small>必須</small></b><i></i></div>
+    <div class="abs lab" style="left:282px;top:404px" data-pop="1.1" data-rot="2.5"><b>連絡先（携帯）</b><i></i></div>
+    <div class="abs lab" style="left:46px;top:506px" data-pop="1.3" data-rot="2"><b>TEL</b><i></i></div>
+    <div class="abs lab" style="left:272px;top:518px" data-pop="1.5" data-rot="-2.5"><b>保護者連絡先（携帯）</b><i></i></div>
+    <div class="abs lab" style="left:30px;top:620px" data-pop="1.7" data-rot="-1.5"><b>休暇中の連絡先</b><i></i></div>
+    <div class="abs lab" style="left:286px;top:628px" data-pop="1.9" data-rot="3"><b>緊急時の電話番号</b><i></i></div>
+    <div class="abs q" data-in="2.4">どの番号を入れればいい？</div>
+  </section>
+
+  <!-- 2. Sophon が見出しを読んで入力（3.5〜9.4秒） -->
+  <section class="scene" id="s2" data-from="3.5" data-to="9.4">
+    <div class="abs step">
+      <span class="kick"><span class="orb"></span>AI · SOPHON</span>
+      <div class="h">
+        <span class="line" data-line="3.7"><span>見出しを読んで、</span></span>
+        <span class="line" data-line="3.82"><span><span class="mk" data-mk="7.6">入れる番号を判断。</span></span></span>
+      </div>
+    </div>
+    <div class="abs win" style="top:236px">
+      <div class="wtop"><i></i><i></i><i></i><span class="wurl">recruit.minato-bank.jp/entry/step2</span><span class="tb" id="ext"></span><span class="tb av">山</span></div>
+      <div class="page">
+        <div class="ptitle"><span class="logo" style="background:#1a73e8">み</span>みなと銀行 本選考エントリー</div>
+        <div class="sec">連絡先</div>
+        <div class="fld"><span class="flab"><span class="scanbar"></span><span style="position:relative">連絡先（携帯）</span><span class="tag"><span class="orb"></span>あなたの携帯電話</span></span><div class="inp"></div></div>
+        <div class="fld"><span class="flab"><span class="scanbar"></span><span style="position:relative">休暇中の連絡先</span><span class="tag"><span class="orb"></span>帰省先の電話番号</span></span><div class="inp"></div></div>
+        <div class="fld"><span class="flab"><span class="scanbar"></span><span style="position:relative">保護者連絡先（携帯）</span><span class="tag warn"><span class="orb"></span>迷ったので確認</span></span><div class="inp"></div></div>
+        <div style="height:56px"></div>
+        <div class="toast" id="toast1" style="bottom:16px">3 件入力しました ・ <b>1 件は確認してください</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 迷った欄は確認 → 候補から選び直す（9.3〜15.0秒） -->
+  <section class="scene" id="s3" data-from="9.3" data-to="15.0">
+    <div class="abs step">
+      <span class="kick"><span class="orb"></span>AI · SOPHON</span>
+      <div class="h">
+        <span class="line" data-line="9.5"><span>迷った欄は、</span></span>
+        <span class="line" data-line="9.62"><span><span class="mk" data-mk="12.6">あなたに確認。</span></span></span>
+      </div>
+    </div>
+    <div class="abs pp">
+      <div class="pp-head"><span class="pp-av">山</span><div><b>山田 花子</b><small>@新卒用</small></div></div>
+      <div class="pp-stats"><div><b id="stIn">11</b>入力済み</div><div><b>12</b>検出</div><div><b class="warn" id="stCk">1</b>要確認</div></div>
+      <div class="pp-bar"><i id="ppbar"></i></div>
+      <div class="pp-h">確認してください</div>
+      <div class="pp-rev">
+        <span class="orb"></span>
+        <div>
+          <div class="pp-who"><b>Sophon</b> · 確信度 64%</div>
+          <p>「保護者連絡先（携帯）」には、あなたの携帯「090-1234-5678」を入れました。保護者の番号「090-0000-0000」の可能性もあります。合っていますか？</p>
+          <div class="pp-chips"><span id="chipA">090-1234-5678</span><span id="chipB">090-0000-0000</span></div>
+          <div class="pp-ok" id="ppok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="m7.8 12.3 2.9 2.9 5.6-6"/></svg>「090-0000-0000」に入れ直しました</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 書き方もフォームに合わせる（14.9〜19.6秒） -->
+  <section class="scene" id="s4" data-from="14.9" data-to="19.6">
+    <div class="abs brandrow"><div><span class="ico"></span>らくらくエントリー</div></div>
+    <div class="abs h" style="left:40px;top:132px;font-size:40px">
+      <span class="line" data-line="15.1"><span>書き方も、</span></span>
+      <span class="line" data-line="15.22"><span><span class="mk" data-mk="15.7">フォームに合わせて。</span></span></span>
+    </div>
+    <div class="abs convs">
+      <div class="conv" data-in="15.75" data-conv="16.25"><small>生年月日（和暦）</small><div class="pair"><span class="from">2004年5月12日</span><span class="arrow"></span><span class="to">平成16年5月12日</span></div></div>
+      <div class="conv" data-in="15.95" data-conv="16.55"><small>フリガナ（半角カナ）</small><div class="pair"><span class="from">ヤマダ ハナコ</span><span class="arrow"></span><span class="to">ﾔﾏﾀﾞ ﾊﾅｺ</span></div></div>
+      <div class="conv" data-in="16.15" data-conv="16.85"><small>携帯電話（3 つの欄）</small><div class="pair"><span class="from">090-1234-5678</span><span class="arrow"></span><span class="to"><em>090</em><span class="dash">-</span><em>1234</em><span class="dash">-</span><em>5678</em></span></div></div>
+    </div>
+    <p class="abs note" data-in="17.3">郵便番号・メール・学歴も、同じように。</p>
+  </section>
+
+  <!-- 5. 最後：公式サイトへ（19.5秒〜） -->
+  <section class="scene" id="s5" data-from="19.5" data-to="99">
+    <div class="abs dark"></div>
+    <div class="abs glow" style="width:360px;height:360px;background:#5b4cf0;left:-110px;top:90px"></div>
+    <div class="abs glow" style="width:340px;height:340px;background:#ff7a59;left:300px;top:470px"></div>
+    <div class="abs end">
+      <div class="end-icon ico" data-pop="19.7"></div>
+      <div class="end-name" data-in="19.9">らくらくエントリー</div>
+      <div class="end-label" data-in="20.4">くわしくは公式サイトで</div>
+      <div class="urlbar" data-in="20.5"><svg viewBox="0 0 24 24" fill="none" stroke="#1f8a5b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span id="q"></span><i class="caret" id="qcaret"></i></div>
+      <div class="cta" data-pop="21.8" id="cta">Chrome に追加</div>
+      <div class="end-sub" data-in="22.1">Chrome ウェブストアで「らくらくエントリー」と検索</div>
+    </div>
+  </section>
+
+  <div class="abs" id="ripple"></div>
+  <div class="abs" id="cursor"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var W = 540;
+  var H = 960;
+  var D = 25.5;
+  var params = new URLSearchParams(location.search);
+  var CAPTURE = params.has('capture');
+
+  var ICON = '<svg viewBox="0 0 128 128" aria-hidden="true"><rect x="4" y="4" width="120" height="120" rx="28" fill="#0F1419"/><rect x="22" y="28" width="84" height="16" rx="8" fill="#2EE6C5"/><rect x="22" y="54" width="84" height="16" rx="8" fill="#2EE6C5"/><rect x="22" y="80" width="46" height="16" rx="8" fill="#2EE6C5" fill-opacity=".35"/><path transform="translate(74 70)" d="M0 0 v34 l8.5 -8 l6.5 14 l6.5 -3 l-6.5 -13.5 h12 z" fill="#fff" stroke="#0F1419" stroke-width="4" stroke-linejoin="round"/></svg>';
+  var CURSOR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2 L3 20 L8 15.5 L11.5 22.5 L14.5 21 L11 14.2 L18 14.2 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+  var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="url(#ag)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="ag" gradientUnits="userSpaceOnUse" x1="4" y1="12" x2="20" y2="12"><stop offset="0" stop-color="#5b4cf0"/><stop offset="1" stop-color="#ff7a59"/></linearGradient></defs><path d="M4 12h15"/><path d="m13 6 6 6-6 6"/></svg>';
+
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function clamp(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  /** a〜b 秒の間の進み具合（0〜1） */
+  function prog(t, a, b) { return clamp((t - a) / (b - a)); }
+  function easeOut(x) { return 1 - Math.pow(1 - clamp(x), 3); }
+  function easeInOut(x) { x = clamp(x); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+  /** 少し行き過ぎてから戻る */
+  function back(x) { x = clamp(x); var c1 = 1.70158; return 1 + (c1 + 1) * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); }
+  /** a 秒から d 秒かけて現れ、b 秒から d 秒かけて消える */
+  function vis(t, a, b, d) { d = d || 0.25; return Math.min(prog(t, a, a + d), 1 - prog(t, b, b + d)); }
+  function typed(text, t, a, b) { var c = Array.from(text); return c.slice(0, Math.round(c.length * prog(t, a, b))).join(''); }
+  function show(e, o, transform) {
+    e.style.opacity = String(o);
+    e.style.visibility = o <= 0.001 ? 'hidden' : 'visible';
+    if (transform != null) e.style.transform = transform;
+  }
+  /** ぽんと出てくる大きさ */
+  function popScale(p) { return 'scale(' + (0.35 + 0.65 * back(p)) + ')'; }
+
+  var stage = $('#stage');
+  if (CAPTURE) document.body.classList.add('capture');
+  $$('.ico').forEach(function (e) { e.innerHTML = ICON; });
+  $$('.arrow').forEach(function (e) { e.innerHTML = ARROW; });
+  $('#ext').innerHTML = ICON;
+  $('#cursor').innerHTML = CURSOR;
+
+  /** ステージの中での中心座標（変形は無視したレイアウト上の位置） */
+  function center(el) {
+    var x = el.offsetWidth / 2;
+    var y = el.offsetHeight / 2;
+    for (var e = el; e && e !== stage; e = e.offsetParent) {
+      x += e.offsetLeft;
+      y += e.offsetTop;
+    }
+    return [x, y];
+  }
+
+  /** 入力欄に、文字と印（「済」か「確認」）を入れる場所を作る */
+  function slot(el, warn) {
+    var tx = document.createElement('span');
+    var st = document.createElement('span');
+    st.className = warn ? 'chk' : 'stamp';
+    st.textContent = warn ? '確認' : '済';
+    el.appendChild(tx);
+    el.appendChild(st);
+    return { el: el, tx: tx, st: st };
+  }
+  function fill(f, value, t, at, warn) {
+    var on = t >= at;
+    f.tx.textContent = on ? value : '';
+    f.el.style.boxShadow = on ? (warn ? '0 0 0 2px rgba(244,161,0,.3)' : '0 0 0 2px rgba(224,86,63,.22)') : 'none';
+    var s = on ? prog(t, at + 0.03, at + 0.25) : 0;
+    show(f.st, s, (warn ? '' : 'rotate(-12deg) ') + 'scale(' + (1.8 - 0.8 * easeOut(s)) + ')');
+  }
+
+  // 2. Sophon が読む 3 つの欄（値, 見出しを読み始める時刻, 迷ったか）
+  var FIELDS = [['090-1234-5678', 4.8, false], ['0123-45-6789', 5.65, false], ['090-1234-5678', 6.5, true]];
+  var flds = $$('#s2 .fld').map(function (f, i) {
+    return { bar: $('.scanbar', f), tag: $('.tag', f), slot: slot($('.inp', f), FIELDS[i][2]) };
+  });
+  // 3. 下に出す、直した欄
+  var strip = document.createElement('div');
+  strip.className = 'abs strip';
+  strip.innerHTML = '<span class="flab">保護者連絡先（携帯）</span><div class="inp"></div>';
+  $('#s3').appendChild(strip);
+  var stripSlot = slot($('.inp', strip), false);
+  var stripChk = document.createElement('span');
+  stripChk.className = 'chk';
+  stripChk.textContent = '確認';
+  stripSlot.el.appendChild(stripChk);
+
+  // 4. 変換の行
+  var CONVS = $$('[data-conv]').map(function (e) { return { el: e, at: Number(e.dataset.conv), from: $('.from', e), arrow: $('.arrow', e), to: $('.to', e) }; });
+
+  // 時刻を data 属性で書いた、決まった動き
+  var INS = $$('[data-in]').map(function (e) { return [e, Number(e.dataset.in)]; });
+  var LINES = $$('[data-line]').map(function (e) { return [e.firstElementChild, Number(e.dataset.line)]; });
+  var POPS = $$('[data-pop]').map(function (e) { return [e, Number(e.dataset.pop), Number(e.dataset.rot || 0)]; });
+  var MKS = $$('[data-mk]').map(function (e) { return [e, Number(e.dataset.mk)]; });
+  var scenes = $$('.scene');
+
+  var el = {
+    b1: $('#b1'), b2: $('#b2'), b3: $('#b3'), ext: $('#ext'), toast1: $('#toast1'),
+    stIn: $('#stIn'), stCk: $('#stCk'), ppbar: $('#ppbar'), chipA: $('#chipA'), chipB: $('#chipB'), ppok: $('#ppok'),
+    q: $('#q'), qcaret: $('#qcaret'), cta: $('#cta'), cursor: $('#cursor'), ripple: $('#ripple'),
+  };
+
+  var CLICK_EXT = 4.5;
+  var CLICK_CHIP = 11.6;
+  var CLICK_CTA = 22.9;
+  var CLICKS = [CLICK_EXT, CLICK_CHIP, CLICK_CTA];
+
+  /** カーソルの通り道（時刻と位置。位置は要素なら中心） */
+  function path() {
+    function at(e, dx, dy) { var c = center(e); return [c[0] + (dx || 0), c[1] + (dy || 0)]; }
+    return [
+      [3.7, [430, 800]], [4.0, [430, 800]], [CLICK_EXT - 0.05, at(el.ext, 3, 5)], [9.0, at(el.ext, 3, 5)],
+      [10.3, [420, 800]], [10.9, [420, 800]], [CLICK_CHIP - 0.06, at(el.chipB, 20, 6)], [14.0, at(el.chipB, 20, 6)],
+      [22.0, [470, 900]], [CLICK_CTA - 0.08, at(el.cta, 82, 14)],
+    ];
+  }
+  function cursorAt(t) {
+    var p = path();
+    if (t <= p[0][0]) return p[0][1];
+    for (var i = 1; i < p.length; i++) {
+      if (t <= p[i][0]) {
+        var a = p[i - 1];
+        var b = p[i];
+        // 場面が変わるところ（次の点が離れた時刻）では、そこへ飛ぶ
+        if (b[0] - a[0] > 2.5) return b[1];
+        var k = easeInOut(prog(t, a[0], b[0]));
+        return [a[1][0] + (b[1][0] - a[1][0]) * k, a[1][1] + (b[1][1] - a[1][1]) * k];
+      }
+    }
+    return p[p.length - 1][1];
+  }
+
+  function render(t) {
+    t = Math.max(0, Math.min(D, t));
+
+    el.b1.style.transform = 'translate(' + Math.sin(t * 0.5) * 26 + 'px,' + Math.cos(t * 0.4) * 18 + 'px)';
+    el.b2.style.transform = 'translate(' + Math.cos(t * 0.45) * 22 + 'px,' + Math.sin(t * 0.35) * 26 + 'px)';
+    el.b3.style.transform = 'translate(' + Math.sin(t * 0.3 + 1) * 28 + 'px,' + Math.cos(t * 0.5) * 16 + 'px)';
+
+    // 場面の切り替え
+    scenes.forEach(function (s) {
+      var a = Number(s.dataset.from);
+      var b = Number(s.dataset.to);
+      var pi = easeOut(prog(t, a, a + 0.3));
+      var po = easeInOut(prog(t, b, b + 0.3));
+      show(s, Math.min(pi, 1 - po), 'translateY(' + ((1 - pi) * 24 - po * 24) + 'px)');
+    });
+    INS.forEach(function (x) {
+      var p = easeOut(prog(t, x[1], x[1] + 0.45));
+      show(x[0], p, 'translateY(' + (1 - p) * 18 + 'px)');
+    });
+    LINES.forEach(function (x) {
+      x[0].style.transform = 'translateY(' + (1 - easeOut(prog(t, x[1], x[1] + 0.5))) * 110 + '%)';
+    });
+    POPS.forEach(function (x) {
+      var p = prog(t, x[1], x[1] + 0.45);
+      show(x[0], clamp(p * 2.5), 'rotate(' + x[2] + 'deg) ' + popScale(p));
+    });
+    MKS.forEach(function (x) {
+      x[0].style.backgroundSize = easeInOut(prog(t, x[1], x[1] + 0.4)) * 100 + '% 100%';
+    });
+
+    // 2. 見出しを読む（なぞる → 判断のタグ → 入力）
+    el.ext.style.background = t >= CLICK_EXT && t < CLICK_EXT + 0.25 ? 'rgba(91,76,240,.18)' : 'transparent';
+    flds.forEach(function (f, i) {
+      var a = FIELDS[i][1];
+      f.bar.style.width = easeInOut(prog(t, a, a + 0.4)) * 100 + '%';
+      f.bar.style.opacity = String(1 - prog(t, a + 0.75, a + 0.95));
+      var tp = prog(t, a + 0.4, a + 0.75);
+      show(f.tag, clamp(tp * 2.5), 'translateX(' + (1 - easeOut(tp)) * -10 + 'px) ' + popScale(tp));
+      fill(f.slot, FIELDS[i][0], t, a + 0.6, FIELDS[i][2]);
+    });
+    var t1 = prog(t, 7.4, 7.7);
+    show(el.toast1, clamp(t1 * 2.5), 'translateX(-50%) scale(' + (0.6 + 0.4 * back(t1)) + ')');
+
+    // 3. 候補を押して選び直す
+    var fixed = t >= CLICK_CHIP + 0.1;
+    el.chipA.className = fixed ? '' : 'on';
+    el.chipB.className = fixed ? 'on' : '';
+    el.chipB.style.transform = t >= CLICK_CHIP && t < CLICK_CHIP + 0.12 ? 'scale(.95)' : 'none';
+    el.stIn.textContent = fixed ? '12' : '11';
+    el.stCk.textContent = fixed ? '0' : '1';
+    el.ppbar.style.width = 92 + 8 * easeOut(prog(t, CLICK_CHIP + 0.1, CLICK_CHIP + 0.5)) + '%';
+    var ok = easeOut(prog(t, CLICK_CHIP + 0.2, CLICK_CHIP + 0.5));
+    show(el.ppok, ok);
+    el.ppok.style.height = ok * 41 + 'px';
+    el.ppok.style.marginTop = ok * 12 + 'px';
+    el.ppok.style.paddingTop = el.ppok.style.paddingBottom = ok * 10 + 'px';
+    var sp = easeOut(prog(t, 10.1, 10.5));
+    show(strip, sp, 'translateY(' + (1 - sp) * 20 + 'px)');
+    // 直す前は「確認」付きの携帯番号、押したあとは保護者の番号に「済」
+    var fixedAt = CLICK_CHIP + 0.35;
+    fill(stripSlot, '090-0000-0000', t, fixedAt, false);
+    if (t < fixedAt) {
+      stripSlot.tx.textContent = '090-1234-5678';
+      stripSlot.el.style.boxShadow = '0 0 0 2px rgba(244,161,0,.3)';
+    }
+    show(stripChk, t < fixedAt ? 1 : 0);
+
+    // 4. 書き方の変換（元の書き方が薄くなり、変換後がすべり込む）
+    CONVS.forEach(function (c) {
+      var p = easeOut(prog(t, c.at, c.at + 0.45));
+      c.from.style.textDecoration = p > 0.5 ? 'line-through' : 'none';
+      c.from.style.opacity = String(1 - 0.45 * p);
+      show(c.arrow, p, 'translateX(' + (1 - p) * -8 + 'px)');
+      show(c.to, p, 'translateX(' + (1 - p) * 24 + 'px)');
+    });
+
+    // 5. アドレス欄に打ち込む → 「Chrome に追加」
+    el.q.textContent = typed('rakuraku-entry.com', t, 20.75, 21.55);
+    el.qcaret.style.visibility = t >= 20.5 && (t < 21.55 || Math.floor(t * 2.2) % 2 === 0) ? 'visible' : 'hidden';
+    if (t >= CLICK_CTA) {
+      var w = ((t - CLICK_CTA - 0.15) % 1.4 + 1.4) % 1.4 / 1.4;
+      el.cta.style.boxShadow = '0 0 0 ' + 14 * w + 'px rgba(192,79,216,' + 0.4 * (1 - w) + ')';
+    } else {
+      el.cta.style.boxShadow = 'none';
+    }
+    if (t >= CLICK_CTA && t < CLICK_CTA + 0.12) el.cta.style.transform = 'scale(.96)';
+
+    // カーソルとクリックの波紋
+    var c = cursorAt(t);
+    var pressed = CLICKS.some(function (k) { return t >= k && t < k + 0.12; });
+    var cv = Math.max(vis(t, 3.8, 8.9, 0.2), vis(t, 10.6, 13.8, 0.2), vis(t, 22.0, 99, 0.2));
+    show(el.cursor, cv, 'translate(' + (c[0] - 4) + 'px,' + (c[1] - 3) + 'px) scale(' + (pressed ? 0.85 : 1) + ')');
+    var last = -1;
+    CLICKS.forEach(function (k) { if (t >= k && t < k + 0.4) last = k; });
+    if (last >= 0) {
+      var rp = prog(t, last, last + 0.4);
+      show(el.ripple, 1 - rp, 'translate(' + (c[0] - 20) + 'px,' + (c[1] - 20) + 'px) scale(' + (0.4 + rp) + ')');
+    } else {
+      show(el.ripple, 0);
+    }
+  }
+
+  window.__capture = { width: W, height: H, scale: 2, duration: D };
+  window.__render = render;
+
+  if (CAPTURE) {
+    render(Number(params.get('t') || 0));
+    return;
+  }
+  // プレビュー：画面に収まるように縮めて、ループ再生する
+  function fit() {
+    stage.style.transform = 'scale(' + Math.min(innerWidth / W, innerHeight / H) + ')';
+  }
+  fit();
+  addEventListener('resize', fit);
+  if (params.has('t')) {
+    render(Number(params.get('t')));
+    return;
+  }
+  var start = null;
+  function loop(ts) {
+    if (start === null) start = ts;
+    render(Math.min(((ts - start) / 1000) % (D + 1), D));
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
