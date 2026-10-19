@@ -6,7 +6,8 @@ import { MypageCard } from './MypageCard';
 import { essentialProgress } from '@/lib/essentials';
 import { FIELD_KEYS, isFieldKey } from '@/lib/fieldKeys';
 import { fetchSponsor, type Sponsor } from '@/lib/api';
-import { SOPHON_URL, matchCompany, type LinkCompany } from '@/lib/sophon-link';
+import { WEB_URL } from '@/lib/app-config';
+import { matchCompany, type LinkCompany } from '@/lib/sophon-link';
 import { activeProfileIdItem, getProfiles, getSettings, settingsItem, sophonDataItem, sponsorCacheItem } from '@/lib/store';
 import { activeTabId, runInTab, type Action, type FrameResult } from '@/lib/tab';
 import type { Engine, Profile, Settings } from '@/lib/types';
@@ -24,8 +25,7 @@ export default function App() {
   const [pageError, setPageError] = useState('');
   const [shortcut, setShortcut] = useState('');
   const [diagState, setDiagState] = useState<'idle' | 'copied' | 'error'>('idle');
-  /** Sophon とつながっているか・このページの企業 */
-  const [linked, setLinked] = useState(false);
+  /** このページの企業（Web 版とつながっていれば分かる） */
   const [company, setCompany] = useState<LinkCompany>();
   const [companies, setCompanies] = useState<LinkCompany[]>([]);
   const [tabUrl, setTabUrl] = useState('');
@@ -53,7 +53,6 @@ export default function App() {
         sophonDataItem.getValue(),
         browser.tabs.query({ active: true, currentWindow: true }),
       ]);
-      setLinked(!!link);
       setCompanies(link?.companies ?? []);
       setTabUrl(current?.url ?? '');
       if (link && current?.url) setCompany(matchCompany(current.url, link.companies));
@@ -190,7 +189,7 @@ export default function App() {
       </header>
 
       {company && (
-        <a className="company-card" href={`${SOPHON_URL}/companies/${company.id}`} target="_blank" rel="noreferrer">
+        <a className="company-card" href={`${WEB_URL}/companies?id=${encodeURIComponent(company.id)}`} target="_blank" rel="noreferrer">
           <span className="company-logo">{[...company.name][0]}</span>
           <span className="company-body">
             <b>{company.name}</b>
@@ -358,7 +357,7 @@ export default function App() {
         </div>
       </details>
 
-      <Footer linked={linked} />
+      <Footer />
     </div>
   );
 }
@@ -397,16 +396,14 @@ function SponsorCard() {
   );
 }
 
-function Footer({ linked }: { linked?: boolean }) {
+function Footer() {
   return (
     <footer className="foot">
       <ShieldCheck size={14} />
       個人情報はこの端末から出ません
-      {linked && (
-        <a className="sophon-link" href={SOPHON_URL} target="_blank" rel="noreferrer">
-          Web版を開く
-        </a>
-      )}
+      <a className="sophon-link" href={`${WEB_URL}/companies`} target="_blank" rel="noreferrer">
+        マイページ管理
+      </a>
     </footer>
   );
 }

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ArrowLeft,
   Calendar,
+  CalendarClock,
   Check,
   CircleDot,
   ExternalLink,
@@ -141,11 +142,23 @@ export function CompanyPage({ company, mode, onClose }: { company: Company; mode
           />
         </Prop>
         <Prop icon={<Calendar size={15} />} label="締切">
-          <input
+          <DateWithLabel
             type="date"
-            value={company.deadline}
-            onChange={(e) => set({ deadline: e.target.value })}
-            className={`bg-transparent text-[14px] outline-none ${company.deadline ? '' : 'text-mute'}`}
+            date={company.deadline}
+            label={company.deadlineLabel}
+            placeholder="ES・Web テストなど"
+            onDate={(deadline) => set({ deadline })}
+            onLabel={(deadlineLabel) => set({ deadlineLabel })}
+          />
+        </Prop>
+        <Prop icon={<CalendarClock size={15} />} label="次の予定">
+          <DateWithLabel
+            type="datetime-local"
+            date={company.nextAt}
+            label={company.nextLabel}
+            placeholder="一次面接・説明会など"
+            onDate={(nextAt) => set({ nextAt })}
+            onLabel={(nextLabel) => set({ nextLabel })}
           />
         </Prop>
         <Prop icon={<Tag size={15} />} label="業界">
@@ -211,6 +224,35 @@ function Prop({ icon, label, children, onRemove }: { icon: ReactNode; label: Rea
         </button>
       )}
     </div>
+  );
+}
+
+/** 日付（日時）と、その中身（「ES」「一次面接」など）。ここに入れたものが「予定」と「今日やること」に出る */
+function DateWithLabel({
+  type,
+  date,
+  label,
+  placeholder,
+  onDate,
+  onLabel,
+}: {
+  type: 'date' | 'datetime-local';
+  date: string;
+  label: string;
+  placeholder: string;
+  onDate(v: string): void;
+  onLabel(v: string): void;
+}) {
+  return (
+    <span className="flex min-w-0 flex-1 items-center gap-3">
+      <input
+        type={type}
+        value={date}
+        onChange={(e) => onDate(e.target.value)}
+        className={`shrink-0 bg-transparent text-[14px] outline-none ${date ? '' : 'text-mute'}`}
+      />
+      <PlainInput value={label} placeholder={placeholder} onChange={onLabel} />
+    </span>
   );
 }
 

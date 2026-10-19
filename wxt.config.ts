@@ -2,13 +2,15 @@ import { defineConfig } from 'wxt';
 
 /**
  * 公開用のビルド（npm run build:release / zip:release）かどうか。
- * 公開用では、まだ公開していない Sophon（Web アプリ）との連携を外す。
+ * 公開用では、中継 API と Web 版の URL を本番のものにする。
  */
 const release = process.env.npm_lifecycle_event?.endsWith(':release') ?? false;
 
 /** 公開した中継 API の URL（worker/ を deploy したあとに入れる） */
 const PROD_API_URL = 'https://api.rakuraku-entry.com';
 const apiUrl = release ? PROD_API_URL : (process.env.API_URL ?? 'http://localhost:8787');
+/** Web 版（マイページ管理）。開発中は web/ の next dev（3100） */
+const webUrl = release ? 'https://app.rakuraku-entry.com' : 'http://localhost:3100';
 if (release && !PROD_API_URL) {
   throw new Error('wxt.config.ts の PROD_API_URL に、公開した中継 API の URL を入れてください');
 }
@@ -16,10 +18,15 @@ if (release && !PROD_API_URL) {
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
-  // 公開用では Sophon 連携の中継スクリプト（sophon-bridge）を入れない
-  filterEntrypoints: release ? ['background', 'content', 'popup', 'options'] : undefined,
+  hooks: {
+    // 公開用では、Web 版との中継スクリプトを手元の開発用ページ（localhost）で動かさない
+    'build:manifestGenerated': (_wxt, manifest) => {
+      if (!release) return;
+      for (const cs of manifest.content_scripts ?? []) cs.matches = cs.matches?.filter((m) => !m.includes('localhost'));
+    },
+  },
   vite: () => ({
-    define: { __API_URL__: JSON.stringify(apiUrl) },
+    define: { __API_URL__: JSON.stringify(apiUrl), __WEB_URL__: JSON.stringify(webUrl) },
   }),
   manifest: ({ manifestVersion }) => ({
     name: 'らくらくエントリー｜就活エントリー自動入力',

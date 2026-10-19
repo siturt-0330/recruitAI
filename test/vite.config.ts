@@ -12,6 +12,6 @@ export default defineConfig({
       { find: /^@\//, replacement: `${root.replace(/\\/g, '/')}` },
     ],
   },
-  define: { __API_URL__: JSON.stringify('http://localhost:8787') },
+  define: { __API_URL__: JSON.stringify('http://localhost:8787'), __WEB_URL__: JSON.stringify('http://localhost:3100') },
   server: { port: 5179, strictPort: true },
 });
