@@ -186,7 +186,9 @@
 
 
       /* Sophon の説明 */
-      .sophon { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .95fr); gap: 56px; align-items: center; }
+      /* 下のマイページ管理と交互になるよう、PC では画面を左・説明を右にする */
+      .sophon { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+      .sophon > .pp-wrap { order: -1; }
       .sophon .sec-lead { margin-bottom: 0; }
       .pp-wrap { display: flex; flex-direction: column; align-items: center; padding: 36px 24px 22px; border-radius: 32px; background: linear-gradient(160deg, #efeaff 0%, #f6f2ff 45%, #fff3ec 100%); border: 1px solid #e4dcff; }
       .pp { width: 340px; max-width: 100%; background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 24px 60px rgba(60,50,140,.18), 0 0 0 1px rgba(20,22,26,.05); font-size: 14px; line-height: 1.5; }
@@ -259,6 +261,7 @@
         .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 48px; }
         .shots, .pricing, .sophon { grid-template-columns: minmax(0, 1fr); }
         .sophon { gap: 36px; }
+        .sophon > .pp-wrap { order: 0; }
         .tweets { height: auto; padding: 18px; display: grid; gap: 14px; }
         .tweet { position: static; width: auto; transform: none !important; }
         .feat { grid-template-columns: repeat(2, minmax(0, 1fr)); }
