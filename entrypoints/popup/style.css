@@ -653,3 +653,10 @@ body {
   color: var(--text-2);
   cursor: default;
 }
+
+.mypage-allow {
+  margin: 0;
+  align-self: center;
+  font-size: 12.5px;
+  cursor: pointer;
+}

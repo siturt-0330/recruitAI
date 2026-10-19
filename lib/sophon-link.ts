@@ -5,9 +5,11 @@ import type { Profile } from './types';
  * 拡張機能側・Web 側の両方からこのファイルを読み込むので、ブラウザ API には依存させない。
  */
 
-/** Sophon を開く URL。本番の URL が決まったらここと wxt.config.ts の matches を変える */
-export const SOPHON_URL = 'http://localhost:3100';
-export const SOPHON_MATCHES = ['http://localhost:3100/*'];
+/**
+ * Web 版（マイページ管理）のページ。拡張機能の中継スクリプトはここでだけ動く。
+ * 公開用のビルドでは localhost を外す（wxt.config.ts）。開く URL は lib/app-config.ts の WEB_URL
+ */
+export const SOPHON_MATCHES = ['https://app.rakuraku-entry.com/*', 'http://localhost:3100/*'];
 
 export interface LinkCompany {
   id: string;

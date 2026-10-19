@@ -36,6 +36,8 @@ export function MypageCard({ tabId, tabUrl, companies }: Props) {
   const [page, setPage] = useState({ loginId: '', password: '' });
   /** ボタンを押したあとの表示（説明文を出さず、ボタンの文字で伝える） */
   const [done, setDone] = useState<'' | 'filled' | 'updated' | 'failed'>('');
+  /** 保存したサイトで、一覧から開いたときに自動入力してよいか（Chrome の許可） */
+  const [granted, setGranted] = useState<boolean | null>(null);
 
   const saved = list ? findMypage(list, tabUrl) : undefined;
 
@@ -63,6 +65,8 @@ export function MypageCard({ tabId, tabUrl, companies }: Props) {
       });
       // まだ保存していないログイン画面なら、最初から保存の形で出す
       setEditing(!m && login.found);
+      const pattern = m && originPattern(m.url);
+      if (pattern) setGranted(await browser.permissions.contains({ origins: [pattern] }).catch(() => false));
     })();
   }, [tabId, tabUrl, companies]);
 
@@ -99,10 +103,16 @@ export function MypageCard({ tabId, tabUrl, companies }: Props) {
     setList(next);
     void mypagesItem.setValue(next);
     const pattern = originPattern(url);
-    if (pattern) void browser.permissions.request({ origins: [pattern] }).catch(() => false);
+    if (pattern) browser.permissions.request({ origins: [pattern] }).then(setGranted, () => setGranted(false));
     setEditing(false);
     setMessage('');
     setPage({ loginId: item.loginId, password: item.password });
+  };
+
+  /** 保存したときに許可しなかった人が、あとから許可する（ボタンを押した直後に request を呼ぶ） */
+  const allow = () => {
+    const pattern = saved && originPattern(saved.url);
+    if (pattern) browser.permissions.request({ origins: [pattern] }).then(setGranted, () => setGranted(false));
   };
 
   /** ページで打ち直した ID・パスワードで、保存した内容を上書きする */
@@ -148,6 +158,11 @@ export function MypageCard({ tabId, tabUrl, companies }: Props) {
                 {done === 'failed' ? '入力できませんでした' : 'ログイン情報を入力'}
               </button>
             )
+          )}
+          {granted === false && (
+            <button className="link mypage-allow" onClick={allow}>
+              一覧から開いたときの自動入力を許可
+            </button>
           )}
         </div>
       </section>
