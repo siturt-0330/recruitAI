@@ -135,3 +135,37 @@ node store/marketing/capture.mjs store/marketing/reel3.html store/marketing/reel
 https://rakuraku-entry.com
 
 #就活 #27卒 #28卒
+
+## 縦型動画 4本目「呼び方がバラバラでも」
+
+動画は `reel4.mp4`（1080×1920、25.5秒、音なし）。表紙は `reel4-cover.png`。元データは `reel4.html`。
+
+同じ電話番号の欄でも、会社ごとに見出しが違う（携帯電話・連絡先（携帯）・保護者連絡先…）→ AI「Sophon」が見出しを読んで入れる番号を判断 → 迷った欄は確認してくれて、候補を押して選び直せる → 和暦・半角カナ・分割欄にも合わせる → 公式サイトへ。会社名と番号はすべて架空。動画にも投稿文にも絵文字は使っていない。
+
+```bash
+node store/marketing/capture.mjs store/marketing/reel4.html store/marketing/reel4.mp4 --muxer=<mp4-muxer の build/mp4-muxer.js>
+node store/marketing/capture.mjs store/marketing/reel4.html store/marketing/reel4-cover.png --t=3.2
+```
+
+### キャプション（リール・TikTok）
+
+「連絡先（携帯）」「保護者連絡先」「休暇中の連絡先」。
+同じ電話番号の欄でも、呼び方は会社ごとにバラバラです。
+
+らくらくエントリーの AI「Sophon」は、欄の見出しを読んで、どの番号を入れるかを判断します。
+迷った欄は「確認」の印を付けて知らせるので、候補を押すだけで選び直せます。
+
+和暦、半角カナ、3 つに分かれた電話番号の欄にも合わせて入力。
+くわしくは公式サイト rakuraku-entry.com へ。
+
+#就活 #27卒 #28卒 #エントリーシート #本選考 #就活生 #インターン #Chrome拡張機能
+
+### X 用の短い版
+
+「保護者連絡先（携帯）」に入れるのは、自分の番号？ 親の番号？
+
+らくらくエントリーの AI「Sophon」は、欄の見出しを読んで入れる番号を判断。迷ったときは確認してくれて、候補から選び直せます。
+
+https://rakuraku-entry.com
+
+#就活 #27卒 #28卒

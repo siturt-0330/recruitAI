@@ -126,8 +126,6 @@
   .feat .em { font: 40px/1 var(--emoji); width: 48px; text-align: center; }
   .feat b { display: block; font: 900 21px/1.3 var(--head); }
   .feat small { display: block; font-size: 13.5px; color: var(--sub); font-weight: 500; }
-  .free { right: 44px; top: 128px; width: 92px; height: 92px; border-radius: 50%; border: 3px solid var(--stamp); color: var(--stamp); background: #fffaf4;
-    font: 900 22px/1.15 var(--head); display: flex; align-items: center; justify-content: center; text-align: center; }
   .note { left: 0; right: 0; top: 622px; margin: 0; text-align: center; font-size: 15.5px; font-weight: 700; color: var(--sub); }
 
   /* 5. 最後（暗い背景） */
@@ -271,7 +269,6 @@
       <span class="line" data-line="16.0"><span>応募から</span></span>
       <span class="line" data-line="16.12"><span><span class="mk" data-mk="16.6">マイページまで。</span></span></span>
     </div>
-    <div class="abs free" data-pop="16.75" data-rot="-10">ぜんぶ<br />無料</div>
     <div class="abs feats">
       <div class="feat" data-in="16.9"><span class="em">⚡</span><div><b>ワンクリックで入力</b><small>形式の違う応募フォームにも合わせて</small></div></div>
       <div class="feat" data-in="17.1"><span class="em">🤖</span><div><b>迷う欄は AI「Sophon」</b><small>見出しを読んで、入れる項目を判断</small></div></div>
@@ -299,7 +296,7 @@
         <div class="site-body">
           <span class="site-eb"><b>NEW</b>就活生のための Chrome 拡張機能</span>
           <div class="site-h">エントリーの入力は、<br /><span class="grad">ワンクリック</span>で終わり。</div>
-          <span class="site-cta" id="siteCta">Chrome に無料で追加</span>
+          <span class="site-cta" id="siteCta">Chrome に追加</span>
         </div>
       </div>
       <div class="end-sub" data-in="23.2">Chrome ウェブストアで「らくらくエントリー」と検索 🔍</div>
@@ -434,7 +431,7 @@
       [3.3, [430, 790]], [3.85, [430, 790]], [CLICK_EXT - 0.05, at(el.ext2, 3, 5)],
       [6.75, at(el.ext2, 3, 5)], [CLICK_SAVE - 0.08, at(el.save, 40, 6)], [9.2, at(el.save, 40, 6)],
       [10.6, [420, 800]], [11.25, [420, 800]], [CLICK_OPEN - 0.05, at($('#open0'), 3, 5)], [12.8, at($('#open0'), 3, 5)],
-      [23.6, [470, 900]], [CLICK_SITE - 0.08, at(el.siteCta, 50, 8)],
+      [23.6, [470, 900]], [CLICK_SITE - 0.08, at(el.siteCta, 66, 14)],
     ];
   }
   function cursorAt(t) {
@@ -509,7 +506,7 @@
     var tq = prog(t, 13.4, 13.7);
     show(el.toast2, clamp(tq * 2.5), 'translateX(-50%) scale(' + (0.6 + 0.4 * back(tq)) + ')');
 
-    // 5. アドレス欄に打ち込む → サイト → 「Chrome に無料で追加」
+    // 5. アドレス欄に打ち込む → サイト → 「Chrome に追加」
     el.q.textContent = typed('rakuraku-entry.com', t, 21.75, 22.55);
     el.qcaret.style.visibility = t >= 21.5 && (t < 22.55 || Math.floor(t * 2.2) % 2 === 0) ? 'visible' : 'hidden';
     if (t >= CLICK_SITE) {
