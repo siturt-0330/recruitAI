@@ -23,15 +23,28 @@ function isPublicHttpUrl(u: URL): boolean {
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
 const BOT_UA = 'SophonLogoFetcher/1.0 (https://rakuraku-entry.com; contact@geek-app.com)';
 
+/**
+ * リダイレクトは自分でたどり、行き先が手元やネットワーク内部のアドレスでないかを毎回確かめる
+ * （公開サイトから内部のアドレスへ転送させて、中を読まれないように）
+ */
 async function fetchWithTimeout(url: string): Promise<Response> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
-    return await fetch(url, {
-      signal: ctrl.signal,
-      redirect: 'follow',
-      headers: { 'User-Agent': url.startsWith('https://www.wikidata.org/') ? BOT_UA : BROWSER_UA, 'Accept-Language': 'ja,en;q=0.8' },
-    });
+    let current = url;
+    for (let hop = 0; hop < 5; hop++) {
+      const res = await fetch(current, {
+        signal: ctrl.signal,
+        redirect: 'manual',
+        headers: { 'User-Agent': current.startsWith('https://www.wikidata.org/') ? BOT_UA : BROWSER_UA, 'Accept-Language': 'ja,en;q=0.8' },
+      });
+      const location = res.status >= 300 && res.status < 400 ? res.headers.get('location') : null;
+      if (!location) return res;
+      const next = new URL(location, current);
+      if (!isPublicHttpUrl(next)) throw new Error('blocked redirect');
+      current = next.toString();
+    }
+    throw new Error('too many redirects');
   } finally {
     clearTimeout(timer);
   }
@@ -60,6 +73,10 @@ function iconCandidates(html: string, base: URL): string[] {
 /** 「株式会社〇〇」→「〇〇」 */
 const bareName = (name: string) => name.replace(/株式会社|有限会社|合同会社|[（(]株[）)]|㈱/g, '').replace(/\s+/g, '').trim();
 
+/** Wikidata の説明文が会社を表しているか */
+const COMPANY_WORDS =
+  /会社|企業|商社|コングロマリット|持株|ホールディングス|多国籍|電機|製薬|ゼネコン|デベロッパー|メーカー|銀行|証券|保険|グループ|株式|事業者|製造|小売|インテグレーター|コンサル|出版社|放送局|新聞社|鉄道|航空|監査法人|法律事務所|company|corporation|manufacturer|bank|retailer|conglomerate|firm/i;
+
 /** 会社名から公式サイトの URL を調べる（Wikidata の「公式ウェブサイト」） */
 async function officialSite(name: string): Promise<string | null> {
   const q = bareName(name);
@@ -67,7 +84,11 @@ async function officialSite(name: string): Promise<string | null> {
   const api = 'https://www.wikidata.org/w/api.php';
   try {
     const search = await fetchWithTimeout(`${api}?action=wbsearchentities&search=${encodeURIComponent(q)}&language=ja&uselang=ja&type=item&limit=5&format=json`);
-    const ids = ((await search.json()) as { search?: { id: string }[] }).search?.map((x) => x.id) ?? [];
+    // 「楽天」で野球チーム、「東京」で東京都が出ないよう、説明が会社のものだけを使う
+    const ids =
+      ((await search.json()) as { search?: { id: string; description?: string }[] }).search
+        ?.filter((x) => COMPANY_WORDS.test(x.description ?? ''))
+        .map((x) => x.id) ?? [];
     if (!ids.length) return null;
     const got = await fetchWithTimeout(`${api}?action=wbgetentities&ids=${ids.join('|')}&props=claims&format=json`);
     type Claim = { mainsnak?: { datavalue?: { value?: unknown } } };
@@ -100,6 +121,18 @@ export async function GET(request: NextRequest) {
   try {
     const page = await fetchWithTimeout(site.toString());
     if (page.ok) html = (await page.text()).slice(0, 300_000);
+    // トップページが <meta http-equiv="refresh"> で /ja/ などへ飛ばすだけのときは、飛び先を読む
+    const refresh = /<meta[^>]+http-equiv=["']?refresh["']?[^>]*content=["'][^"']*url=([^"'\s>]+)/i.exec(html)?.[1];
+    if (refresh) {
+      const next = new URL(refresh, site);
+      if (isPublicHttpUrl(next)) {
+        const res = await fetchWithTimeout(next.toString());
+        if (res.ok) {
+          html = (await res.text()).slice(0, 300_000);
+          site = next;
+        }
+      }
+    }
   } catch {
     // ページが取れなくても /favicon.ico は試す
   }

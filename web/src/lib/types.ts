@@ -12,6 +12,24 @@ export type Stage =
   | 'offer'
   | 'closed';
 
+/** 会社ページのメモ欄の1行（Notion のブロック） */
+export type BlockType = 'text' | 'heading' | 'bullet' | 'todo';
+
+export interface Block {
+  id: string;
+  type: BlockType;
+  text: string;
+  /** やること（todo）のチェック */
+  checked?: boolean;
+}
+
+/** 自分で追加したプロパティ（「本社」「年収」など） */
+export interface CustomProp {
+  id: string;
+  name: string;
+  value: string;
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -32,7 +50,10 @@ export interface Company {
   loginId: string;
   /** 拡張機能にパスワードを保存してあるか（パスワード自体は拡張機能にしかない） */
   hasPassword: boolean;
+  /** メモ欄の文字だけをつなげたもの（検索や CSV 用。blocks を直すと作り直す） */
   memo: string;
+  blocks: Block[];
+  props: CustomProp[];
   /** 拡張機能の「ボードに記録」で応募フォームを出した日時（ISO）。なければ空 */
   submittedAt: string;
   createdAt: string;
@@ -49,4 +70,6 @@ export interface AppData {
   doneTasks: Record<string, string[]>;
   /** サンプルデータを表示中か */
   sample: boolean;
+  /** 消した会社の ID。拡張機能につながっていないときに消すと、拡張機能に残ったログイン情報から会社が戻ってきてしまうので、次につながったときに拡張機能からも消してもらう */
+  removedIds: string[];
 }

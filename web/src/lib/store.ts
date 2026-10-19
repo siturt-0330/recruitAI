@@ -26,7 +26,7 @@ interface Actions {
   /** 拡張機能の「ボードに記録」を反映する */
   applyRecords(records: LinkRecord[]): void;
   /** 拡張機能で保存したマイページを反映する。新しく入った・変わった会社名を返す */
-  applyMypages(list: LinkMypage[]): string[];
+  applyMypages(list: LinkMypage[]): { changed: string[]; forget: string[] };
   clearSample(): void;
   loadSample(): void;
 }
@@ -48,7 +48,8 @@ export const useStore = create<Store>()(
 
       upsertCompany: (c) => set((s) => ({ companies: upsert(s.companies, c) })),
       patchCompany: (id, p) => set((s) => ({ companies: patch(s.companies, id, p) })),
-      removeCompany: (id) => set((s) => ({ companies: s.companies.filter((c) => c.id !== id) })),
+      removeCompany: (id) =>
+        set((s) => ({ companies: s.companies.filter((c) => c.id !== id), removedIds: [...s.removedIds.filter((x) => x !== id), id] })),
 
       toggleTask: (date, taskId) =>
         set((s) => {
@@ -79,8 +80,12 @@ export const useStore = create<Store>()(
 
       applyMypages: (list) => {
         const changed: string[] = [];
+        const removed = new Set(get().removedIds);
+        // 消した会社のログイン情報は、取り込まずに拡張機能から消してもらう
+        const forget = list.filter((m) => removed.has(m.companyId)).map((m) => m.companyId);
         let companies = get().companies;
         for (const m of list) {
+          if (removed.has(m.companyId)) continue;
           const fields = { name: m.companyName, mypageUrl: m.url, loginId: m.loginId, hasPassword: m.hasPassword };
           const c = companies.find((x) => x.id === m.companyId);
           if (!c) {
@@ -94,16 +99,25 @@ export const useStore = create<Store>()(
           }
         }
         if (companies !== get().companies) set({ companies });
-        return changed;
+        // 拡張機能にもう残っていない ID は、覚えておかなくてよい
+        const still = new Set(list.map((m) => m.companyId));
+        if (get().removedIds.some((id) => !still.has(id))) set({ removedIds: get().removedIds.filter((id) => still.has(id)) });
+        return { changed, forget };
       },
 
       clearSample: () =>
-        set({ companies: [], doneTasks: {}, sample: false }),
-      loadSample: () => set({ ...sampleData() }),
+        set((s) => ({
+          removedIds: [...s.removedIds, ...s.companies.map((c) => c.id)],
+          companies: [],
+          doneTasks: {},
+          sample: false,
+        })),
+      // サンプルを入れ直しても、消した会社の記録は残す
+      loadSample: () => set((s) => ({ ...sampleData(), removedIds: s.removedIds })),
     }),
     {
       name: 'sophon-data',
-      version: 5,
+      version: 7,
       // v2: 「気になる」をなくし、業界の選択肢を持つようにした
       migrate: (state, version) => {
         const s = state as AppData;
@@ -126,6 +140,21 @@ export const useStore = create<Store>()(
         }
         // v5: マイページのパスワードを拡張機能に保存したか
         if (version < 5) s.companies = s.companies.map((c) => ({ ...c, hasPassword: c.hasPassword ?? false }));
+        // v6: メモを Notion のようなブロックにし、自分で追加できるプロパティを持つ
+        if (version < 6) {
+          s.companies = s.companies.map((c) => ({
+            ...c,
+            props: c.props ?? [],
+            blocks:
+              c.blocks ??
+              (c.memo ?? '')
+                .split('\n')
+                .filter((t) => t.trim())
+                .map((text) => ({ id: crypto.randomUUID(), type: 'text' as const, text })),
+          }));
+        }
+        // v7: 消した会社の記録（拡張機能のログイン情報から戻ってこないように）
+        if (version < 7) s.removedIds = s.removedIds ?? [];
         return s as Store;
       },
       storage: createJSONStorage(() => localStorage),
