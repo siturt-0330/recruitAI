@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>らくらくエントリー 縦型動画 3</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@700;900&family=Noto+Sans+JP:wght@400;500;700;900&family=Inter:wght@600;800&display=swap" rel="stylesheet" />
+<!--
+  リール・TikTok・ショート用の縦型 PR 動画の 3 本目「応募からマイページまで」（540×960 を 2 倍で 1080×1920 に書き出す）。
+  1.1.0 の流れ：応募フォームをワンクリックで入力 → マイページの ID・パスワードを保存 → Web 版（マイページ管理）の一覧から開くとログイン欄まで入力済み。
+  最後は公式サイト rakuraku-entry.com へ誘導する。会社名はすべて架空。
+  画面はすべて時刻 t（秒）から決まる。ふつうに開くとループ再生、?t=秒 でその時点、?capture で書き出し用。
+  下の約 200px と右端はアプリのボタンや説明文に隠れるので、大事な文字は置かない。
+-->
+<style>
+  :root {
+    --ink: #14161a; --sub: #5b6470; --mute: #9aa3ad; --line: #ece9f2; --paper: #fbfaf8;
+    --stamp: #e0563f; --hl: #ffe45c; --accent: #5b4cf0;
+    --head: "Zen Kaku Gothic New", "Noto Sans JP", sans-serif;
+    --emoji: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+    --grad: linear-gradient(100deg, #5b4cf0 0%, #c04fd8 50%, #ff7a59 100%);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: #202228; display: flex; align-items: center; justify-content: center; overflow: hidden;
+    font-family: "Noto Sans JP", sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; line-height: 1.5; }
+  body.capture { display: block; background: var(--paper); }
+  #stage { position: relative; flex-shrink: 0; width: 540px; height: 960px; overflow: hidden; background: var(--paper); }
+  .abs { position: absolute; }
+  .scene { position: absolute; inset: 0; }
+  .blob { border-radius: 50%; filter: blur(64px); opacity: .85; }
+  #b1 { width: 380px; height: 380px; background: #d9d1ff; left: -150px; top: -110px; }
+  #b2 { width: 340px; height: 340px; background: #ffd9c7; left: 320px; top: 360px; }
+  #b3 { width: 360px; height: 360px; background: #c9f0de; left: -80px; top: 700px; }
+
+  .brandrow { left: 0; right: 0; top: 72px; display: flex; justify-content: center; }
+  .brandrow > div { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.85); border: 1px solid rgba(20,22,26,.06);
+    border-radius: 999px; padding: 5px 14px 5px 6px; font: 900 14px var(--head); box-shadow: 0 6px 20px rgba(20,22,26,.06); }
+  .brandrow svg { width: 24px; height: 24px; display: block; }
+  .kicker { display: inline-block; background: var(--ink); color: #fff; border-radius: 999px; padding: 5px 14px; font-size: 14px; font-weight: 700; letter-spacing: .02em; }
+  .h { font-family: var(--head); font-weight: 900; font-size: 40px; line-height: 1.3; letter-spacing: -.025em; }
+  .line { display: block; overflow: hidden; padding-bottom: .04em; }
+  .line > span { display: inline-block; }
+  .mk { background: linear-gradient(transparent 62%, var(--hl) 62%) no-repeat 0 0 / 0% 100%; padding: 0 2px; margin: 0 -2px; }
+  .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .grad2 { background: linear-gradient(100deg, #a59bff 0%, #e48cf2 50%, #ffa184 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .h, .kicker, .brandrow, .sticky, .feat, .end-name, .end-tag, .chip, .toast, .pop, .site { font-feature-settings: "palt"; }
+
+  /* 1. つかみ：マイページのログインで迷う */
+  .sticky { padding: 14px 20px; border-radius: 16px; font: 900 21px var(--head); white-space: nowrap; box-shadow: 0 14px 34px rgba(60,50,140,.14); }
+  .sticky.y { background: #fff6c9; }
+  .sticky.w { background: #fff; }
+  .sticky.err { background: #fff0ee; color: #c0392b; box-shadow: inset 0 0 0 2px #f2b8ae, 0 14px 34px rgba(192,57,43,.12); font-size: 18px; }
+  .sticky.link { background: #fff; color: #1a73e8; font: 700 18px "Noto Sans JP", sans-serif; text-decoration: underline; text-underline-offset: 4px; }
+  .sticky .em { font: 24px/1 var(--emoji); vertical-align: -3px; }
+
+  /* 手順の見出し */
+  .step { left: 30px; right: 30px; top: 92px; }
+  .step .h { font-size: 34px; margin-top: 10px; }
+  .snum { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 14px 0 5px; border-radius: 999px; background: var(--grad); color: #fff; font: 900 14px var(--head); }
+  .snum b { width: 22px; height: 22px; border-radius: 50%; background: #fff; color: var(--accent); font: 800 13px/22px Inter, sans-serif; text-align: center; }
+
+  /* ブラウザの窓 */
+  .win { left: 30px; width: 480px; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 18px 44px rgba(60,50,140,.14), 0 2px 6px rgba(20,22,26,.05); }
+  .wtop { height: 32px; background: #f1f3f4; border-bottom: 1px solid #e3e5e8; display: flex; align-items: center; gap: 5px; padding: 0 8px 0 12px; }
+  .wtop > i { width: 8px; height: 8px; border-radius: 50%; background: #ff5f57; flex-shrink: 0; }
+  .wtop > i:nth-child(2) { background: #febc2e; }
+  .wtop > i:nth-child(3) { background: #28c840; }
+  .wurl { flex: 1; margin-left: 6px; height: 21px; border-radius: 10px; background: #fff; font-size: 11px; color: #5f6368; line-height: 21px; padding: 0 10px; white-space: nowrap; overflow: hidden; }
+  .tb { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .tb svg { width: 17px; height: 17px; display: block; }
+  .tb.av { background: #c7b8ff; color: #3b2a8a; font-size: 10px; font-weight: 700; }
+  .page { position: absolute; left: 0; right: 0; top: 32px; bottom: 0; padding: 14px 20px 0; }
+  .ptitle { display: flex; align-items: center; gap: 8px; font: 900 16px var(--head); margin-bottom: 8px; }
+  .logo { width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0; color: #fff; font: 900 11px/20px var(--head); text-align: center; }
+  .row { display: flex; align-items: center; gap: 8px; height: 44px; }
+  .row > b { width: 76px; flex-shrink: 0; font-size: 12.5px; color: #536471; font-weight: 500; white-space: nowrap; }
+  .inp { position: relative; flex: 1; height: 32px; border: 1px solid #cfd6dc; border-radius: 7px; background: #fff; padding: 0 10px; font-size: 13.5px;
+    display: flex; align-items: center; white-space: nowrap; }
+  .stamp { position: absolute; right: -8px; top: -9px; width: 20px; height: 20px; border-radius: 50%; border: 1.4px solid var(--stamp); color: var(--stamp); background: #fffaf4;
+    font: 700 10.5px/1 "Yu Mincho", "Hiragino Mincho ProN", serif; display: flex; align-items: center; justify-content: center; }
+  .pbtn { margin: 14px auto 0; width: 180px; height: 38px; border-radius: 8px; background: #1e3a6e; color: #fff; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .toast { position: absolute; left: 50%; bottom: 16px; display: flex; align-items: center; gap: 10px; background: var(--ink); color: #fff; border-radius: 999px; padding: 7px 7px 7px 16px;
+    font-size: 13px; font-weight: 700; white-space: nowrap; box-shadow: 0 12px 30px rgba(20,22,26,.25); }
+  .toast em { font-style: normal; background: #fff; color: var(--ink); border-radius: 999px; padding: 4px 11px; font-size: 11.5px; }
+  .done-box { margin-top: 6px; padding: 16px 18px; border-radius: 12px; background: #eef8f2; color: #1f8a5b; font: 900 17px var(--head); display: flex; align-items: center; gap: 10px; }
+  .done-box .em { font: 22px/1 var(--emoji); }
+
+  /* 拡張機能のポップアップ（実物に寄せる） */
+  .pop { left: 168px; top: 392px; width: 330px; background: #fff; border-radius: 16px; padding: 14px 14px 16px; z-index: 6;
+    box-shadow: 0 30px 70px rgba(20,22,26,.28), 0 0 0 1px rgba(20,22,26,.05); }
+  .pop-h { display: flex; align-items: center; gap: 10px; }
+  .pop-av { width: 36px; height: 36px; border-radius: 50%; background: #f1f3f4; box-shadow: inset 0 0 0 2px #e3e5e8; font: 900 15px/36px var(--head); text-align: center; }
+  .pop-h b { display: block; font-size: 13.5px; line-height: 1.3; }
+  .pop-h small { font-size: 11.5px; color: var(--sub); }
+  .pop-label { margin: 12px 0 6px; font-size: 12.5px; font-weight: 700; color: #536471; display: flex; align-items: center; gap: 6px; }
+  .pop-t { border: 1px solid #ececf2; border-radius: 10px; font-size: 12.5px; }
+  .pop-t div { display: flex; align-items: center; height: 33px; padding: 0 10px; border-top: 1px solid #f0f0f4; white-space: nowrap; overflow: hidden; }
+  .pop-t div:first-child { border-top: 0; }
+  .pop-t b { width: 72px; font-weight: 500; color: var(--sub); flex-shrink: 0; }
+  .pop-save { margin-top: 10px; height: 38px; border-radius: 999px; background: #efedff; color: #3b2a8a; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .pop-save.ok { background: #1f8a5b; color: #fff; }
+
+  /* マイページ管理（Web 版） */
+  .app-h { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .app-h h3 { margin: 0; font: 900 19px var(--head); }
+  .app-h .search { margin-left: auto; width: 150px; height: 30px; border: 1px solid #e3e5e8; border-radius: 8px; font-size: 11.5px; color: var(--mute); display: flex; align-items: center; padding: 0 10px; }
+  .app-h .add { height: 30px; padding: 0 12px; border-radius: 8px; background: var(--ink); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; }
+  .crow { position: relative; display: flex; align-items: center; gap: 10px; height: 60px; padding: 0 10px; border: 1px solid #efeef4; border-radius: 12px; margin-bottom: 7px; background: #fff; }
+  .crow.new { background: #f5f3ff; border-color: #d9d3ff; }
+  .crow .logo { width: 34px; height: 34px; border-radius: 9px; font-size: 16px; line-height: 34px; }
+  .crow .nm { flex: 1; min-width: 0; }
+  .crow .nm b { display: block; font-size: 14px; line-height: 1.35; }
+  .crow .nm small { display: block; font-size: 11px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip { height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .chip.sel { background: #eef4ff; color: #1a5fc8; }
+  .chip.key { background: var(--ink); color: #fff; }
+  .chip.nokey { background: #f1f0f5; color: var(--mute); }
+  .open { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #5f6368; flex-shrink: 0; }
+  .open svg { width: 16px; height: 16px; display: block; }
+  .newtag { position: absolute; left: -8px; top: -9px; background: var(--grad); color: #fff; font: 800 10px/1 Inter, sans-serif; padding: 4px 7px; border-radius: 999px; }
+
+  /* 4. できること */
+  .feats { left: 40px; width: 460px; top: 300px; }
+  .feat { display: flex; align-items: center; gap: 16px; height: 92px; padding: 0 22px; margin-bottom: 12px; background: #fff; border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 10px 28px rgba(60,50,140,.08); }
+  .feat .em { font: 40px/1 var(--emoji); width: 48px; text-align: center; }
+  .feat b { display: block; font: 900 21px/1.3 var(--head); }
+  .feat small { display: block; font-size: 13.5px; color: var(--sub); font-weight: 500; }
+  .free { right: 44px; top: 128px; width: 92px; height: 92px; border-radius: 50%; border: 3px solid var(--stamp); color: var(--stamp); background: #fffaf4;
+    font: 900 22px/1.15 var(--head); display: flex; align-items: center; justify-content: center; text-align: center; }
+  .note { left: 0; right: 0; top: 622px; margin: 0; text-align: center; font-size: 15.5px; font-weight: 700; color: var(--sub); }
+
+  /* 5. 最後（暗い背景） */
+  .dark { inset: 0; background: var(--ink); }
+  .glow { border-radius: 50%; filter: blur(80px); opacity: .5; }
+  .end { left: 0; right: 0; top: 120px; display: flex; flex-direction: column; align-items: center; text-align: center; color: #fff; }
+  .end-icon svg { width: 96px; height: 96px; display: block; filter: drop-shadow(0 18px 40px rgba(46,230,197,.25)); }
+  .end-icon svg rect:first-child { stroke: rgba(255,255,255,.14); stroke-width: 2; }
+  .end-name { margin-top: 16px; font: 900 36px/1.3 var(--head); }
+  .end-tag { margin-top: 4px; font: 900 20px var(--head); }
+  .end-label { margin-top: 26px; font-size: 14px; font-weight: 700; color: rgba(255,255,255,.75); }
+  .urlbar { margin-top: 10px; width: 440px; height: 54px; border-radius: 999px; background: #fff; color: var(--ink); display: flex; align-items: center; gap: 10px;
+    padding: 0 22px; font: 600 20px Inter, sans-serif; text-align: left; }
+  .urlbar svg { width: 18px; height: 18px; flex-shrink: 0; display: block; }
+  .caret { display: inline-block; width: 2px; height: 22px; background: var(--ink); margin-left: 1px; }
+  /* 公式サイトの縮小版 */
+  .site { margin-top: 14px; width: 440px; height: 236px; border-radius: 20px; background: var(--paper); color: var(--ink); text-align: left; position: relative; overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,.35); }
+  .site .sb { position: absolute; border-radius: 50%; filter: blur(36px); opacity: .9; }
+  .site-nav { position: relative; margin: 12px 12px 0; height: 38px; border-radius: 999px; background: rgba(255,255,255,.85); display: flex; align-items: center; gap: 7px; padding: 0 5px 0 10px;
+    font: 900 12.5px var(--head); box-shadow: 0 4px 14px rgba(20,22,26,.06); }
+  .site-nav svg { width: 20px; height: 20px; display: block; }
+  .site-nav span:last-child { margin-left: auto; background: var(--ink); color: #fff; font: 700 11px "Noto Sans JP", sans-serif; padding: 6px 11px; border-radius: 999px; }
+  .site-nav .lk { margin-left: auto; font: 500 11px "Noto Sans JP", sans-serif; color: var(--sub); }
+  .site-nav .lk + span { margin-left: 4px; }
+  .site-body { position: relative; padding: 14px 22px 0; }
+  .site-eb { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.85); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px 3px 4px; font-size: 10.5px; font-weight: 700; color: var(--sub); }
+  .site-eb b { background: var(--ink); color: #fff; border-radius: 999px; padding: 1px 7px; font-size: 9.5px; }
+  .site-h { margin: 8px 0 12px; font: 900 25px/1.3 var(--head); letter-spacing: -.01em; }
+  .site-cta { display: inline-flex; align-items: center; height: 40px; padding: 0 20px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 14px; font-weight: 700; }
+  .end-sub { margin-top: 18px; font-size: 13px; font-weight: 700; color: rgba(255,255,255,.6); }
+
+  #cursor { left: 0; top: 0; width: 26px; height: 26px; z-index: 20; }
+  #cursor svg { width: 26px; height: 26px; display: block; }
+  #ripple { left: 0; top: 0; width: 40px; height: 40px; border-radius: 50%; border: 3px solid rgba(91,76,240,.6); z-index: 19; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="abs blob" id="b1"></div>
+  <div class="abs blob" id="b2"></div>
+  <div class="abs blob" id="b3"></div>
+
+  <!-- 1. つかみ（0〜3.2秒） -->
+  <section class="scene" id="s1" data-from="-1" data-to="3.2">
+    <div class="abs brandrow"><div><span class="ico"></span>らくらくエントリー</div></div>
+    <div class="abs h" style="left:40px;top:134px;font-size:44px;line-height:1.34">
+      <span class="line" data-line="0.05"><span>エントリーした会社の</span></span>
+      <span class="line" data-line="0.17"><span>マイページ、</span></span>
+      <span class="line" data-line="0.29"><span><span class="mk" data-mk="0.75">すぐログインできる？</span></span></span>
+    </div>
+    <div class="abs sticky y" style="left:40px;top:388px" data-pop="0.95" data-rot="-4"><span class="em">🤔</span> ID って何だっけ…</div>
+    <div class="abs sticky err" style="left:150px;top:478px" data-pop="1.35" data-rot="3">⚠ ID またはパスワードが違います</div>
+    <div class="abs sticky w" style="left:52px;top:572px" data-pop="1.75" data-rot="2"><span class="em">📩</span> 登録完了メール、どこ…？</div>
+    <div class="abs sticky link" style="left:196px;top:664px" data-pop="2.15" data-rot="-3">パスワードを忘れた方はこちら ›</div>
+  </section>
+
+  <!-- 2. 応募 → マイページを保存（3.1〜9.2秒） -->
+  <section class="scene" id="s2" data-from="3.1" data-to="9.2">
+    <div class="abs step" id="hdr1">
+      <span class="snum"><b>1</b>応募</span>
+      <div class="h">
+        <span class="line" data-line="3.3"><span>応募フォームは、</span></span>
+        <span class="line" data-line="3.42"><span><span class="mk" data-mk="5.0">ワンクリックで入力。</span></span></span>
+      </div>
+    </div>
+    <div class="abs step" id="hdr2">
+      <span class="snum"><b>2</b>保存</span>
+      <div class="h">
+        <span class="line" data-line="6.35"><span>マイページの ID も、</span></span>
+        <span class="line" data-line="6.47"><span><span class="mk" data-mk="8.05">そのまま保存。</span></span></span>
+      </div>
+    </div>
+    <div class="abs win" style="top:236px;height:420px">
+      <div class="wtop"><i></i><i></i><i></i><span class="wurl" id="url2">recruit.aoba-shoji.co.jp/entry</span><span class="tb" id="ext2"></span><span class="tb av">山</span></div>
+      <div class="page" id="pg1">
+        <div class="ptitle"><span class="logo" style="background:#1f8a5b">青</span>あおば商事 エントリー</div>
+        <div class="row"><b>氏名</b><span class="inp f1"></span></div>
+        <div class="row"><b>フリガナ</b><span class="inp f1"></span></div>
+        <div class="row"><b>生年月日</b><span class="inp f1"></span></div>
+        <div class="row"><b>メール</b><span class="inp f1"></span></div>
+        <div class="row"><b>パスワード</b><span class="inp f1"></span></div>
+        <div class="row"><b>電話番号</b><span class="inp f1"></span></div>
+        <div class="toast" id="toast1">6 件入力しました<em>元に戻す</em></div>
+      </div>
+      <div class="page" id="pg2">
+        <div class="ptitle"><span class="logo" style="background:#1f8a5b">青</span>あおば商事 新卒採用マイページ</div>
+        <div class="done-box"><span class="em">✅</span>マイページの登録が完了しました</div>
+      </div>
+    </div>
+    <div class="abs pop" id="pop">
+      <div class="pop-h"><span class="pop-av">山</span><div><b>山田 花子</b><small>@新卒用</small></div></div>
+      <div class="pop-label">🔑 このマイページを保存</div>
+      <div class="pop-t">
+        <div><b>会社名</b>あおば商事</div>
+        <div><b>ID</b>hanako.yamada@example.com</div>
+        <div><b>パスワード</b>••••••••••</div>
+        <div><b>URL</b>https://mypage.aoba-shoji.co.jp/</div>
+      </div>
+      <div class="pop-save" id="save">保存</div>
+    </div>
+  </section>
+
+  <!-- 3. マイページ管理から開く → ログイン欄に入力（9.1〜15.9秒） -->
+  <section class="scene" id="s3" data-from="9.1" data-to="15.9">
+    <div class="abs step">
+      <span class="snum"><b>3</b>ログイン</span>
+      <div class="h">
+        <span class="line" data-line="9.3"><span>保存したマイページは、</span></span>
+        <span class="line" data-line="9.42"><span><span class="mk" data-mk="13.35">一覧から開くだけ。</span></span></span>
+      </div>
+    </div>
+    <div class="abs win" style="top:236px;height:440px">
+      <div class="wtop"><i></i><i></i><i></i><span class="wurl">app.rakuraku-entry.com/companies</span><span class="tb" id="ext3"></span><span class="tb av">山</span></div>
+      <div class="page">
+        <div class="app-h"><h3>マイページ</h3><span class="search">会社名を入力</span><span class="add">＋ 追加</span></div>
+        <div id="rows"></div>
+      </div>
+    </div>
+    <div class="abs win" id="login" style="top:236px;height:440px;z-index:5">
+      <div class="wtop"><i></i><i></i><i></i><span class="wurl">mypage.aoba-shoji.co.jp/login</span><span class="tb" id="ext4"></span><span class="tb av">山</span></div>
+      <div class="page" style="background:#f4f5f7;padding:28px 30px 0">
+        <div style="background:#fff;border-radius:14px;padding:22px 24px 24px;box-shadow:0 0 0 1px #e8e9ee">
+          <div style="font:900 19px var(--head);color:#1e3a6e">あおば商事 新卒採用マイページ</div>
+          <div style="font-size:12px;color:var(--sub);margin-bottom:14px">2027年卒 ログイン</div>
+          <div style="font-size:12px;color:#536471;margin-bottom:4px">ログイン ID（メールアドレス）</div>
+          <div class="inp f2" style="flex:none;height:38px;margin-bottom:12px"></div>
+          <div style="font-size:12px;color:#536471;margin-bottom:4px">パスワード</div>
+          <div class="inp f2" style="flex:none;height:38px"></div>
+          <div class="pbtn" style="width:auto;margin-top:18px">ログイン</div>
+        </div>
+      </div>
+      <div class="toast" id="toast2">あおば商事 のログイン情報を入力しました<em>元に戻す</em></div>
+    </div>
+  </section>
+
+  <!-- 4. できること（15.8〜20.6秒） -->
+  <section class="scene" id="s4" data-from="15.8" data-to="20.6">
+    <div class="abs brandrow"><div><span class="ico"></span>らくらくエントリー</div></div>
+    <div class="abs h" style="left:40px;top:132px;font-size:40px">
+      <span class="line" data-line="16.0"><span>応募から</span></span>
+      <span class="line" data-line="16.12"><span><span class="mk" data-mk="16.6">マイページまで。</span></span></span>
+    </div>
+    <div class="abs free" data-pop="16.75" data-rot="-10">ぜんぶ<br />無料</div>
+    <div class="abs feats">
+      <div class="feat" data-in="16.9"><span class="em">⚡</span><div><b>ワンクリックで入力</b><small>形式の違う応募フォームにも合わせて</small></div></div>
+      <div class="feat" data-in="17.1"><span class="em">🤖</span><div><b>迷う欄は AI「Sophon」</b><small>見出しを読んで、入れる項目を判断</small></div></div>
+      <div class="feat" data-in="17.3"><span class="em">🗂️</span><div><b>マイページを一元管理</b><small>ID・パスワード・選考状況をひとつに</small></div></div>
+    </div>
+    <p class="abs note" data-in="17.7">🔒 個人情報とパスワードは、あなたの PC の中だけ。</p>
+  </section>
+
+  <!-- 5. 最後：公式サイトへ（20.5秒〜） -->
+  <section class="scene" id="s5" data-from="20.5" data-to="99">
+    <div class="abs dark"></div>
+    <div class="abs glow" style="width:360px;height:360px;background:#5b4cf0;left:-110px;top:60px"></div>
+    <div class="abs glow" style="width:340px;height:340px;background:#ff7a59;left:300px;top:470px"></div>
+    <div class="abs end">
+      <div class="end-icon ico" data-pop="20.7"></div>
+      <div class="end-name" data-in="20.9">らくらくエントリー</div>
+      <div class="end-tag" data-in="21.05"><span class="grad2">応募も、マイページも、らくらく。</span></div>
+      <div class="end-label" data-in="21.4">公式サイトができました</div>
+      <div class="urlbar" data-in="21.5"><svg viewBox="0 0 24 24" fill="none" stroke="#1f8a5b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span id="q"></span><i class="caret" id="qcaret"></i></div>
+      <div class="site" data-pop="22.75" id="site">
+        <div class="sb" style="width:200px;height:200px;background:#d9d1ff;left:-60px;top:-60px"></div>
+        <div class="sb" style="width:180px;height:180px;background:#ffd9c7;right:-50px;top:40px"></div>
+        <div class="sb" style="width:180px;height:180px;background:#c9f0de;left:140px;top:170px"></div>
+        <div class="site-nav"><span class="ico"></span>らくらくエントリー<span class="lk">マイページ管理</span><span>Chrome に追加</span></div>
+        <div class="site-body">
+          <span class="site-eb"><b>NEW</b>就活生のための Chrome 拡張機能</span>
+          <div class="site-h">エントリーの入力は、<br /><span class="grad">ワンクリック</span>で終わり。</div>
+          <span class="site-cta" id="siteCta">Chrome に無料で追加</span>
+        </div>
+      </div>
+      <div class="end-sub" data-in="23.2">Chrome ウェブストアで「らくらくエントリー」と検索 🔍</div>
+    </div>
+  </section>
+
+  <div class="abs" id="ripple"></div>
+  <div class="abs" id="cursor"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var W = 540;
+  var H = 960;
+  var D = 27;
+  var params = new URLSearchParams(location.search);
+  var CAPTURE = params.has('capture');
+
+  var ICON = '<svg viewBox="0 0 128 128" aria-hidden="true"><rect x="4" y="4" width="120" height="120" rx="28" fill="#0F1419"/><rect x="22" y="28" width="84" height="16" rx="8" fill="#2EE6C5"/><rect x="22" y="54" width="84" height="16" rx="8" fill="#2EE6C5"/><rect x="22" y="80" width="46" height="16" rx="8" fill="#2EE6C5" fill-opacity=".35"/><path transform="translate(74 70)" d="M0 0 v34 l8.5 -8 l6.5 14 l6.5 -3 l-6.5 -13.5 h12 z" fill="#fff" stroke="#0F1419" stroke-width="4" stroke-linejoin="round"/></svg>';
+  var CURSOR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2 L3 20 L8 15.5 L11.5 22.5 L14.5 21 L11 14.2 L18 14.2 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+  var OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function clamp(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  /** a〜b 秒の間の進み具合（0〜1） */
+  function prog(t, a, b) { return clamp((t - a) / (b - a)); }
+  function easeOut(x) { return 1 - Math.pow(1 - clamp(x), 3); }
+  function easeInOut(x) { x = clamp(x); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+  /** 少し行き過ぎてから戻る */
+  function back(x) { x = clamp(x); var c1 = 1.70158; return 1 + (c1 + 1) * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); }
+  /** a 秒から d 秒かけて現れ、b 秒から d 秒かけて消える */
+  function vis(t, a, b, d) { d = d || 0.25; return Math.min(prog(t, a, a + d), 1 - prog(t, b, b + d)); }
+  function typed(text, t, a, b) { var c = Array.from(text); return c.slice(0, Math.round(c.length * prog(t, a, b))).join(''); }
+  function show(e, o, transform) {
+    e.style.opacity = String(o);
+    e.style.visibility = o <= 0.001 ? 'hidden' : 'visible';
+    if (transform != null) e.style.transform = transform;
+  }
+
+  var stage = $('#stage');
+  if (CAPTURE) document.body.classList.add('capture');
+  $$('.ico').forEach(function (e) { e.innerHTML = ICON; });
+  ['#ext2', '#ext3', '#ext4'].forEach(function (s) { $(s).innerHTML = ICON; });
+  $('#cursor').innerHTML = CURSOR;
+
+  /** ステージの中での中心座標（変形は無視したレイアウト上の位置） */
+  function center(el) {
+    var x = el.offsetWidth / 2;
+    var y = el.offsetHeight / 2;
+    for (var e = el; e && e !== stage; e = e.offsetParent) {
+      x += e.offsetLeft;
+      y += e.offsetTop;
+    }
+    return [x, y];
+  }
+
+  /** 入力欄に、文字と「済」の印を入れる場所を作る */
+  function slots(sel) {
+    return $$(sel).map(function (el) {
+      var tx = document.createElement('span');
+      var st = document.createElement('span');
+      st.className = 'stamp';
+      st.textContent = '済';
+      el.appendChild(tx);
+      el.appendChild(st);
+      return { el: el, tx: tx, st: st };
+    });
+  }
+  /** at 秒に値が入り、少し遅れて「済」が押される */
+  function fill(f, value, t, at) {
+    var on = t >= at;
+    f.tx.textContent = on ? value : '';
+    f.el.style.boxShadow = on ? '0 0 0 2px rgba(224,86,63,.22)' : 'none';
+    var s = on ? prog(t, at + 0.03, at + 0.25) : 0;
+    show(f.st, s, 'rotate(-12deg) scale(' + (1.8 - 0.8 * easeOut(s)) + ')');
+  }
+
+  var ENTRY = ['山田 花子', 'ヤマダ ハナコ', '2004年5月12日', 'hanako.yamada@example.com', '••••••••••', '090-1234-5678'];
+  var F1 = slots('.f1');
+  var F2 = slots('.f2');
+  var FILL1 = 4.45;
+  var FILL2 = 13.0;
+
+  // マイページ管理の一覧（会社名, ロゴの文字, 色, URL, 選考状況, 保存済みか）
+  var COMPANIES = [
+    ['あおば商事', '青', '#1f8a5b', 'mypage.aoba-shoji.co.jp', 'ES 提出', true],
+    ['みなと銀行', 'み', '#1a73e8', 'minato-bank.snar.jp', '一次面接', true],
+    ['ひかり電機', 'ひ', '#e8a200', 'hikari-denki.axol.jp', '説明会予約', true],
+    ['そら食品', 'そ', '#d6457a', 'マイページ未登録', 'エントリー', false],
+    ['つばさ自動車', 'つ', '#3d5afe', 'mypage.tsubasa-motor.jp', '二次面接', true],
+  ];
+  var rowsEl = $('#rows');
+  COMPANIES.forEach(function (c, i) {
+    var r = document.createElement('div');
+    r.className = 'crow' + (i === 0 ? ' new' : '');
+    r.setAttribute('data-in', String(9.55 + i * 0.09));
+    r.innerHTML = (i === 0 ? '<span class="newtag">NEW</span>' : '') +
+      '<span class="logo" style="background:' + c[2] + '">' + c[1] + '</span>' +
+      '<span class="nm"><b>' + c[0] + '</b><small>' + c[3] + '</small></span>' +
+      '<span class="chip sel">' + c[4] + '</span>' +
+      '<span class="chip ' + (c[5] ? 'key">🔑 保存済み' : 'nokey">未保存') + '</span>' +
+      '<span class="open"' + (i === 0 ? ' id="open0"' : '') + '>' + OPEN + '</span>';
+    rowsEl.appendChild(r);
+  });
+
+  // 時刻を data 属性で書いた、決まった動き
+  var INS = $$('[data-in]').map(function (e) { return [e, Number(e.dataset.in)]; });
+  var LINES = $$('[data-line]').map(function (e) { return [e.firstElementChild, Number(e.dataset.line)]; });
+  var POPS = $$('[data-pop]').map(function (e) { return [e, Number(e.dataset.pop), Number(e.dataset.rot || 0)]; });
+  var MKS = $$('[data-mk]').map(function (e) { return [e, Number(e.dataset.mk)]; });
+  var scenes = $$('.scene');
+
+  var el = {
+    b1: $('#b1'), b2: $('#b2'), b3: $('#b3'), hdr1: $('#hdr1'), hdr2: $('#hdr2'), url2: $('#url2'), pg1: $('#pg1'), pg2: $('#pg2'),
+    toast1: $('#toast1'), toast2: $('#toast2'), pop: $('#pop'), save: $('#save'), login: $('#login'), ext2: $('#ext2'), ext4: $('#ext4'),
+    q: $('#q'), qcaret: $('#qcaret'), siteCta: $('#siteCta'), cursor: $('#cursor'), ripple: $('#ripple'),
+  };
+
+  var CLICK_EXT = 4.3;
+  var CLICK_SAVE = 7.9;
+  var CLICK_OPEN = 12.2;
+  var CLICK_SITE = 24.6;
+  var CLICKS = [CLICK_EXT, CLICK_SAVE, CLICK_OPEN, CLICK_SITE];
+
+  /** カーソルの通り道（時刻と位置。位置は要素なら中心） */
+  function path() {
+    function at(e, dx, dy) { var c = center(e); return [c[0] + (dx || 0), c[1] + (dy || 0)]; }
+    return [
+      [3.3, [430, 790]], [3.85, [430, 790]], [CLICK_EXT - 0.05, at(el.ext2, 3, 5)],
+      [6.75, at(el.ext2, 3, 5)], [CLICK_SAVE - 0.08, at(el.save, 40, 6)], [9.2, at(el.save, 40, 6)],
+      [10.6, [420, 800]], [11.25, [420, 800]], [CLICK_OPEN - 0.05, at($('#open0'), 3, 5)], [12.8, at($('#open0'), 3, 5)],
+      [23.6, [470, 900]], [CLICK_SITE - 0.08, at(el.siteCta, 50, 8)],
+    ];
+  }
+  function cursorAt(t) {
+    var p = path();
+    if (t <= p[0][0]) return p[0][1];
+    for (var i = 1; i < p.length; i++) {
+      if (t <= p[i][0]) {
+        var a = p[i - 1];
+        var b = p[i];
+        // 場面が変わるところ（次の点が離れた時刻）では、そこへ飛ぶ
+        if (b[0] - a[0] > 2.5) return b[1];
+        var k = easeInOut(prog(t, a[0], b[0]));
+        return [a[1][0] + (b[1][0] - a[1][0]) * k, a[1][1] + (b[1][1] - a[1][1]) * k];
+      }
+    }
+    return p[p.length - 1][1];
+  }
+
+  function render(t) {
+    t = Math.max(0, Math.min(D, t));
+
+    el.b1.style.transform = 'translate(' + Math.sin(t * 0.5) * 26 + 'px,' + Math.cos(t * 0.4) * 18 + 'px)';
+    el.b2.style.transform = 'translate(' + Math.cos(t * 0.45) * 22 + 'px,' + Math.sin(t * 0.35) * 26 + 'px)';
+    el.b3.style.transform = 'translate(' + Math.sin(t * 0.3 + 1) * 28 + 'px,' + Math.cos(t * 0.5) * 16 + 'px)';
+
+    // 場面の切り替え
+    scenes.forEach(function (s) {
+      var a = Number(s.dataset.from);
+      var b = Number(s.dataset.to);
+      var pi = easeOut(prog(t, a, a + 0.3));
+      var po = easeInOut(prog(t, b, b + 0.3));
+      show(s, Math.min(pi, 1 - po), 'translateY(' + ((1 - pi) * 24 - po * 24) + 'px)');
+    });
+    INS.forEach(function (x) {
+      var p = easeOut(prog(t, x[1], x[1] + 0.45));
+      show(x[0], p, 'translateY(' + (1 - p) * 18 + 'px)');
+    });
+    LINES.forEach(function (x) {
+      x[0].style.transform = 'translateY(' + (1 - easeOut(prog(t, x[1], x[1] + 0.5))) * 110 + '%)';
+    });
+    POPS.forEach(function (x) {
+      var p = prog(t, x[1], x[1] + 0.45);
+      show(x[0], clamp(p * 2.5), 'rotate(' + x[2] + 'deg) scale(' + (0.35 + 0.65 * back(p)) + ')');
+    });
+    MKS.forEach(function (x) {
+      x[0].style.backgroundSize = easeInOut(prog(t, x[1], x[1] + 0.4)) * 100 + '% 100%';
+    });
+
+    // 2. 応募フォームを入力 → 登録完了 → ポップアップで保存
+    show(el.hdr1, 1 - prog(t, 6.1, 6.3));
+    show(el.hdr2, prog(t, 6.25, 6.3));
+    el.ext2.style.background = t >= CLICK_EXT && t < CLICK_EXT + 0.25 ? 'rgba(91,76,240,.18)' : 'transparent';
+    F1.forEach(function (f, i) { fill(f, ENTRY[i], t, FILL1 + i * 0.07); });
+    var tp = prog(t, 5.05, 5.35);
+    show(el.toast1, clamp(tp * 2.5) * (1 - prog(t, 5.9, 6.1)), 'translateX(-50%) scale(' + (0.6 + 0.4 * back(tp)) + ')');
+    var sw = prog(t, 6.2, 6.45);
+    show(el.pg1, 1 - sw, 'translateX(' + -sw * 40 + 'px)');
+    show(el.pg2, sw, 'translateX(' + (1 - sw) * 40 + 'px)');
+    el.url2.textContent = t < 6.3 ? 'recruit.aoba-shoji.co.jp/entry' : 'mypage.aoba-shoji.co.jp/registered';
+    var pp = easeOut(prog(t, 6.65, 7.05));
+    show(el.pop, pp, 'translateY(' + (1 - pp) * 30 + 'px) scale(' + (0.96 + 0.04 * pp) + ')');
+    var saved = t >= CLICK_SAVE + 0.1;
+    el.save.className = 'pop-save' + (saved ? ' ok' : '');
+    el.save.textContent = saved ? '✓ 保存しました' : '保存';
+    el.save.style.transform = t >= CLICK_SAVE && t < CLICK_SAVE + 0.12 ? 'scale(.96)' : 'none';
+
+    // 3. 一覧から開く → ログイン画面に入力済み
+    var lg = easeOut(prog(t, 12.45, 12.85));
+    show(el.login, lg, 'translateY(' + (1 - lg) * 120 + 'px)');
+    el.ext4.style.background = t >= FILL2 - 0.1 && t < FILL2 + 0.2 ? 'rgba(91,76,240,.18)' : 'transparent';
+    F2.forEach(function (f, i) { fill(f, i === 0 ? 'hanako.yamada@example.com' : '••••••••••', t, FILL2 + i * 0.12); });
+    var tq = prog(t, 13.4, 13.7);
+    show(el.toast2, clamp(tq * 2.5), 'translateX(-50%) scale(' + (0.6 + 0.4 * back(tq)) + ')');
+
+    // 5. アドレス欄に打ち込む → サイト → 「Chrome に無料で追加」
+    el.q.textContent = typed('rakuraku-entry.com', t, 21.75, 22.55);
+    el.qcaret.style.visibility = t >= 21.5 && (t < 22.55 || Math.floor(t * 2.2) % 2 === 0) ? 'visible' : 'hidden';
+    if (t >= CLICK_SITE) {
+      var w = ((t - CLICK_SITE - 0.15) % 1.4 + 1.4) % 1.4 / 1.4;
+      el.siteCta.style.boxShadow = '0 0 0 ' + 12 * w + 'px rgba(91,76,240,' + 0.4 * (1 - w) + ')';
+    } else {
+      el.siteCta.style.boxShadow = 'none';
+    }
+    el.siteCta.style.transform = t >= CLICK_SITE && t < CLICK_SITE + 0.12 ? 'scale(.96)' : 'none';
+
+    // カーソルとクリックの波紋
+    var c = cursorAt(t);
+    var pressed = CLICKS.some(function (k) { return t >= k && t < k + 0.12; });
+    var cv = Math.max(vis(t, 3.4, 8.9, 0.2), vis(t, 10.7, 12.5, 0.2), vis(t, 23.5, 99, 0.2));
+    show(el.cursor, cv, 'translate(' + (c[0] - 4) + 'px,' + (c[1] - 3) + 'px) scale(' + (pressed ? 0.85 : 1) + ')');
+    var last = -1;
+    CLICKS.forEach(function (k) { if (t >= k && t < k + 0.4) last = k; });
+    if (last >= 0) {
+      var rp = prog(t, last, last + 0.4);
+      show(el.ripple, 1 - rp, 'translate(' + (c[0] - 20) + 'px,' + (c[1] - 20) + 'px) scale(' + (0.4 + rp) + ')');
+    } else {
+      show(el.ripple, 0);
+    }
+  }
+
+  window.__capture = { width: W, height: H, scale: 2, duration: D };
+  window.__render = render;
+
+  if (CAPTURE) {
+    render(Number(params.get('t') || 0));
+    return;
+  }
+  // プレビュー：画面に収まるように縮めて、ループ再生する
+  function fit() {
+    stage.style.transform = 'scale(' + Math.min(innerWidth / W, innerHeight / H) + ')';
+  }
+  fit();
+  addEventListener('resize', fit);
+  if (params.has('t')) {
+    render(Number(params.get('t')));
+    return;
+  }
+  var start = null;
+  function loop(ts) {
+    if (start === null) start = ts;
+    render(Math.min(((ts - start) / 1000) % (D + 1), D));
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
