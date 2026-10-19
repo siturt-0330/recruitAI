@@ -160,5 +160,17 @@ export async function findLogo(name: string, url: string): Promise<LogoResult> {
       // 次の候補へ
     }
   }
+  // 企業サイトがボット対策でアクセスを断るとき（sony.com など）は、Google のファビコンの配信から取る。
+  // 送るのは会社のサイトのドメインだけ。知らないドメインには 404 が返るので、そのときは頭文字のまま
+  try {
+    const res = await fetchWithTimeout(`https://www.google.com/s2/favicons?domain=${encodeURIComponent(site.hostname)}&sz=128`);
+    const type = res.headers.get('content-type') ?? '';
+    if (res.ok && /^image\//.test(type)) {
+      const buf = new Uint8Array(await res.arrayBuffer());
+      if (buf.length && buf.length <= MAX_BYTES) return { logo: `data:${type.split(';')[0]};base64,${toBase64(buf)}`, source: 'google-favicon' };
+    }
+  } catch {
+    // 取れなければ頭文字のまま
+  }
   return NOT_FOUND;
 }
