@@ -74,9 +74,15 @@ async function openMypage(companyId: string) {
   // 保存したときにこのサイトへの許可をもらっていなければ、開くだけ（アイコンを押せば入力できる）
   const pattern = originPattern(m.url);
   if (!pattern || !(await browser.permissions.contains({ origins: [pattern] }))) return;
-  try {
-    await runInTab(tab.id, 'fillLogin', { loginId: m.loginId, password: m.password, company: m.companyName });
-  } catch (e) {
-    console.warn('[らくらくエントリー] ログイン情報を入力できませんでした', e);
+  // 読み込みが終わってから画面を組み立てるログイン画面もあるので、欄が出てくるまで少し待ちながら試す
+  for (let i = 0; i < 10; i++) {
+    try {
+      const res = await runInTab(tab.id, 'fillLogin', { loginId: m.loginId, password: m.password, company: m.companyName });
+      if (res.some((f) => f.result.login?.found)) return;
+    } catch (e) {
+      console.warn('[らくらくエントリー] ログイン情報を入力できませんでした', e);
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 600));
   }
 }

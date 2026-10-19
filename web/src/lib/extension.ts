@@ -72,7 +72,8 @@ export function useExtensionBridge() {
         store.applyRecords(msg.records);
         post({ source: 'sophon-app', type: 'ack', ids: msg.records.map((r) => r.id) });
       } else if (msg.type === 'mypages') {
-        const changed = store.applyMypages(msg.mypages);
+        const { changed, forget } = store.applyMypages(msg.mypages);
+        forget.forEach(forgetMypage);
         if (changed.length) useExtension.setState({ notice: `${changed.join('、')} のマイページを保存しました` });
       }
     };

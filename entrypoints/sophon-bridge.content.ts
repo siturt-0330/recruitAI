@@ -86,7 +86,8 @@ export default defineContentScript({
         const patch = { companyName: c.name, url: c.mypageUrl || m.url, loginId: c.loginId ?? m.loginId };
         if (patch.companyName === m.companyName && patch.url === m.url && patch.loginId === m.loginId) return m;
         changed = true;
-        return { ...m, ...patch, updatedAt: new Date().toISOString() };
+        // 更新日時は Sophon で直した時刻のままにする（今の時刻にすると、打っている途中の古い値で Sophon 側を上書きしてしまう）
+        return { ...m, ...patch, updatedAt: c.updatedAt ?? m.updatedAt };
       });
       if (changed) await mypagesItem.setValue(next);
     };
