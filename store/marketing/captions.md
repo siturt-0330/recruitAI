@@ -169,3 +169,39 @@ node store/marketing/capture.mjs store/marketing/reel4.html store/marketing/reel
 https://rakuraku-entry.com
 
 #就活 #27卒 #28卒
+
+## フィード投稿 2・3（縦型動画 3・4 に合わせたカルーセル）
+
+画像は `feed/mypage-1.png`〜`mypage-5.png` と `feed/sophon-1.png`〜`sophon-5.png`（1080×1350）。それぞれ 5 枚で 1 つのカルーセル投稿にする。元データは `post2.html`（`?s=mypage` か `?s=sophon` と `&n=1`〜`5`）。動画と同じ見た目で、絵文字と「無料」は使っていない。
+
+- mypage はマイページの保存とログイン欄への入力（1.1.0 の機能）を見せるので、ストアで 1.1.0 が公開されてから投稿する
+
+```bash
+node store/marketing/capture.mjs "store/marketing/post2.html?s=mypage&n=1" store/marketing/feed/mypage-1.png
+```
+
+### キャプション（mypage）
+
+エントリーした会社のマイページ、すぐログインできますか？
+
+らくらくエントリーなら、応募フォームはワンクリックで入力。
+マイページの ID とパスワードもそのまま保存できて、
+一覧から開けば、ログイン欄まで入力された状態で開きます。
+
+個人情報とパスワードは、あなたの PC の中だけに保存します。
+くわしくは公式サイト rakuraku-entry.com へ。
+
+#就活 #27卒 #28卒 #マイページ #本選考 #就活生 #インターン #Chrome拡張機能
+
+### キャプション（sophon）
+
+「連絡先（携帯）」「保護者連絡先」「休暇中の連絡先」。
+同じ電話番号の欄でも、呼び方は会社ごとにバラバラです。
+
+らくらくエントリーの AI「Sophon」は、欄の見出しを読んで、どの番号を入れるかを判断します。
+迷った欄は「確認」の印で知らせるので、候補を押すだけで入れ直せます。
+
+和暦、半角カナ、分かれた電話番号の欄にも合わせて入力。
+くわしくは公式サイト rakuraku-entry.com へ。
+
+#就活 #27卒 #28卒 #エントリーシート #本選考 #就活生 #インターン #Chrome拡張機能
