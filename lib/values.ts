@@ -425,6 +425,10 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
       return [p.highSchool];
     case 'highSchoolAdmission':
       return ymForms(p.highSchoolAdmission, h, kind);
+    case 'highSchoolAdmissionYear':
+      return ymPart(p.highSchoolAdmission, 'year', h);
+    case 'highSchoolAdmissionMonth':
+      return ymPart(p.highSchoolAdmission, 'month', h);
     case 'highSchoolGraduation':
       return ymForms(p.highSchoolGraduation, h, kind);
     case 'highSchoolGraduationYear':
@@ -528,10 +532,22 @@ const NO_WIDTH_KEYS = new Set<FieldKey>(['email', 'emailConfirm', 'emailSub', 'p
 
 const YES_WORDS = ['はい', 'あり', '有', '有り', 'ある', 'yes'];
 const NO_WORDS = ['いいえ', 'なし', '無', '無し', 'ない', 'no'];
-const isYesNoOptions = (options: string[]) => {
+/**
+ * 有無を聞く選択肢の「ある」側と「ない」側。
+ * 「あり／なし」のほか、「持っている／持っていない」「決まっている／決まっていない」のような対の形も見る
+ */
+export function yesNoOptions(options: string[]): { yes: string; no: string } | null {
   const opts = options.map((o) => o.normalize('NFKC').replace(/\s/g, '').toLowerCase());
-  return opts.some((o) => YES_WORDS.includes(o)) && opts.some((o) => NO_WORDS.includes(o));
-};
+  const yes = opts.findIndex((o) => YES_WORDS.includes(o));
+  const no = opts.findIndex((o) => NO_WORDS.includes(o));
+  if (yes >= 0 && no >= 0) return { yes: options[yes]!, no: options[no]! };
+  for (const [i, o] of opts.entries()) {
+    const positive = o.replace(/ていない$/, 'ている').replace(/しない$/, 'する');
+    const j = positive !== o ? opts.indexOf(positive) : -1;
+    if (j >= 0) return { yes: options[j]!, no: options[i]! };
+  }
+  return null;
+}
 /** 「なし」「特になし」のように、ないことを書いた値 */
 export const SAYS_NONE = /^(特に)?(なし|無し|無|ない|ありません|no|none)$/i;
 
@@ -539,8 +555,9 @@ export const SAYS_NONE = /^(特に)?(なし|無し|無|ない|ありません|no
 export function valueVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind, options: string[] = []): string[] {
   const values = uniq(rawVariants(key, p, h, kind).map((v) => v.trim()));
   // 「留学経験 ［あり］［なし］」のように、項目の中身ではなく有無を聞いている欄
-  if ((kind === 'radio' || kind === 'select') && values.length && isYesNoOptions(options) && !YES_WORDS.includes(values[0]!)) {
-    return SAYS_NONE.test(values[0]!.normalize('NFKC')) ? NO_WORDS : YES_WORDS;
+  const yesNo = kind === 'radio' || kind === 'select' ? yesNoOptions(options) : null;
+  if (yesNo && values.length && !YES_WORDS.includes(values[0]!)) {
+    return SAYS_NONE.test(values[0]!.normalize('NFKC')) ? [yesNo.no, ...NO_WORDS] : [yesNo.yes, ...YES_WORDS];
   }
   if (kind !== 'text' && kind !== 'textarea' && kind !== 'tel' && kind !== 'number') return values;
   if (NO_WIDTH_KEYS.has(key)) return values;

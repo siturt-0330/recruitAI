@@ -108,6 +108,8 @@ export const FIELD_KEYS = {
   researchTheme: k('education', '研究テーマ', '研究テーマ・卒業論文のテーマ'),
   highSchool: k('education', '高校名', '出身高校の名前'),
   highSchoolAdmission: k('education', '高校入学年月', '高校の入学年月'),
+  highSchoolAdmissionYear: k('education', '高校入学年', '高校の入学年月の「年」だけの欄'),
+  highSchoolAdmissionMonth: k('education', '高校入学月', '高校の入学年月の「月」だけの欄'),
   highSchoolGraduation: k('education', '高校卒業年月', '高校の卒業年月'),
   highSchoolGraduationYear: k('education', '高校卒業年', '高校の卒業年月の「年」だけの欄'),
   highSchoolGraduationMonth: k('education', '高校卒業月', '高校の卒業年月の「月」だけの欄'),

@@ -236,9 +236,36 @@ function hasOtherFieldLabel(node: Element, el: HTMLElement): boolean {
   return false;
 }
 
+/** 「設問 8」「Q3」のような、番号だけで中身のわからない行見出し */
+const NUMBER_ONLY_HEADER = /^(設問|質問|問|q|question)\s*[\d０-９]+[.．:：]?$/i;
+
+/**
+ * アンケートで、欄より前に書かれた設問の文（「TOEICのスコアについて」「スコアはお持ちですか？」）。
+ * 欄を含むセルの中で、欄より前にあって入力欄を含まない要素の文字を順につなげる
+ */
+function questionText(el: HTMLElement): string {
+  const parts: string[] = [];
+  let node: HTMLElement | null = el;
+  for (let depth = 0; node && depth < 6; depth++) {
+    for (let n = node.previousSibling; n; n = n.previousSibling) {
+      // 前の設問の欄まで来たら、それより前の文字は前の設問のもの
+      if (isControl(n) || (n instanceof HTMLElement && n.querySelector(CONTROLS))) return finish(parts);
+      const t = n.nodeType === Node.TEXT_NODE ? (n.nodeValue ?? '') : textOf(n, 80);
+      if (t.trim()) parts.unshift(t.trim());
+    }
+    const parent: HTMLElement | null = node.parentElement;
+    if (!parent || /^(TD|TH|DD|LI|FORM|BODY|FIELDSET)$/.test(parent.tagName)) break;
+    node = parent;
+  }
+  return finish(parts);
+}
+
+const finish = (parts: string[]) => parts.join(' ').replace(/\s+/g, ' ').slice(0, 100);
+
 function contextText(el: HTMLElement): string {
   // 表や dl の行見出しがあれば、近くにある入力例より優先する
   const header = structuralHeader(el);
+  if (header && NUMBER_ONLY_HEADER.test(header.normalize('NFKC').trim())) return questionText(el) || header;
   if (header) return header;
 
   let node = el.parentElement;

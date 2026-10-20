@@ -95,7 +95,9 @@ async function main() {
   const stage = document.getElementById('stage')!;
   const out = document.getElementById('results')!;
   const results: CaseResult[] = [];
-  for (const c of CASES) results.push(await runCase(c, stage));
+  // ?only=第3版 のように名前の一部を渡すと、そのケースだけ実行する
+  const only = new URLSearchParams(location.search).get('only');
+  for (const c of CASES) if (!only || c.name.includes(only)) results.push(await runCase(c, stage));
 
   const failed = results.filter((r) => r.failures.length || r.undoFailures.length || r.error);
   const esc = (s: unknown) => String(s).replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[ch]!);
