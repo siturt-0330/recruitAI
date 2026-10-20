@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>らくらくエントリー フィード投稿 2</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@700;900&family=Noto+Sans+JP:wght@400;500;700;900&family=Inter:wght@600;800&display=swap" rel="stylesheet" />
+<!--
+  Instagram のフィード投稿（カルーセル）用の画像。540×675 を 2 倍で 1080×1350 に書き出す。
+  ?s=mypage は縦型動画 3（応募からマイページまで）、?s=sophon は縦型動画 4（呼び方がバラバラでも）に合わせた 5 枚ずつ。&n=1〜5 で 1 枚を選ぶ。
+  会社名・番号はすべて架空。絵文字と「無料」は使わない。
+  書き出し：node store/marketing/capture.mjs "store/marketing/post2.html?s=mypage&n=1" store/marketing/feed/mypage-1.png
+-->
+<style>
+  :root {
+    --ink: #14161a; --sub: #5b6470; --mute: #9aa3ad; --line: #ece9f2; --paper: #fbfaf8;
+    --stamp: #e0563f; --warn: #f4a100; --hl: #ffe45c; --accent: #5b4cf0;
+    --head: "Zen Kaku Gothic New", "Noto Sans JP", sans-serif;
+    --grad: linear-gradient(100deg, #5b4cf0 0%, #c04fd8 50%, #ff7a59 100%);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #202228; display: flex; align-items: center; justify-content: center; min-height: 100vh;
+    font-family: "Noto Sans JP", sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; line-height: 1.5; }
+  body.capture { display: block; min-height: 0; background: var(--paper); }
+  #stage { position: relative; width: 540px; height: 675px; overflow: hidden; background: var(--paper); }
+  .abs { position: absolute; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(64px); opacity: .85; }
+  .slide { display: none; position: absolute; inset: 0; }
+  .slide.on { display: block; }
+  .ico svg { display: block; width: 100%; height: 100%; }
+
+  .kicker { position: absolute; left: 40px; top: 44px; display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 14px; border-radius: 999px; background: var(--ink); color: #fff; font: 700 13.5px "Noto Sans JP", sans-serif; }
+  .kicker.g { background: var(--grad); padding-left: 5px; }
+  .kicker.g b { width: 22px; height: 22px; border-radius: 50%; background: #fff; color: var(--accent); font: 800 13px/22px Inter, sans-serif; text-align: center; }
+  .kicker .orb { width: 22px; height: 22px; margin-left: -9px; box-shadow: 0 0 0 1.5px rgba(255,255,255,.25); }
+  .h { position: absolute; left: 40px; right: 40px; top: 88px; font: 900 34px/1.36 var(--head); letter-spacing: -.02em; }
+  .h.big { font-size: 38px; top: 92px; }
+  .mk { background: linear-gradient(transparent 62%, var(--hl) 62%); padding: 0 2px; margin: 0 -2px; }
+  .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lead { position: absolute; left: 40px; right: 40px; margin: 0; font-size: 15px; font-weight: 500; color: var(--sub); line-height: 1.75; }
+  .h, .kicker, .sticky, .lab, .tag, .conv, .chk-list, .foot, .pop-h, .pp-head, .pp-h { font-feature-settings: "palt"; }
+
+  .foot { position: absolute; left: 40px; right: 40px; bottom: 26px; display: flex; align-items: center; gap: 8px; font: 900 13.5px var(--head); }
+  .foot .ico { width: 24px; height: 24px; }
+  .foot span:last-child { margin-left: auto; font: 600 12.5px Inter, sans-serif; color: var(--mute); }
+
+  /* 付せん・見出しカード */
+  .sticky { position: absolute; padding: 13px 18px; border-radius: 16px; font: 900 19px var(--head); white-space: nowrap; box-shadow: 0 14px 34px rgba(60,50,140,.14); }
+  .sticky.y { background: #fff6c9; }
+  .sticky.w { background: #fff; }
+  .sticky.err { background: #fff0ee; color: #c0392b; box-shadow: inset 0 0 0 2px #f2b8ae, 0 14px 34px rgba(192,57,43,.12); font-size: 16.5px; }
+  .sticky.link { background: #fff; color: #1a73e8; font: 700 16.5px "Noto Sans JP", sans-serif; text-decoration: underline; text-underline-offset: 4px; }
+  .lab { position: absolute; width: 222px; padding: 12px 14px 14px; background: #fff; border-radius: 16px; box-shadow: 0 14px 34px rgba(60,50,140,.12), 0 0 0 1px rgba(20,22,26,.04); }
+  .lab b { display: block; font: 900 17px var(--head); margin-bottom: 8px; white-space: nowrap; }
+  .lab i { display: block; height: 30px; border: 1px solid #cfd6dc; border-radius: 7px; }
+  .lab small { display: inline-block; margin-left: 4px; font: 700 11px "Noto Sans JP", sans-serif; color: #fff; background: var(--stamp); border-radius: 4px; padding: 1px 5px; vertical-align: 2px; }
+
+  /* ブラウザの窓 */
+  .win { position: absolute; left: 40px; width: 460px; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 18px 44px rgba(60,50,140,.14), 0 2px 6px rgba(20,22,26,.05); }
+  .wtop { height: 30px; background: #f1f3f4; border-bottom: 1px solid #e3e5e8; display: flex; align-items: center; gap: 5px; padding: 0 8px 0 12px; }
+  .wtop > i { width: 8px; height: 8px; border-radius: 50%; background: #ff5f57; flex-shrink: 0; }
+  .wtop > i:nth-child(2) { background: #febc2e; }
+  .wtop > i:nth-child(3) { background: #28c840; }
+  .wurl { flex: 1; margin-left: 6px; height: 20px; border-radius: 10px; background: #fff; font-size: 10.5px; color: #5f6368; line-height: 20px; padding: 0 10px; white-space: nowrap; overflow: hidden; }
+  .tb { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .tb.ico { padding: 3px; }
+  .tb.av { background: #c7b8ff; color: #3b2a8a; font-size: 10px; font-weight: 700; }
+  .page { position: relative; padding: 14px 20px 18px; }
+  .ptitle { display: flex; align-items: center; gap: 8px; font: 900 15.5px var(--head); margin-bottom: 4px; }
+  .logo { width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0; color: #fff; font: 900 11px/20px var(--head); text-align: center; }
+  .row { display: flex; align-items: center; gap: 8px; height: 46px; }
+  .row > b { width: 76px; flex-shrink: 0; font-size: 12.5px; color: #536471; font-weight: 500; white-space: nowrap; }
+  .inp { position: relative; flex: 1; height: 34px; border: 1px solid #cfd6dc; border-radius: 7px; background: #fff; padding: 0 10px; font-size: 13.5px;
+    display: flex; align-items: center; white-space: nowrap; }
+  .inp.done { box-shadow: 0 0 0 2px rgba(224,86,63,.22); }
+  .inp.w { box-shadow: 0 0 0 2px rgba(244,161,0,.3); }
+  .stamp { position: absolute; right: -8px; top: -9px; width: 20px; height: 20px; border-radius: 50%; border: 1.4px solid var(--stamp); color: var(--stamp); background: #fffaf4;
+    font: 700 10.5px/1 "Yu Mincho", "Hiragino Mincho ProN", serif; display: flex; align-items: center; justify-content: center; transform: rotate(-12deg); }
+  .chk { position: absolute; right: -10px; top: -10px; height: 20px; padding: 0 7px; border-radius: 999px; background: var(--warn); color: #fff; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; }
+  .toast { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; background: var(--ink); color: #fff; border-radius: 999px; padding: 7px 7px 7px 16px;
+    font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: 0 12px 30px rgba(20,22,26,.25); }
+  .toast em { font-style: normal; background: #fff; color: var(--ink); border-radius: 999px; padding: 4px 11px; font-size: 11px; }
+  .toast.plain { padding: 8px 16px; }
+  .toast.plain b { color: #ffc94d; }
+
+  /* 拡張機能のポップアップ */
+  .pop { position: absolute; background: #fff; border-radius: 16px; padding: 14px 14px 16px; box-shadow: 0 30px 70px rgba(20,22,26,.22), 0 0 0 1px rgba(20,22,26,.05); }
+  .pop-h { display: flex; align-items: center; gap: 10px; }
+  .pop-av { width: 36px; height: 36px; border-radius: 50%; background: #f1f3f4; box-shadow: inset 0 0 0 2px #e3e5e8; font: 900 15px/36px var(--head); text-align: center; }
+  .pop-h b { display: block; font-size: 13.5px; line-height: 1.3; }
+  .pop-h small { font-size: 11.5px; color: var(--sub); }
+  .pop-label { margin: 12px 0 6px; font-size: 12.5px; font-weight: 700; color: #536471; display: flex; align-items: center; gap: 6px; }
+  .pop-label svg { width: 15px; height: 15px; }
+  .pop-t { border: 1px solid #ececf2; border-radius: 10px; font-size: 12.5px; }
+  .pop-t div { display: flex; align-items: center; height: 33px; padding: 0 10px; border-top: 1px solid #f0f0f4; white-space: nowrap; overflow: hidden; }
+  .pop-t div:first-child { border-top: 0; }
+  .pop-t b { width: 72px; font-weight: 500; color: var(--sub); flex-shrink: 0; }
+  .pop-save { margin-top: 10px; height: 38px; border-radius: 999px; background: #1f8a5b; color: #fff; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .pop-save svg { width: 16px; height: 16px; }
+
+  /* マイページ管理 */
+  .app-h { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .app-h h3 { margin: 0; font: 900 18px var(--head); }
+  .app-h .search { margin-left: auto; width: 140px; height: 28px; border: 1px solid #e3e5e8; border-radius: 8px; font-size: 11px; color: var(--mute); display: flex; align-items: center; padding: 0 10px; }
+  .app-h .add { height: 28px; padding: 0 11px; border-radius: 8px; background: var(--ink); color: #fff; font-size: 11.5px; font-weight: 700; display: flex; align-items: center; }
+  .crow { position: relative; display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 10px; border: 1px solid #efeef4; border-radius: 12px; margin-bottom: 7px; background: #fff; }
+  .crow.new { background: #f5f3ff; border-color: #d9d3ff; }
+  .crow .logo { width: 32px; height: 32px; border-radius: 9px; font-size: 15px; line-height: 32px; }
+  .crow .nm { flex: 1; min-width: 0; }
+  .crow .nm b { display: block; font-size: 13.5px; line-height: 1.35; }
+  .crow .nm small { display: block; font-size: 10.5px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip { height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .chip.sel { background: #eef4ff; color: #1a5fc8; }
+  .chip.key { background: var(--ink); color: #fff; }
+  .chip svg { width: 11px; height: 11px; }
+  .open { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; color: #5f6368; flex-shrink: 0; }
+  .open svg { width: 15px; height: 15px; display: block; }
+  .open.hot { border-radius: 8px; background: #efedff; color: var(--accent); box-shadow: 0 0 0 2px rgba(91,76,240,.35); }
+  .newtag { position: absolute; left: -8px; top: -9px; background: var(--grad); color: #fff; font: 800 10px/1 Inter, sans-serif; padding: 4px 7px; border-radius: 999px; }
+
+  /* Sophon */
+  .orb { position: relative; display: inline-block; border-radius: 50%; flex-shrink: 0; background: radial-gradient(circle at 50% 50%, #34386a 0%, #23264a 28%, #121322 52%, #0a0a0f 72%); }
+  .orb::after { content: ''; position: absolute; inset: 29%; border-radius: 50%; background: #0a0a0f; box-shadow: 0 0 0 1.3px #b9bde8, 0 0 5px 1.5px rgba(185,189,232,.6); }
+  .fld { margin-top: 12px; }
+  .flab { position: relative; display: inline-flex; align-items: center; height: 26px; font-size: 13.5px; font-weight: 700; color: #3c4650; }
+  .tag { position: absolute; left: calc(100% + 8px); top: 1px; display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px 0 4px; border-radius: 999px; background: #f1efff; color: #3b2a8a;
+    font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+  .tag .orb { width: 17px; height: 17px; }
+  .tag.warn { background: #fff5dc; color: #8a5a00; }
+  .fld .inp { margin-top: 4px; flex: none; }
+  .pp { position: absolute; background: #fff; border-radius: 18px; padding: 16px 18px 18px; font-size: 14px; line-height: 1.5; box-shadow: 0 24px 60px rgba(60,50,140,.18), 0 0 0 1px rgba(20,22,26,.05); }
+  .pp-head { display: flex; align-items: center; gap: 12px; }
+  .pp-av { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; background: #eff3f4; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #c04fd8; }
+  .pp-head b { display: block; font-size: 14.5px; }
+  .pp-head small { color: var(--sub); font-size: 12px; }
+  .pp-stats { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; margin: 12px 0 10px; font-size: 12px; color: var(--sub); }
+  .pp-stats b { display: block; font: 800 19px Inter, sans-serif; color: var(--ink); }
+  .pp-stats b.warn { color: var(--warn); }
+  .pp-bar { height: 4px; border-radius: 4px; background: #eff3f4; overflow: hidden; }
+  .pp-bar i { display: block; width: 92%; height: 100%; background: linear-gradient(90deg, #5b4cf0, #ff7a59); }
+  .pp-h { font-weight: 700; font-size: 14.5px; margin: 12px 0 6px; }
+  .pp-rev { display: flex; gap: 10px; border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px 14px 12px; }
+  .pp-rev > .orb { width: 32px; height: 32px; }
+  .pp-who { font-size: 12px; color: var(--sub); }
+  .pp-who b { color: var(--ink); }
+  .pp-rev p { margin: 4px 0 2px; font-size: 13px; line-height: 1.65; }
+  .pp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .pp-chips span { border: 1px solid #cfd9de; border-radius: 999px; padding: 4px 13px; font-size: 13px; font-weight: 700; }
+  .pp-chips span.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  /* 書き方の変換 */
+  .conv { position: absolute; left: 40px; width: 460px; height: 100px; padding: 14px 20px 0; background: #fff; border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 10px 28px rgba(60,50,140,.08); }
+  .conv > small { display: block; font-size: 12.5px; font-weight: 700; color: var(--sub); }
+  .conv .pair { height: 52px; margin-top: 4px; display: flex; align-items: center; gap: 12px; }
+  .conv .from { font: 700 17px "Noto Sans JP", sans-serif; color: var(--mute); white-space: nowrap; text-decoration: line-through; }
+  .conv .arrow { width: 26px; height: 26px; flex-shrink: 0; }
+  .conv .to { font: 700 22px "Noto Sans JP", sans-serif; white-space: nowrap; display: flex; gap: 4px; align-items: center; }
+  .conv .to em { font-style: normal; display: inline-flex; align-items: center; height: 38px; padding: 0 9px; border: 1.5px solid #cfd6dc; border-radius: 8px; font: 700 17px Inter, sans-serif; }
+  .conv .to .dash { color: var(--mute); font-weight: 500; }
+
+  /* 最後の 1 枚 */
+  .chk-list { position: absolute; left: 40px; width: 460px; }
+  .chk-list div { display: flex; align-items: center; gap: 14px; height: 64px; padding: 0 20px; margin-bottom: 10px; background: #fff; border: 1px solid var(--line); border-radius: 18px; font: 900 17px var(--head);
+    box-shadow: 0 8px 22px rgba(60,50,140,.06); }
+  .chk-list i { width: 30px; height: 30px; border-radius: 50%; background: var(--grad); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .chk-list i svg { width: 17px; height: 17px; }
+  .chk-list small { display: block; font: 500 12.5px "Noto Sans JP", sans-serif; color: var(--sub); }
+  .site { position: absolute; left: 40px; width: 460px; height: 92px; border-radius: 22px; background: var(--ink); color: #fff; display: flex; align-items: center; gap: 16px; padding: 0 22px;
+    box-shadow: 0 16px 40px rgba(20,22,26,.22); }
+  .site .ico { width: 52px; height: 52px; }
+  .site small { display: block; font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,.65); }
+  .site b { display: block; font: 800 24px Inter, sans-serif; letter-spacing: -.01em; }
+  .site .go { margin-left: auto; width: 40px; height: 40px; border-radius: 50%; background: var(--grad); display: flex; align-items: center; justify-content: center; }
+  .site .go svg { width: 20px; height: 20px; }
+  .storeline { position: absolute; left: 0; right: 0; text-align: center; font-size: 13.5px; font-weight: 700; color: var(--sub); }
+  .swipe { position: absolute; right: 40px; display: flex; align-items: center; gap: 6px; font: 900 15px var(--head); }
+  .swipe svg { width: 22px; height: 22px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="blob" style="width:380px;height:380px;background:#d9d1ff;left:-150px;top:-120px"></div>
+  <div class="blob" style="width:340px;height:340px;background:#ffd9c7;left:330px;top:300px"></div>
+  <div class="blob" style="width:340px;height:340px;background:#c9f0de;left:-100px;top:520px"></div>
+
+  <!-- ===== マイページ（縦型動画 3 に合わせる） ===== -->
+  <section class="slide" data-s="mypage" data-n="1">
+    <span class="kicker">就活生のみなさん</span>
+    <div class="h big">エントリーした会社の<br />マイページ、<br /><span class="mk">すぐログインできる？</span></div>
+    <div class="sticky y" style="left:40px;top:326px;transform:rotate(-3deg)">ID って何だっけ…</div>
+    <div class="sticky err" style="left:150px;top:400px;transform:rotate(2.5deg)">ID またはパスワードが違います</div>
+    <div class="sticky w" style="left:52px;top:474px;transform:rotate(1.5deg)">登録完了メール、どこ…？</div>
+    <div class="sticky link" style="left:212px;top:548px;transform:rotate(-2.5deg)">パスワードを忘れた方はこちら ›</div>
+  </section>
+
+  <section class="slide" data-s="mypage" data-n="2">
+    <span class="kicker g"><b>1</b>応募</span>
+    <div class="h">応募フォームは、<br /><span class="mk">ワンクリックで入力。</span></div>
+    <div class="win" style="top:206px">
+      <div class="wtop"><i></i><i></i><i></i><span class="wurl">recruit.aoba-shoji.co.jp/entry</span><span class="tb ico"></span><span class="tb av">山</span></div>
+      <div class="page">
+        <div class="ptitle"><span class="logo" style="background:#1f8a5b">青</span>あおば商事 エントリー</div>
+        <div class="row"><b>氏名</b><span class="inp done">山田 花子<span class="stamp">済</span></span></div>
+        <div class="row"><b>フリガナ</b><span class="inp done">ヤマダ ハナコ<span class="stamp">済</span></span></div>
+        <div class="row"><b>生年月日</b><span class="inp done">2004年5月12日<span class="stamp">済</span></span></div>
+        <div class="row"><b>メール</b><span class="inp done">hanako.yamada@example.com<span class="stamp">済</span></span></div>
+        <div class="row"><b>パスワード</b><span class="inp done">••••••••••<span class="stamp">済</span></span></div>
+        <div style="height:50px"></div>
+        <div class="toast" style="bottom:16px">5 件入力しました<em>元に戻す</em></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-s="mypage" data-n="3">
+    <span class="kicker g"><b>2</b>保存</span>
+    <div class="h">マイページの ID も、<br /><span class="mk">そのまま保存。</span></div>
+    <div class="win" style="top:206px;height:150px">
+      <div class="wtop"><i></i><i></i><i></i><span class="wurl">mypage.aoba-shoji.co.jp/registered</span><span class="tb ico"></span><span class="tb av">山</span></div>
+      <div class="page">
+        <div class="ptitle"><span class="logo" style="background:#1f8a5b">青</span>あおば商事 新卒採用マイページ</div>
+        <div style="margin-top:8px;padding:12px 14px;border-radius:12px;background:#eef8f2;color:#1f8a5b;font:900 15px var(--head)">マイページの登録が完了しました</div>
+      </div>
+    </div>
+    <div class="pop" style="left:150px;top:338px;width:340px;padding-top:4px">
+      <div class="pop-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.3-9.3"/><path d="m16 7 3 3"/></svg>このマイページを保存</div>
+      <div class="pop-t">
+        <div><b>会社名</b>あおば商事</div>
+        <div><b>ID</b>hanako.yamada@example.com</div>
+        <div><b>パスワード</b>••••••••••</div>
+        <div><b>URL</b>https://mypage.aoba-shoji.co.jp/</div>
+      </div>
+      <div class="pop-save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>保存しました</div>
+    </div>
+  </section>
+
+  <section class="slide" data-s="mypage" data-n="4">
+    <span class="kicker g"><b>3</b>ログイン</span>
+    <div class="h">一覧から開けば、<br /><span class="mk">ログイン欄まで入力済み。</span></div>
+    <div class="win" style="top:206px">
+      <div class="wtop"><i></i><i></i><i></i><span class="wurl">app.rakuraku-entry.com/companies</span><span class="tb ico"></span><span class="tb av">山</span></div>
+      <div class="page" id="rows">
+        <div class="app-h"><h3>マイページ</h3><span class="search">会社名を入力</span><span class="add">＋ 追加</span></div>
+      </div>
+    </div>
+    <div class="toast" style="top:552px">あおば商事 のログイン情報を入力しました<em>元に戻す</em></div>
+  </section>
+
+  <section class="slide" data-s="mypage" data-n="5">
+    <span class="kicker">らくらくエントリー</span>
+    <div class="h big">応募も、<br />マイページも、<br /><span class="grad">らくらくに。</span></div>
+    <div class="chk-list" style="top:264px">
+      <div><i></i><span>応募フォームはワンクリックで入力<small>和暦・半角カナ・分割欄にも合わせて</small></span></div>
+      <div><i></i><span>マイページは一覧でまとめて管理<small>選考状況や締切、メモも一緒に</small></span></div>
+      <div><i></i><span>個人情報とパスワードは PC の中だけ<small>運営者のサーバーには送りません</small></span></div>
+    </div>
+    <div class="site" style="top:484px"><span class="ico"></span><span><small>くわしくは公式サイトで</small><b>rakuraku-entry.com</b></span><span class="go"></span></div>
+    <div class="storeline" style="top:586px">Chrome ウェブストアで「らくらくエントリー」と検索</div>
+  </section>
+
+  <!-- ===== Sophon（縦型動画 4 に合わせる） ===== -->
+  <section class="slide" data-s="sophon" data-n="1">
+    <span class="kicker">就活生のみなさん</span>
+    <div class="h big">同じ電話番号の欄でも、<br />呼び方は<br /><span class="mk">会社ごとにバラバラ。</span></div>
+    <div class="lab" style="left:36px;top:318px;transform:rotate(-3deg)"><b>携帯電話<small>必須</small></b><i></i></div>
+    <div class="lab" style="left:282px;top:328px;transform:rotate(2.5deg)"><b>連絡先（携帯）</b><i></i></div>
+    <div class="lab" style="left:46px;top:422px;transform:rotate(2deg)"><b>保護者連絡先（携帯）</b><i></i></div>
+    <div class="lab" style="left:276px;top:432px;transform:rotate(-2.5deg)"><b>休暇中の連絡先</b><i></i></div>
+    <div class="abs" style="left:0;right:0;top:546px;text-align:center;font:900 21px var(--head)">どの番号を入れればいい？</div>
+  </section>
+
+  <section class="slide" data-s="sophon" data-n="2">
+    <span class="kicker"><span class="orb"></span>AI · SOPHON</span>
+    <div class="h">見出しを読んで、<br /><span class="mk">入れる番号を判断。</span></div>
+    <div class="win" style="top:206px">
+      <div class="wtop"><i></i><i></i><i></i><span class="wurl">recruit.minato-bank.jp/entry/step2</span><span class="tb ico"></span><span class="tb av">山</span></div>
+      <div class="page">
+        <div class="ptitle"><span class="logo" style="background:#1a73e8">み</span>みなと銀行 本選考エントリー</div>
+        <div class="fld"><span class="flab">連絡先（携帯）<span class="tag"><span class="orb"></span>あなたの携帯電話</span></span><div class="inp done">090-1234-5678<span class="stamp">済</span></div></div>
+        <div class="fld"><span class="flab">休暇中の連絡先<span class="tag"><span class="orb"></span>帰省先の電話番号</span></span><div class="inp done">0123-45-6789<span class="stamp">済</span></div></div>
+        <div class="fld"><span class="flab">保護者連絡先（携帯）<span class="tag warn"><span class="orb"></span>迷ったので確認</span></span><div class="inp w">090-1234-5678<span class="chk">確認</span></div></div>
+        <div style="height:52px"></div>
+        <div class="toast plain" style="bottom:14px">3 件入力しました ・ <b>1 件は確認してください</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-s="sophon" data-n="3">
+    <span class="kicker"><span class="orb"></span>AI · SOPHON</span>
+    <div class="h">迷った欄は、<br /><span class="mk">あなたに確認。</span></div>
+    <div class="pp" style="left:50px;top:206px;width:440px">
+      <div class="pp-head"><span class="pp-av">山</span><div><b>山田 花子</b><small>@新卒用</small></div></div>
+      <div class="pp-stats"><div><b>11</b>入力済み</div><div><b>12</b>検出</div><div><b class="warn">1</b>要確認</div></div>
+      <div class="pp-bar"><i></i></div>
+      <div class="pp-h">確認してください</div>
+      <div class="pp-rev">
+        <span class="orb"></span>
+        <div>
+          <div class="pp-who"><b>Sophon</b> · 確信度 64%</div>
+          <p>「保護者連絡先（携帯）」には、あなたの携帯「090-1234-5678」を入れました。保護者の番号「090-0000-0000」の可能性もあります。合っていますか？</p>
+          <div class="pp-chips"><span class="on">090-1234-5678</span><span>090-0000-0000</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="lead" style="top:556px;text-align:center">候補を押すだけで、入れ直せます。</p>
+  </section>
+
+  <section class="slide" data-s="sophon" data-n="4">
+    <span class="kicker">ここも自動</span>
+    <div class="h">書き方も、<br /><span class="mk">フォームに合わせて。</span></div>
+    <div class="conv" style="top:212px"><small>生年月日（和暦）</small><div class="pair"><span class="from">2004年5月12日</span><span class="arrow"></span><span class="to">平成16年5月12日</span></div></div>
+    <div class="conv" style="top:324px"><small>フリガナ（半角カナ）</small><div class="pair"><span class="from">ヤマダ ハナコ</span><span class="arrow"></span><span class="to">ﾔﾏﾀﾞ ﾊﾅｺ</span></div></div>
+    <div class="conv" style="top:436px"><small>携帯電話（3 つの欄）</small><div class="pair"><span class="from">090-1234-5678</span><span class="arrow"></span><span class="to"><em>090</em><span class="dash">-</span><em>1234</em><span class="dash">-</span><em>5678</em></span></div></div>
+    <p class="lead" style="top:556px;text-align:center">郵便番号・メール・学歴も、同じように。</p>
+  </section>
+
+  <section class="slide" data-s="sophon" data-n="5">
+    <span class="kicker">らくらくエントリー</span>
+    <div class="h big">呼び方が違っても、<br /><span class="grad">ワンクリック。</span></div>
+    <div class="chk-list" style="top:226px">
+      <div><i></i><span>見出しを読んで、入れる項目を判断<small>「保護者連絡先」「休暇中の住所」なども</small></span></div>
+      <div><i></i><span>入れた欄には「済」、迷った欄は「確認」<small>見直すのは「確認」の欄だけ</small></span></div>
+      <div><i></i><span>入力するだけで、送信はしない<small>「元に戻す」でいつでも入力前に</small></span></div>
+    </div>
+    <div class="site" style="top:470px"><span class="ico"></span><span><small>くわしくは公式サイトで</small><b>rakuraku-entry.com</b></span><span class="go"></span></div>
+    <div class="storeline" style="top:572px">Chrome ウェブストアで「らくらくエントリー」と検索</div>
+  </section>
+
+  <div class="foot"><span class="ico"></span>らくらくエントリー<span id="pg"></span></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var ICON = '<svg viewBox="0 0 128 128" aria-hidden="true"><rect x="4" y="4" width="120" height="120" rx="28" fill="#0F1419"/><rect x="22" y="28" width="84" height="16" rx="8" fill="#2EE6C5"/><rect x="22" y="54" width="84" height="16" rx="8" fill="#2EE6C5"/><rect x="22" y="80" width="46" height="16" rx="8" fill="#2EE6C5" fill-opacity=".35"/><path transform="translate(74 70)" d="M0 0 v34 l8.5 -8 l6.5 14 l6.5 -3 l-6.5 -13.5 h12 z" fill="#fff" stroke="#0F1419" stroke-width="4" stroke-linejoin="round"/></svg>';
+  var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+  var GO = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
+  var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="url(#ag)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="ag" gradientUnits="userSpaceOnUse" x1="4" y1="12" x2="20" y2="12"><stop offset="0" stop-color="#5b4cf0"/><stop offset="1" stop-color="#ff7a59"/></linearGradient></defs><path d="M4 12h15"/><path d="m13 6 6 6-6 6"/></svg>';
+  var OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+  var KEY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.3-9.3"/><path d="m16 7 3 3"/></svg>';
+
+  function $$(s) { return Array.prototype.slice.call(document.querySelectorAll(s)); }
+  $$('.ico').forEach(function (e) { e.innerHTML = ICON; });
+  $$('.chk-list i').forEach(function (e) { e.innerHTML = CHECK; });
+  $$('.site .go').forEach(function (e) { e.innerHTML = GO; });
+  $$('.arrow').forEach(function (e) { e.innerHTML = ARROW; });
+
+  // マイページ管理の一覧（会社名, ロゴの文字, 色, URL, 選考状況）
+  var rows = document.getElementById('rows');
+  [
+    ['あおば商事', '青', '#1f8a5b', 'mypage.aoba-shoji.co.jp', 'ES 提出'],
+    ['みなと銀行', 'み', '#1a73e8', 'minato-bank.snar.jp', '一次面接'],
+    ['ひかり電機', 'ひ', '#e8a200', 'hikari-denki.axol.jp', '説明会予約'],
+    ['つばさ自動車', 'つ', '#3d5afe', 'mypage.tsubasa-motor.jp', '二次面接'],
+  ].forEach(function (c, i) {
+    var r = document.createElement('div');
+    r.className = 'crow' + (i === 0 ? ' new' : '');
+    r.innerHTML = (i === 0 ? '<span class="newtag">NEW</span>' : '') +
+      '<span class="logo" style="background:' + c[2] + '">' + c[1] + '</span>' +
+      '<span class="nm"><b>' + c[0] + '</b><small>' + c[3] + '</small></span>' +
+      '<span class="chip sel">' + c[4] + '</span><span class="chip key">' + KEY + '保存済み</span>' +
+      '<span class="open' + (i === 0 ? ' hot' : '') + '">' + OPEN + '</span>';
+    rows.appendChild(r);
+  });
+
+  var params = new URLSearchParams(location.search);
+  var s = params.get('s') || 'mypage';
+  var n = params.get('n') || '1';
+  var total = $$('.slide[data-s="' + s + '"]').length;
+  $$('.slide[data-s="' + s + '"][data-n="' + n + '"]').forEach(function (e) { e.classList.add('on'); });
+  document.getElementById('pg').textContent = n + ' / ' + total;
+  if (params.has('capture')) document.body.classList.add('capture');
+
+  // capture.mjs で静止画として書き出すための入り口（動きはない）
+  window.__capture = { width: 540, height: 675, scale: 2, duration: 0 };
+  window.__render = function () {};
+})();
+</script>
+</body>
+</html>
