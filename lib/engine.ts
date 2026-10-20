@@ -50,6 +50,8 @@ const MISSING_ALIAS: Partial<Record<FieldKey, FieldKey>> = {
   kiseiPhone2: 'kiseiPhone',
   kiseiPhone3: 'kiseiPhone',
   kiseiCityAddressLine: 'kiseiCity',
+  highSchoolAdmissionYear: 'highSchoolAdmission',
+  highSchoolAdmissionMonth: 'highSchoolAdmission',
   highSchoolGraduationYear: 'highSchoolGraduation',
   highSchoolGraduationMonth: 'highSchoolGraduation',
   highSchoolGraduated: 'highSchool',

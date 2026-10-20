@@ -808,6 +808,60 @@ export const CASES: Case[] = [
     },
   },
   {
+    name: '学校情報（実サイトの形・第3版）：入学年月なし・高校の入学年月と卒業年月',
+    profile: {
+      schoolKana: 'ニイガタダイガク',
+      schoolOwnership: '国立',
+      highSchool: '大阪府立サンプル高等学校',
+      highSchoolPrefecture: '福島県',
+      highSchoolAdmission: '2019-04',
+      highSchoolGraduation: '2022-03',
+    },
+    html: `<form><table>
+      <tr><th>学校区分</th><td>${['大学院', '大学', '短期大学'].map((t) => `<label><input type="radio" name="h2type">${t}</label>`).join(' ')}</td></tr>
+      <tr><th>設置区分<span>※交換留学・短期留学の場合は国内で正規在籍している大学名を記入ください</span></th><td>${['国立', '公立', '私立', '日本国外'].map((t) => `<label><input type="radio" name="h2own">${t}</label>`).join(' ')}</td></tr>
+      <tr><th>学位</th><td><p>※学位の選択は、大学院（国立・公立・私立）の方のみ対象です。</p></td></tr>
+      <tr><th>学校名の頭文字</th><td><p>（全角カタカナ１文字＜濁点含む＞、日本国外の場合は空欄）</p><input name="h2init" size="3"> <button type="button">学校検索</button></td></tr>
+      <tr><th>学校</th><td>（上記より学校を検索してください。）</td></tr>
+      <tr><th>卒業（予定）年月</th><td><select name="h2gy">${opts(range(2020, 2030).map(String), '--')}</select>年 <select name="h2gm">${opts(range(1, 12).map((m) => String(m).padStart(2, '0')), '--')}</select>月</td></tr>
+      <tr><th>卒業高校</th><td><div><b>都道府県</b><br><select name="h2hp">${opts(PREFECTURES, '（選択してください）')}</select></div><div><b>高校名の一部</b><br><input name="h2hs"> <button type="button">高校検索</button></div><div><b>高校名</b><br>（上記より高校を検索してください。）</div></td></tr>
+      <tr><th>高校入学年月</th><td><select name="h2hay">${opts(range(2010, 2026).map(String), '--')}</select>年 <select name="h2ham">${opts(range(1, 12).map((m) => String(m).padStart(2, '0')), '--')}</select>月</td></tr>
+      <tr><th>高校卒業年月</th><td><select name="h2hgy">${opts(range(2010, 2026).map(String), '--')}</select>年 <select name="h2hgm">${opts(range(1, 12).map((m) => String(m).padStart(2, '0')), '--')}</select>月</td></tr>
+    </table></form>`,
+    expect: {
+      'radio:h2type': '大学',
+      'radio:h2own': '国立',
+      '[name=h2init]': 'ニ',
+      '[name=h2gy]': '2026',
+      '[name=h2gm]': '03',
+      '[name=h2hp]': '福島県',
+      '[name=h2hay]': '2019',
+      '[name=h2ham]': '04',
+      '[name=h2hgy]': '2022',
+      '[name=h2hgm]': '03',
+    },
+  },
+  {
+    name: 'アンケート（実サイトの形）：持っている／決まっている／ある・ない',
+    profile: { lab: '山本ゼミ', toeic: '780', studyAbroad: 'なし', partTime: '飲食店ホール（3年）' },
+    html: `<form><table>
+      <tr><th>設問 1</th><td><p>入社を予定している時期を教えてください。</p><select name="q1">${opts(['2026年4月', '2026年10月', '2027年4月', 'その他'], '（選択してください）')}</select></td></tr>
+      <tr><th>設問 2</th><td><p>ゼミ（研究室）について</p><p>ゼミ（研究室）が決まっているか教えてください。</p>${['決まっている', '決まっていない'].map((t) => `<label><input type="radio" name="q2">${t}</label>`).join('<br>')}</td></tr>
+      <tr><th>設問 5</th><td><p>アルバイト経験等（時期・期間・内容等）についてご入力ください。</p><p>50文字以下</p><textarea name="q5"></textarea></td></tr>
+      <tr><th>設問 6</th><td><p>留学経験についてご回答ください。</p><p>留学経験はありますか？</p>${['ある', 'ない'].map((t) => `<label><input type="radio" name="q6">${t}</label>`).join('<br>')}</td></tr>
+      <tr><th>設問 8</th><td><p>TOEICのスコアについて</p><p>スコアはお持ちですか？</p>${['持っている', '持っていない'].map((t) => `<label><input type="radio" name="q8">${t}</label>`).join('<br>')}</td></tr>
+      <tr><th>設問 9</th><td><p>TOEFLのスコアについて</p><p>スコアはお持ちですか？</p>${['持っている', '持っていない'].map((t) => `<label><input type="radio" name="q9">${t}</label>`).join('<br>')}</td></tr>
+    </table></form>`,
+    expect: {
+      '[name=q1]': '2026年4月',
+      'radio:q2': '決まっている',
+      '[name=q5]': '飲食店ホール（3年）',
+      'radio:q6': 'ない',
+      'radio:q8': '持っている',
+      'radio:q9': '',
+    },
+  },
+  {
     name: '「メールアドレス2」と確認用（実サイトの形）',
     profile: { emailSub: 'taro.sub@example.com' },
     html: `<form><table>

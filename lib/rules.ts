@@ -2,6 +2,7 @@ import type { FieldDescriptor, ScannedField } from './extract';
 import type { FieldKey } from './fieldKeys';
 import type { Hints } from './types';
 import { hasFullDigit, hasHalfKana, hasHiragana, norm } from './japanese';
+import { yesNoOptions } from './values';
 
 export interface Classification {
   key: FieldKey | null;
@@ -104,7 +105,7 @@ const TEXT_RULES: [Category, RegExp][] = [
   ['personalRequest', /本人希望|希望記入|その他.{0,2}希望|ご希望/],
   ['desiredSalary', /希望年収|希望給与|希望収入/],
   ['currentSalary', /年収/],
-  ['availableDate', /入社可能|就業可能|入社希望|入社予定|勤務開始可能|入社時期/],
+  ['availableDate', /入社可能|就業可能|入社希望|入社予定|勤務開始可能|入社.{0,10}時期/],
   ['employmentType', /雇用形態/],
   ['workHistory', /職務経歴|職歴/],
   ['currentJobType', /現在の職種|現職.{0,3}職種/],
@@ -366,8 +367,13 @@ function classifyField(d: FieldDescriptor): Classification {
       if (has(/認定試験|高認|大検/)) return result(null, 0);
       if (isYesNo(d)) return r(has(/卒業/) ? 'highSchoolGraduated' : 'highSchool', has(/卒業/) ? conf : 0);
       const dateLike = isDateLike(d, near) || d.kind === 'select';
-      if (dateLike && has(/入学/)) return r('highSchoolAdmission');
-      if (dateLike && has(/卒業/)) return r('highSchoolGraduation');
+      // 「高校入学年月 [年▼]年 [月▼]月」のように、年と月が分かれた欄もある
+      if (dateLike && has(/入学/)) {
+        return dateKey(d, attrs, conf, ['highSchoolAdmission', 'highSchoolAdmissionYear', 'highSchoolAdmissionMonth', null]);
+      }
+      if (dateLike && has(/卒業/)) {
+        return dateKey(d, attrs, conf, ['highSchoolGraduation', 'highSchoolGraduationYear', 'highSchoolGraduationMonth', null]);
+      }
       return r('highSchool');
     }
     case 'educationHistory':
@@ -508,7 +514,8 @@ const NO = /^(いいえ|なし|無し?|no|ない|いない|していない)$/i;
 export function isYesNo(d: FieldDescriptor): boolean {
   if (d.kind !== 'radio' && d.kind !== 'select') return false;
   const opts = d.options.map((o) => o.normalize('NFKC').replace(/\s/g, '')).filter((o) => o && !/^[-▼―ー\s]*$|選択/.test(o));
-  return opts.length >= 2 && opts.length <= 3 && opts.some((o) => YES.test(o)) && opts.some((o) => NO.test(o));
+  if (opts.length < 2 || opts.length > 3) return false;
+  return (opts.some((o) => YES.test(o)) && opts.some((o) => NO.test(o))) || !!yesNoOptions(opts);
 }
 
 /** 「取得年月」「受験日」など、資格そのものではなく日付を聞いている欄か */
