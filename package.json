@@ -2,7 +2,7 @@
   "name": "rakuraku-entry",
   "description": "就活の応募フォームを自動で入力する Chrome 拡張機能",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "scripts": {
     "dev": "wxt",
