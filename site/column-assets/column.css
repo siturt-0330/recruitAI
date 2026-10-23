@@ -18,8 +18,9 @@ img { max-width: 100%; }
 /* ヘッダー（半透明） */
 .bar { position: sticky; top: 0; z-index: 20; background: rgba(255, 255, 255, .8); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: .5px solid var(--line); }
 .bar-in { max-width: 980px; margin: 0 auto; min-height: 52px; padding: 0 22px; display: flex; align-items: center; gap: 4px; }
-.brand { display: flex; align-items: center; gap: 8px; margin-right: 12px; color: var(--ink); font-weight: 600; font-size: 15px; white-space: nowrap; }
+.brand { flex-shrink: 0; display: flex; align-items: center; gap: 8px; margin-right: 12px; color: var(--ink); font-weight: 600; font-size: 15px; white-space: nowrap; }
 .brand:hover { text-decoration: none; }
+.brand img { flex-shrink: 0; max-width: none; }
 .nav-link { display: flex; align-items: center; min-height: 44px; padding: 0 10px; font-size: 13px; color: var(--sub); white-space: nowrap; }
 .nav-link:hover { color: var(--ink); text-decoration: none; }
 .nav-link[aria-current="page"] { color: var(--ink); font-weight: 600; }
@@ -28,7 +29,8 @@ img { max-width: 100%; }
 @media (max-width: 640px) {
   .bar-in { padding: 0 12px; }
   .brand { font-size: 0; gap: 0; margin-right: 4px; }
-  .nav-link { padding: 0 8px; font-size: 13px; }
+  .nav-link { padding: 0 6px; font-size: 13px; }
+  .bar-in .btn-sm { padding: 0 12px; }
 }
 
 /* ボタン（青は大事な 1 つだけ） */
@@ -78,6 +80,8 @@ img { max-width: 100%; }
 .table { width: 100%; border-collapse: collapse; font-size: 15px; }
 .table th, .table td { text-align: left; padding: 10px 12px 10px 0; border-bottom: .5px solid var(--line); vertical-align: top; }
 .table th { color: var(--sub); font-weight: 600; font-size: 13px; }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 980px; background: #fde9e6; color: var(--danger); font-size: 12px; }
+.link-btn.small-inline { min-height: 32px; font-size: 15px; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }
 
 /* 一覧（記事の行）・空のとき */

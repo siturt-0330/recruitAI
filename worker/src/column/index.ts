@@ -1,21 +1,17 @@
 // コラム（/column 以下）の振り分け。読むページはここで HTML を組み立てて返す（検索に載るように）。
-import { admin, deleteAccount, join, settings } from './account';
+import { deleteAccount, join, settings } from './account';
+import { admin } from './admin';
 import { handleApi } from './api';
 import { currentUser, devLogin, googleCallback, logout, startGoogle, type User } from './auth';
 import { page } from './layout';
 import { article, home, image, profile, sitemap } from './read';
+import { terms } from './terms';
 import { htmlResponse } from './util';
 import { handleWriteApi, writeShell } from './write';
 
 function notFound(user: User | null, env: Env, path: string): Response {
   const body = `<h1 class="title">ページが見つかりません</h1><p class="sub">消されたか、URL がまちがっているかもしれません。</p><p><a href="/column">コラムのトップへ</a></p>`;
   return htmlResponse(page({ title: 'ページが見つかりません', noindex: true }, body, user, env, path), 404);
-}
-
-/** 利用規約と投稿のルール（中身は「運営と仕上げ」で書く） */
-function terms(user: User | null, env: Env, path: string): Response {
-  const body = `<h1 class="title">利用規約と投稿のルール</h1><p class="sub">準備中です。</p>`;
-  return htmlResponse(page({ title: '利用規約と投稿のルール', canonical: '/column/terms' }, body, user, env, path));
 }
 
 export async function handleColumn(request: Request, env: Env, _ctx: ExecutionContext, url: URL): Promise<Response> {
