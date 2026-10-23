@@ -4,24 +4,16 @@ import Link from 'next/link';
 import { Check, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { DueBadge, Empty, SophonCard } from '@/components/ui';
-import { addDays, md, today, weekday } from '@/lib/dates';
+import { md, today, weekday } from '@/lib/dates';
 import { useStore } from '@/lib/store';
-import { eventsBetween, todayTasks } from '@/lib/tasks';
+import { todayTasks } from '@/lib/tasks';
 import { companyHref } from '@/lib/links';
-
-const KIND_STYLE = {
-  deadline: 'bg-dangerbg text-danger',
-  interview: 'bg-okbg text-ok',
-  event: 'bg-[#E8F0FE] text-[#1A56C4]',
-};
 
 export default function HomePage() {
   const data = useStore();
   const t = today();
   const tasks = useMemo(() => todayTasks(data), [data]);
   const done = data.doneTasks[t] ?? [];
-  const days = Array.from({ length: 7 }, (_, i) => addDays(t, i));
-  const events = useMemo(() => eventsBetween(data, days[0]!, days[6]!), [data, days]);
   const [query, setQuery] = useState('');
   const hits = query.trim()
     ? data.companies.filter((c) => `${c.name}${c.industry}${c.memo}`.includes(query.trim())).slice(0, 6)
@@ -99,36 +91,8 @@ export default function HomePage() {
         )}
       </SophonCard>
 
-      <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-[17px] font-extrabold">今週の予定</h2>
-        <Link href="/schedule" className="text-[13px] text-link hover:underline">
-          予定をすべて見る
-        </Link>
-      </div>
-      {data.companies.length === 0 ? (
+      {data.companies.length === 0 && (
         <Empty title="まずは企業を追加しましょう" action={<Link href="/companies" className="font-bold text-link">マイページへ</Link>} />
-      ) : (
-        <div className="grid grid-cols-7 gap-2">
-          {days.map((d, i) => (
-            <div key={d} className={`min-h-32 min-w-0 rounded-2xl border p-2.5 ${i === 0 ? 'border-ind ring-1 ring-ind' : 'border-line'}`}>
-              <div className={`text-xs ${i === 0 ? 'text-ind' : 'text-mute'}`}>{weekday(d)}</div>
-              <div className={`text-lg font-extrabold ${i === 0 ? 'text-ind' : ''}`}>{Number(d.slice(8))}</div>
-              {events
-                .filter((e) => e.date === d)
-                .map((e, j) => (
-                  <Link
-                    key={j}
-                    href={companyHref(e.company.id)}
-                    title={`${e.company.name} ${e.label}`}
-                    className={`mt-1.5 block truncate rounded-md px-1.5 py-1 text-[11px] ${KIND_STYLE[e.kind]}`}
-                  >
-                    {e.time && `${e.time} `}
-                    {e.company.name} {e.label}
-                  </Link>
-                ))}
-            </div>
-          ))}
-        </div>
       )}
     </div>
   );

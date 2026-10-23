@@ -284,7 +284,7 @@ function Prop({ icon, label, children, onRemove }: { icon: ReactNode; label: Rea
   );
 }
 
-/** 日付（日時）と、その中身（「ES」「一次面接」など）。ここに入れたものが「予定」と「今日やること」に出る */
+/** 日付（日時）と、その中身（「ES」「一次面接」など）。ここに入れたものがホームの「今日やること」に出る */
 function DateWithLabel({
   type,
   date,
