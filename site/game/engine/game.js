@@ -68,7 +68,19 @@
 
   function show(id) {
     ['start', 'play-pc', 'play-sp', 'result', 'wordbook'].forEach(function (s) { $(s).hidden = s !== id; });
+    $('toast').hidden = true;
     window.scrollTo(0, 0);
+    loadAds();
+  }
+
+  // ---- 広告（games/ads.json に ID があるときだけ、スタート・結果の画面とパソコンのプレイ中の画面に枠が入る） ----
+  /** 見えている枠だけ読み込む。隠れた画面の枠は幅が 0 で読み込めないので、その画面を出したときに読み込む（1 枠 1 回まで） */
+  function loadAds() {
+    Array.prototype.forEach.call(document.querySelectorAll('ins.ad-unit'), function (el) {
+      if (!el.offsetWidth) return;
+      el.className = 'adsbygoogle';
+      try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) { /* 広告が出なくても遊べる */ }
+    });
   }
 
   // ---- 単語帳（出題しない言葉を選ぶ） ----
@@ -127,7 +139,10 @@
     var all = words.filter(function (w) { return off.indexOf(w.w) < 0; });
     var weak = choice ? load('weak', []) : [];
     if (c === REVIEW) return shuffle(all.filter(function (w) { return weak.indexOf(w.w) >= 0; }));
-    var pool = shuffle(all.filter(function (w) { return c.levels.indexOf(w.lv) >= 0; }));
+    // 満遍なく出すため、これまでに出した回数が少ない言葉から並べる（同じ回数どうしはランダム）
+    var seen = load('seen', {});
+    var pool = shuffle(all.filter(function (w) { return c.levels.indexOf(w.lv) >= 0; }))
+      .sort(function (a, b) { return (seen[a.w] || 0) - (seen[b.w] || 0); });
     // 苦手な言葉を先頭のほうに混ぜる（3 割くらい）
     var weakIn = pool.filter(function (w) { return weak.indexOf(w.w) >= 0; });
     var rest = pool.filter(function (w) { return weak.indexOf(w.w) < 0; });
@@ -183,7 +198,12 @@
     // 苦手の復習は、それぞれの言葉を 1 回ずつ出したら終わり
     if (G.qi >= G.queue.length && G.course === REVIEW) return null;
     if (G.qi >= G.queue.length) { G.queue = G.queue.concat(shuffle(G.queue.slice())); }
-    return G.queue[G.qi++];
+    var w = G.queue[G.qi++];
+    // 出した回数を数える（次のゲームで、まだ出ていない言葉を先に出すため）
+    var seen = load('seen', {});
+    seen[w.w] = (seen[w.w] || 0) + 1;
+    save('seen', seen);
+    return w;
   }
 
   // ---- パソコン：ベルトコンベア ----
@@ -587,12 +607,62 @@
     if (G.choice) rows.sort(function (a, b) { return a.ok - b.ok; });
     $('words').innerHTML = rows.length ? rows.map(function (r) {
       var w = r.w;
+      var off = isOff(w);
       // タイピングで打ちそびれた言葉は「見送り」（間違いではない）
       var mark = r.ok ? 'o">○' : G.choice ? 'x">✕' : 's">－';
-      return '<div class="wrow' + (r.ok || !G.choice ? '' : ' miss') + '"><span class="mk ' + mark + '</span>' +
+      return '<div class="wrow' + (r.ok || !G.choice ? '' : ' miss') + (off ? ' gone' : '') + '"><span class="mk ' + mark + '</span>' +
         '<b>' + esc(w.w) + '</b><span class="y">' + esc(w.y) + '</span>' +
-        '<span>' + esc(w.m) + '<span class="ex">例：' + esc(w.e) + '</span></span></div>';
+        '<span>' + esc(w.m) + '<span class="ex">例：' + esc(w.e) + '</span></span>' +
+        '<button class="hide' + (off ? ' on' : '') + '" data-w="' + esc(w.w) + '" aria-pressed="' + off + '" title="' + (off ? '次のゲームから出しません（押すと戻す）' : '次のゲームから出さない') + '">' +
+        (off ? ICON_CHECK : ICON_EYE_OFF) + '<span class="lb">' + (off ? '出さない' : 'もう出さない') + '</span></button></div>';
     }).join('') : '<p class="note">まだ言葉がありません</p>';
+    // 正解した言葉（まだ外していないもの）をまとめて外すボタン
+    var okNames = list.filter(function (r) { return r.ok && !isOff(r.w); }).map(function (r) { return r.w.w; });
+    $('hideOk').hidden = !okNames.length;
+    $('hideOk').innerHTML = '<span class="o">○</span>正解した ' + okNames.length + ' 語を、もう出さない';
+    $('hideOk').dataset.names = JSON.stringify(okNames);
+  }
+
+  // ---- 結果の単語帳から言葉を外す（単語帳の「出題しない」と同じ一覧に入れる） ----
+  var ICON_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 4.2A10.4 10.4 0 0 1 12 4c5 0 9 4.5 10 8a13 13 0 0 1-2.2 3.6M6.6 6.6C4.4 8 2.8 10.1 2 12c1 3.5 5 8 10 8a9.8 9.8 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m2 2 20 20"/></svg>';
+  var ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  // コースの言葉がこれより少なくなるほどは外せない（遊べる言葉がなくならないように）
+  var MIN_WORDS = 10;
+
+  /** names を外しても、選んでいるコースに MIN_WORDS 語以上残るか。残らないときは知らせて false */
+  function canHide(names) {
+    var off = load('off', []);
+    var left = words.filter(function (w) {
+      return course.levels.indexOf(w.lv) >= 0 && off.indexOf(w.w) < 0 && names.indexOf(w.w) < 0;
+    }).length;
+    if (left >= MIN_WORDS) return true;
+    toast('これ以上外すと「' + course.name + '」の言葉が ' + MIN_WORDS + ' 語より少なくなります');
+    return false;
+  }
+
+  var toastTimer;
+  /** 画面の下に一言出す。undo があれば「元に戻す」も出す */
+  function toast(text, undo) {
+    $('toastText').textContent = text;
+    $('toastUndo').hidden = !undo;
+    $('toastUndo').onclick = function () { $('toast').hidden = true; if (undo) undo(); };
+    $('toast').hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { $('toast').hidden = true; }, 6000);
+  }
+
+  function toggleHide(name) {
+    if (isOff(name)) setOff([name], false);
+    else if (canHide([name])) setOff([name], true);
+    renderBook();
+  }
+
+  function hideCorrect() {
+    var names = JSON.parse($('hideOk').dataset.names || '[]');
+    if (!names.length || !canHide(names)) return;
+    setOff(names, true);
+    renderBook();
+    toast('正解した ' + names.length + ' 語を、次から出さないようにしました', function () { setOff(names, false); renderBook(); });
   }
 
   function toStart() {
@@ -623,6 +693,12 @@
   $('quitSp').addEventListener('click', toStart);
   $('tab-all').addEventListener('click', function () { G.tab = 'all'; renderBook(); });
   $('tab-weak').addEventListener('click', function () { G.tab = 'weak'; renderBook(); });
+  $('words').addEventListener('click', function (e) { var b = e.target.closest('.hide'); if (b) toggleHide(b.dataset.w); });
+  $('hideOk').addEventListener('click', hideCorrect);
+  $('bookLink').addEventListener('click', openBook);
+  // 裏のタブで開いたときなど、画面を出した時点で幅がなかった枠は、見えるようになってから読み込む
+  window.addEventListener('resize', loadAds);
+  document.addEventListener('visibilitychange', loadAds);
   document.querySelector('.cta .btn').href = STORE_URL;
 
   fetch('/game/' + CFG.slug + '/words.json?v=' + CFG.version)

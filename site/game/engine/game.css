@@ -43,8 +43,17 @@ button { font: inherit; cursor: pointer; }
 .go .btn { padding: 16px 40px; font-size: 17px; }
 .note { font-size: 13px; color: var(--sub); }
 .note kbd { font: 700 12px Inter, sans-serif; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 1px 6px; background: #fff; }
-.subs { display: flex; gap: 10px; }
-.subs .btn { padding: 11px 22px; font-size: 14px; }
+/* 意味クイズ・単語帳：スタートの下に、説明つきの大きいカードで出す */
+.modes { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+.mode { width: 300px; display: flex; align-items: center; gap: 14px; text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 16px 18px; color: var(--ink); transition: transform .15s, box-shadow .15s; }
+.mode:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(60,50,140,.12); }
+.mode .ic { flex: none; width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #fff; font: 900 21px var(--head); }
+.mode .ic.quiz { background: linear-gradient(135deg, #5b4cf0, #c04fd8); }
+.mode .ic.book { background: linear-gradient(135deg, #f0786a, #f5a547); }
+.mode .tx { flex: 1; min-width: 0; }
+.mode b { display: block; font-family: var(--head); font-weight: 900; font-size: 18px; }
+.mode small { display: block; font-size: 12px; color: var(--sub); margin-top: 3px; line-height: 1.5; }
+.mode .ar { color: var(--mute); font-size: 18px; }
 .note.warn { color: var(--stamp); }
 .weak-link { font-size: 13px; color: var(--accent); background: none; border: none; text-decoration: underline; }
 
@@ -148,7 +157,7 @@ button { font: inherit; cursor: pointer; }
 .tabs { margin-left: auto; display: flex; gap: 6px; }
 .tabs button { padding: 5px 12px; border-radius: 999px; background: #f1f0f4; color: var(--sub); border: none; font-size: 12px; }
 .tabs button[aria-pressed="true"] { background: var(--ink); color: #fff; }
-.wrow { display: grid; grid-template-columns: 22px 76px 112px minmax(0, 1fr); gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.wrow { display: grid; grid-template-columns: 22px 76px 112px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
 .wrow:last-child { border: none; }
 .mk { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; }
 .mk.o { background: #e7f6ee; color: var(--ok); } .mk.x { background: #fde9e6; color: var(--stamp); } .mk.s { background: #f1f0f4; color: var(--mute); }
@@ -156,14 +165,40 @@ button { font: inherit; cursor: pointer; }
 .wrow .y { color: var(--mute); }
 .wrow .ex { display: block; color: var(--mute); font-size: 12px; margin-top: 2px; }
 .wrow.miss b { color: var(--stamp); }
+/* 結果の単語帳から外した言葉（単語帳の「出題しない」） */
+.wrow.gone b, .wrow.gone > span:not(.mk) { color: var(--mute); }
+.wrow.gone b { text-decoration: line-through; text-decoration-color: rgba(154,163,173,.6); }
+.wrow.gone .mk { opacity: .4; }
+.hide { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; border: 1px solid var(--line); background: #fff; color: var(--sub); border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; }
+.hide:hover { color: var(--ink); border-color: #d6d2e0; }
+.hide svg { width: 14px; height: 14px; }
+.hide.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.book .hd .tabs { margin-left: 10px; }
+.bulk { margin-left: auto; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.bulk:hover { border-color: #d6d2e0; }
+.bulk .o { width: 16px; height: 16px; border-radius: 50%; background: #e7f6ee; color: var(--ok); font-size: 10px; display: inline-flex; align-items: center; justify-content: center; }
+.bookfoot { margin: 10px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--sub); }
+.bookfoot button { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 700; font-size: inherit; }
+.toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 20; display: flex; align-items: center; gap: 18px; background: var(--ink); color: #fff; border-radius: 999px; padding: 12px 14px 12px 22px; font-size: 14px; box-shadow: 0 18px 40px rgba(20,22,26,.3); }
+.toast button { white-space: nowrap; flex: none; background: rgba(255,255,255,.14); color: #fff; border: 0; border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 13px; }
 .review { display: flex; align-items: center; gap: 14px; margin-top: 12px; background: #fff7e6; border-radius: 14px; padding: 12px 16px; font-size: 13px; }
 .review .btn { margin-left: auto; padding: 9px 18px; }
-.cta { margin-top: 16px; display: flex; align-items: center; gap: 14px; background: #fff; border-radius: 18px; padding: 14px 18px; border: 1px solid var(--line); font-size: 13px; }
+.cta { margin-bottom: 16px; display: flex; align-items: center; gap: 14px; background: #fff; border-radius: 18px; padding: 14px 18px; border: 1px solid var(--line); font-size: 13px; }
 .cta img { width: 32px; height: 32px; }
 .cta b { font-family: var(--head); }
 .cta span { color: var(--sub); }
 .cta .btn { margin-left: auto; padding: 10px 18px; font-size: 13px; }
 footer { text-align: center; font-size: 12px; color: var(--mute); padding: 20px; }
+
+/* 広告（スタート・結果・一覧の下と、パソコンのプレイ中のステージの下。スマホの 4 択の画面には出さない） */
+/* 広告の大きさは読み込んだときの幅で決まる。あとで画面が狭くなったら、広告を切らずに（隠すのは規約違反）枠の中で横にずらせるようにする */
+.ad { max-width: 728px; margin: 36px auto 0; text-align: center; overflow-x: auto; }
+/* プレイ中の小さい横長の枠。ステージから離して置き、大きさは読み込んだときの画面の幅で決める */
+.ad-small { margin-top: 20px; }
+.ad-small ins { width: 728px; height: 90px; }
+@media (max-width: 800px) { .ad-small ins { width: 468px; height: 60px; } }
+.ad-label { display: block; font-size: 11px; color: var(--mute); margin-bottom: 6px; }
+.ad:has(ins[data-ad-status="unfilled"]) { display: none; }
 
 /* 単語帳 */
 .wb { max-width: 980px; margin: 0 auto; padding-top: 8px; }
@@ -197,11 +232,17 @@ footer { text-align: center; font-size: 12px; color: var(--mute); padding: 20px;
 @media (max-width: 820px) {
   .res { grid-template-columns: minmax(0, 1fr); }
   .score { position: static; }
-  .wrow { grid-template-columns: 22px 64px minmax(0, 1fr); }
+  .wrow { grid-template-columns: 22px 64px minmax(0, 1fr) auto; }
+  .hide .lb { display: none; }
+  .hide { padding: 7px 9px; }
+  .book .hd { flex-wrap: wrap; }
+  .bulk { margin-left: 0; width: 100%; justify-content: center; padding: 9px 14px; font-size: 13px; }
+  .toast { left: 16px; right: 16px; transform: none; border-radius: 16px; font-size: 13px; }
   .wrow .y { display: none; }
   .cta { flex-wrap: wrap; }
   .cta .btn { margin-left: 0; width: 100%; }
   .course { width: 100%; }
+  .mode { width: 100%; }
   .wbr { grid-template-columns: 40px 72px minmax(0, 1fr); }
   .wbr .y { display: none; }
 }

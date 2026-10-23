@@ -89,6 +89,30 @@ function load(slug, errors) {
 const slugs = fs.readdirSync(gamesDir).filter((d) => fs.existsSync(path.join(gamesDir, d, 'game.json')));
 const errors = [];
 const games = slugs.map((s) => load(s, errors));
+
+// 広告（Google AdSense）。games/ads.json の client が空なら、広告のタグも ads.txt も出さない
+const ads = JSON.parse(fs.readFileSync(path.join(gamesDir, 'ads.json'), 'utf8'));
+const adClient = ads.client || '';
+if (adClient && !/^ca-pub-\d+$/.test(adClient)) errors.push(`[ads.json] client は「ca-pub-」で始まる AdSense のサイト運営者 ID にしてください（いまは「${adClient}」）`);
+for (const [name, id] of Object.entries(ads.slots || {})) {
+  if (id && !/^\d+$/.test(id)) errors.push(`[ads.json] slots.${name} は広告ユニットの ID（数字だけ）にしてください（いまは「${id}」）`);
+}
+const adHead = adClient
+  ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adClient}" crossorigin="anonymous"></script>`
+  : '';
+/**
+ * 広告の枠。見えるようになってから読み込むので、class は adsbygoogle ではなく ad-unit にしておく（ゲームのページでは game.js、一覧では now で埋め込むスクリプトが読み込む）。
+ * small はプレイ中の小さい横長の枠（大きさは game.css の .ad-small で画面の幅ごとに決める）
+ */
+const adSlot = (name, { now = false, small = false } = {}) => {
+  const id = adClient && ads.slots?.[name];
+  if (!id) return '';
+  const load = now ? '<script>(window.adsbygoogle = window.adsbygoogle || []).push({});</script>' : '';
+  const cls = now ? 'adsbygoogle' : 'ad-unit';
+  const size = small ? 'style="display:inline-block"' : 'style="display:block" data-ad-format="auto" data-full-width-responsive="true"';
+  return `<aside class="ad${small ? ' ad-small' : ''}"><span class="ad-label">広告</span><ins class="${cls}" ${size} data-ad-client="${adClient}" data-ad-slot="${id}"></ins>${load}</aside>`;
+};
+
 if (errors.length) {
   console.error('言葉のデータに直すところがあります。何も書き出していません。\n');
   errors.forEach((e) => console.error('  ' + e));
@@ -112,6 +136,11 @@ for (const g of games) {
     .replaceAll('{{heading1}}', esc(g.cfg.heading1))
     .replaceAll('{{heading2}}', esc(g.cfg.heading2))
     .replaceAll('{{version}}', version)
+    .replaceAll('{{adHead}}', adHead)
+    .replaceAll('{{wordCount}}', String(g.words.length))
+    .replaceAll('{{adStart}}', adSlot('start'))
+    .replaceAll('{{adPlay}}', adSlot('play', { small: true }))
+    .replaceAll('{{adResult}}', adSlot('result'))
     .replaceAll('{{config}}', JSON.stringify(config).replace(/</g, '\\u003c'));
   const out = path.join(siteGame, g.slug);
   fs.mkdirSync(out, { recursive: true });
@@ -129,8 +158,21 @@ const cards = games
   )
   .join('\n');
 const hubVersion = engineHash.digest('hex').slice(0, 8);
-fs.writeFileSync(path.join(siteGame, 'index.html'), template('hub.html').replaceAll('{{version}}', hubVersion).replace('{{games}}', cards));
+fs.writeFileSync(
+  path.join(siteGame, 'index.html'),
+  template('hub.html').replaceAll('{{version}}', hubVersion).replace('{{adHead}}', adHead).replace('{{adHub}}', adSlot('hub', { now: true })).replace('{{games}}', cards),
+);
 console.log('/game  ゲーム一覧');
+
+// ads.txt（AdSense が「このサイトの広告枠を売ってよい会社」を確かめるファイル。サイトの確認にも使える）
+const adsTxt = path.join(root, 'site', 'ads.txt');
+if (adClient) {
+  fs.writeFileSync(adsTxt, `google.com, ${adClient.replace(/^ca-/, '')}, DIRECT, f08c47fec0942fa0\n`);
+  console.log(`広告：${adClient}（枠：${Object.keys(ads.slots || {}).filter((k) => ads.slots[k]).join('・') || 'なし'}）・ads.txt を書き出しました`);
+} else if (fs.existsSync(adsTxt)) {
+  fs.rmSync(adsTxt);
+  console.log('広告：なし（ads.txt を消しました）');
+}
 
 // サイトマップ（<!-- games --> と <!-- /games --> のあいだを書きかえる）
 const sitemapPath = path.join(root, 'site', 'sitemap.xml');

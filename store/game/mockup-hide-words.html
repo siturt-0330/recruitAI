@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>結果の単語帳から言葉を外す案</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@500;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../site/game/engine/game.css" />
+<style>
+  body { padding: 28px 40px 40px; }
+  .mock { display: none; max-width: 1180px; margin: 0 auto; }
+  .mock.show { display: block; }
+  .cap { display: flex; align-items: baseline; gap: 14px; margin: 0 0 16px; }
+  .cap .id { font: 800 13px Inter, sans-serif; color: #fff; background: var(--accent); border-radius: 8px; padding: 3px 9px; }
+  .cap b { font-family: var(--head); font-weight: 900; font-size: 22px; }
+  .cap span { color: var(--sub); font-size: 14px; }
+
+  /* 行の右端に操作を足す */
+  .wrow.x { grid-template-columns: 22px 76px 112px minmax(0, 1fr) auto; }
+  .wrow.gone b, .wrow.gone > span:not(.mk):not(.ctl) { color: var(--mute); }
+  .wrow.gone .mk { opacity: .4; }
+  .wrow.gone b { text-decoration: line-through; text-decoration-color: rgba(154,163,173,.6); }
+
+  /* A・C：「もう出さない」ボタン */
+  .hide { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; border: 1px solid var(--line); background: #fff; color: var(--sub); border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; }
+  .hide svg { width: 14px; height: 14px; }
+  .hide.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+  /* B：単語帳と同じスイッチ */
+  .sw2 { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--sub); white-space: nowrap; }
+  .sw2 i { width: 34px; height: 20px; border-radius: 99px; background: var(--accent); position: relative; }
+  .sw2 i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transform: translateX(14px); }
+  .sw2.off i { background: #d9dce2; }
+  .sw2.off i::after { transform: none; }
+
+  /* C：まとめて外す */
+  .bulk { margin-left: auto; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+  .bulk .o { width: 16px; height: 16px; border-radius: 50%; background: #e7f6ee; color: var(--ok); font-size: 10px; display: inline-flex; align-items: center; justify-content: center; }
+  .book .hd .tabs { margin-left: 10px; }
+  .foot { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--sub); }
+  .foot a { color: var(--accent); font-weight: 700; text-decoration: none; }
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); display: flex; align-items: center; gap: 18px; background: var(--ink); color: #fff; border-radius: 999px; padding: 12px 14px 12px 22px; font-size: 14px; box-shadow: 0 18px 40px rgba(20,22,26,.3); white-space: nowrap; }
+  .toast button { white-space: nowrap; flex: none; background: rgba(255,255,255,.14); color: #fff; border: 0; border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 13px; }
+  .hint { font-size: 12px; color: var(--mute); margin-left: 8px; }
+
+  @media (max-width: 820px) {
+    body { padding: 16px 16px 90px; }
+    .wrow.x { grid-template-columns: 22px 64px minmax(0, 1fr) auto; }
+    .hide .lb { display: none; }
+    .hide { padding: 7px 9px; }
+    .book .hd { flex-wrap: wrap; }
+    .bulk { margin-left: 0; width: 100%; justify-content: center; padding: 9px 14px; font-size: 13px; }
+    .toast { left: 16px; right: 16px; transform: none; white-space: normal; border-radius: 16px; font-size: 13px; }
+    .score { display: none; }
+    .cap { flex-wrap: wrap; gap: 6px 10px; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.2A10.4 10.4 0 0 1 12 4c5 0 9 4.5 10 8a13 13 0 0 1-2.2 3.6M6.6 6.6C4.4 8 2.8 10.1 2 12c1 3.5 5 8 10 8a9.8 9.8 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m2 2 20 20"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+</svg>
+
+<template id="score">
+  <div class="score">
+    <span class="rank">語彙エキスパート</span>
+    <div class="pt"><span>3,580</span><small> 点</small></div>
+    <div class="best"></div>
+    <div class="st"><div><b>16</b>正解</div><div><b>0</b>見送り</div><div><b>94%</b>正確さ</div></div>
+    <a class="btn dark">𝕏 で結果をシェア</a>
+    <button class="btn ghost">もう一度（R キー）</button>
+    <button class="btn ghost">コースをえらぶ</button>
+  </div>
+</template>
+
+<!-- A：行ごとに「もう出さない」 -->
+<section class="mock" id="A">
+  <p class="cap"><span class="id">A</span><b>行ごとに「もう出さない」ボタン</b><span>覚えた言葉を 1 つずつ外す。押すと線が引かれ、もう一度押すと戻る</span></p>
+  <div class="res">
+    <div data-score></div>
+    <div class="book">
+      <div class="hd"><h2>今回の単語帳</h2><div class="tabs"><button aria-pressed="true">すべて 16</button></div></div>
+      <div data-rows="hide" data-gone="1,3,4"></div>
+      <div class="foot">外した言葉は次のゲームから出ません。<a href="#">単語帳</a>でいつでも戻せます。</div>
+    </div>
+  </div>
+</section>
+
+<!-- B：単語帳と同じスイッチ -->
+<section class="mock" id="B">
+  <p class="cap"><span class="id">B</span><b>単語帳と同じスイッチ</b><span>単語帳の「出題する／しない」と同じ見た目・同じ意味。切ると次から出ない</span></p>
+  <div class="res">
+    <div data-score></div>
+    <div class="book">
+      <div class="hd"><h2>今回の単語帳</h2><span class="hint">スイッチを切ると、次から出題しません</span><div class="tabs" style="margin-left:auto"><button aria-pressed="true">すべて 16</button></div></div>
+      <div data-rows="switch" data-gone="1,3,4"></div>
+      <div class="foot">ここで切った言葉は、<a href="#">単語帳</a>の「出題しない」に入ります。</div>
+    </div>
+  </div>
+</section>
+
+<!-- C：A ＋ まとめて -->
+<section class="mock" id="C">
+  <p class="cap"><span class="id">C</span><b>A ＋「正解した言葉をまとめて」</b><span>おすすめ。1 回押すだけで正解した言葉を外せて、すぐ元に戻せる</span></p>
+  <div class="res">
+    <div data-score></div>
+    <div class="book">
+      <div class="hd"><h2>今回の単語帳</h2><div class="tabs"><button aria-pressed="true">すべて 16</button></div><button class="bulk"><span class="o">○</span>正解した 16 語を、もう出さない</button></div>
+      <div data-rows="hide" data-gone=""></div>
+      <div class="foot">外した言葉は次のゲームから出ません。<a href="#">単語帳</a>でいつでも戻せます。</div>
+    </div>
+  </div>
+</section>
+
+<!-- C を押したあと -->
+<section class="mock" id="C2">
+  <p class="cap"><span class="id">C</span><b>「まとめて」を押したあと</b><span>全部に線が引かれ、下に「元に戻す」が数秒出る</span></p>
+  <div class="res">
+    <div data-score></div>
+    <div class="book">
+      <div class="hd"><h2>今回の単語帳</h2><div class="tabs"><button aria-pressed="true">すべて 16</button></div><button class="bulk" disabled style="color:var(--mute)"><svg width="14" height="14"><use href="#check"/></svg>16 語を外しました</button></div>
+      <div data-rows="hide" data-gone="all"></div>
+      <div class="foot">外した言葉は次のゲームから出ません。<a href="#">単語帳</a>でいつでも戻せます。</div>
+    </div>
+  </div>
+  <div class="toast">正解した 16 語を、次から出さないようにしました<button>元に戻す</button></div>
+</section>
+
+<script>
+  var WORDS = [
+    ['造詣', 'ぞうけい', 'その分野についての深い知識や理解', '美術に造詣が深い'],
+    ['蔓延', 'まんえん', 'よくないものが広がり、はびこること', '感染症が蔓延する'],
+    ['推敲', 'すいこう', '文章を何度も練り直すこと', '志望動機の推敲を重ねる'],
+    ['自負', 'じふ', '自分の能力に自信と誇りをもつこと', '業界一の技術だと自負する'],
+    ['横柄', 'おうへい', 'いばって人を見下すこと', '横柄な態度をとる'],
+    ['照準', 'しょうじゅん', '目標やねらいを定めること', '来年の大会に照準を定める'],
+    ['角', 'かど', '言動や性格がとがっていて、円満でないこと', '言い方によっては角が立つ'],
+    ['労', 'ろう', '苦労。ほねおり', '長年の労に報いる'],
+  ];
+  document.querySelectorAll('[data-score]').forEach(function (el) { el.replaceWith(document.getElementById('score').content.cloneNode(true)); });
+  document.querySelectorAll('[data-rows]').forEach(function (el) {
+    var kind = el.dataset.rows, g = el.dataset.gone;
+    var gone = g === 'all' ? WORDS.map(function (_, i) { return i; }) : g ? g.split(',').map(Number) : [];
+    el.outerHTML = WORDS.map(function (w, i) {
+      var off = gone.indexOf(i) >= 0;
+      var ctl = kind === 'switch'
+        ? '<span class="ctl sw2' + (off ? ' off' : '') + '"><i></i>' + (off ? '出題しない' : '出題する') + '</span>'
+        : '<span class="ctl"><button class="hide' + (off ? ' on' : '') + '"><svg><use href="#' + (off ? 'check' : 'eye-off') + '"/></svg><span class="lb">' + (off ? '出さない' : 'もう出さない') + '</span></button></span>';
+      return '<div class="wrow x' + (off ? ' gone' : '') + '"><span class="mk o">○</span><b>' + w[0] + '</b><span class="y">' + w[1] + '</span>' +
+        '<span>' + w[2] + '<span class="ex">例：' + w[3] + '</span></span>' + ctl + '</div>';
+    }).join('');
+  });
+  function sh() { var id = location.hash.slice(1) || 'A'; document.querySelectorAll('.mock').forEach(function (m) { m.classList.toggle('show', m.id === id); }); }
+  addEventListener('hashchange', sh); sh();
+</script>
+</body>
+</html>
