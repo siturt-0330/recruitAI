@@ -1,7 +1,7 @@
-// プロフィールの設定・退会・招待コードで書き手になる・運営の招待コードの発行
-import { canWrite, hasProfile, isAdmin, type User } from './auth';
+// プロフィールの設定・退会・招待コードで書き手になる
+import { canWrite, hasProfile, type User } from './auth';
 import { page } from './layout';
-import { esc, hostCookie, htmlResponse, jaDate, now, readForm, readableCode, redirect, safeNext, sameOrigin } from './util';
+import { esc, hostCookie, htmlResponse, now, readForm, redirect, safeNext, sameOrigin } from './util';
 
 /** アイコンの色（写真を出さない人のための丸）。ここにない色は保存しない */
 export const ICON_COLORS = ['#c4a68d', '#9c8873', '#d1b06b', '#7d8a7b', '#a7b29a', '#6f7a86', '#8e9fb5', '#b39a9f'];
@@ -170,40 +170,3 @@ ${error ? `<p class="error" role="alert">${esc(error)}</p>` : ''}
     error ? 400 : 200,
   );
 }
-
-/** 運営の画面（いまは招待コードの発行と一覧だけ。通報と非表示はあとで足す） */
-export async function admin(request: Request, env: Env, url: URL, user: User | null): Promise<Response | null> {
-  if (!isAdmin(user, env)) return null;
-  if (request.method === 'POST' && url.pathname === '/column/admin/invites') {
-    if (!sameOrigin(request, url)) return htmlResponse('', 403);
-    const f = await readForm(request);
-    const n = Math.min(20, Math.max(1, Number(f?.get('count') ?? '1') || 1));
-    const note = (f?.get('note') ?? '').trim().slice(0, 60);
-    const t = now();
-    await env.COLUMN_DB.batch(
-      Array.from({ length: n }, () =>
-        env.COLUMN_DB.prepare('INSERT INTO invites (code, note, created_by, created_at) VALUES (?, ?, ?, ?)').bind(readableCode(), note, user!.id, t),
-      ),
-    );
-    return redirect('/column/admin');
-  }
-  const rows = await env.COLUMN_DB.prepare(
-    'SELECT i.code, i.note, i.created_at, i.used_at, u.pen_name, u.handle FROM invites i LEFT JOIN users u ON u.id = i.used_by ORDER BY i.created_at DESC LIMIT 200',
-  ).all<{ code: string; note: string; created_at: number; used_at: number | null; pen_name: string | null; handle: string | null }>();
-  const list = rows.results.length
-    ? `<table class="table"><thead><tr><th>コード</th><th>メモ</th><th>作った日</th><th>使った人</th></tr></thead><tbody>
-${rows.results.map((r) => `<tr><td class="mono">${esc(r.code)}</td><td>${esc(r.note)}</td><td>${jaDate(r.created_at)}</td><td>${r.used_at ? `${esc(r.pen_name ?? '（退会）')}${r.handle ? ` <a href="/column/u/${esc(r.handle)}">@${esc(r.handle)}</a>` : ''}` : '<span style="color:var(--mute)">まだ</span>'}</td></tr>`).join('')}
-</tbody></table>`
-    : '<p class="empty">まだ招待コードがありません</p>';
-  const body = `<h1 class="title">運営</h1>
-<p class="group-label">招待コードを作る</p>
-<form class="group" method="post" action="/column/admin/invites">
-<div class="row"><label for="note">メモ</label><input type="text" id="note" name="note" maxlength="60" placeholder="ゼミの〇〇さんに渡す" autocomplete="off"></div>
-<div class="row"><label for="count">数</label><input type="text" id="count" name="count" value="1" inputmode="numeric" maxlength="2"></div>
-<div class="row"><button class="link-btn" type="submit">作る</button></div>
-</form>
-<p class="group-label">招待コード</p>
-${list}`;
-  return htmlResponse(page({ title: '運営', noindex: true, grouped: true }, body, user, env, url.pathname));
-}
-

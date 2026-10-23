@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://rakuraku-entry.com/sitemap.xml
+Sitemap: https://rakuraku-entry.com/column/sitemap.xml
