@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@500;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/game/engine/game.css?v=2dec6b54" />
+    <link rel="stylesheet" href="/game/engine/game.css?v=aa998015" />
   </head>
   <body>
     <header class="top">
@@ -79,7 +79,7 @@
           <div class="timer" style="flex:1"><i id="timer-sp"></i></div>
           残り<b id="left-sp">0</b>秒　スコア<b id="score-sp">0</b>
         </div>
-        <div class="card"><div class="w" id="q-word"></div><div class="yo" id="q-yomi"></div><div class="q">この言葉の意味は？</div></div>
+        <div class="card"><div class="w" id="q-word"></div><div class="yo" id="q-yomi"></div><div class="q" id="q-ask">この言葉の意味は？</div><div class="exs" id="q-ex" hidden></div></div>
         <div class="opts" id="opts"></div>
         <p class="quit"><button class="quit-sp" id="quitSp">やめる</button></p>
       </section>
@@ -113,8 +113,8 @@
     </main>
 
     <footer>© らくらくエントリー ・ <a href="/privacy">プライバシーポリシー</a></footer>
-    <script type="application/json" id="game-config">{"title":"SPI 語彙タイピング","seoTitle":"SPI 語彙タイピング｜打って覚える SPI の頻出語句 300","description":"SPI の言語で出る難しい言葉を、タイピングで覚える無料ゲーム。流れてくる ES の言い回しを、例文と意味を見ながら打ちます。スマホでは意味を 4 択で選んで覚えられます。","summary":"SPI の言語で出る難しい言葉を、例文ごと打って覚える","kicker":"SPI GOI TYPING","heading1":"打って覚える、","heading2":"SPI のむずかしい言葉。","card":"ES","hashtags":["SPI対策","らくらくエントリー"],"defaultCourse":1,"courses":[{"id":"intern","tag":"お手軽","name":"インターンコース","sec":60,"levels":[1],"cross":13,"ex":"払拭・杞憂 など\u003cbr />よく見る言葉"},{"id":"main","tag":"おすすめ","name":"本選考コース","sec":90,"levels":[1,2],"cross":11,"ex":"逡巡・齟齬 など\u003cbr />SPI で出やすい言葉"},{"id":"final","tag":"上級","name":"最終面接コース","sec":120,"levels":[2,3],"cross":9,"ex":"僥倖・嚆矢 など\u003cbr />差がつく言葉"},{"id":"extreme","tag":"全語","name":"エクストリーム","sec":180,"levels":[1,2,3],"cross":8,"ex":"300 語すべてから\u003cbr />いちばん速いベルト"}],"levelNames":{"1":"よく見る言葉","2":"SPI で出やすい言葉","3":"差がつく言葉"},"ranks":[[6000,"語彙マスター"],[3500,"語彙エキスパート"],[1500,"語彙ルーキー"],[0,"語彙見習い"]],"slug":"spi-goi","url":"https://rakuraku-entry.com/game/spi-goi","version":"2dec6b54"}</script>
-    <script src="/game/engine/romaji.js?v=2dec6b54"></script>
-    <script src="/game/engine/game.js?v=2dec6b54"></script>
+    <script type="application/json" id="game-config">{"title":"SPI 語彙タイピング","seoTitle":"SPI 語彙タイピング｜打って覚える SPI の頻出語句 300","description":"SPI の言語で出る難しい言葉を、タイピングで覚える無料ゲーム。流れてくる ES の言い回しを、例文と意味を見ながら打ちます。スマホでは意味を 4 択で選んで覚えられます。","summary":"SPI の言語で出る難しい言葉を、例文ごと打って覚える","kicker":"SPI GOI TYPING","heading1":"打って覚える、","heading2":"SPI のむずかしい言葉。","card":"ES","hashtags":["SPI対策","らくらくエントリー"],"defaultCourse":1,"courses":[{"id":"intern","tag":"お手軽","name":"インターンコース","sec":60,"levels":[1],"cross":13,"ex":"払拭・杞憂 など\u003cbr />よく見る言葉"},{"id":"main","tag":"おすすめ","name":"本選考コース","sec":90,"levels":[1,2],"cross":11,"ex":"逡巡・齟齬 など\u003cbr />SPI で出やすい言葉"},{"id":"final","tag":"上級","name":"最終面接コース","sec":120,"levels":[2,3],"cross":9,"ex":"僥倖・嚆矢 など\u003cbr />差がつく言葉"},{"id":"extreme","tag":"全語","name":"エクストリーム","sec":180,"levels":[1,2,3],"cross":8,"ex":"300 語すべてから\u003cbr />いちばん速いベルト"}],"levelNames":{"1":"よく見る言葉","2":"SPI で出やすい言葉","3":"差がつく言葉"},"ranks":[[6000,"語彙マスター"],[3500,"語彙エキスパート"],[1500,"語彙ルーキー"],[0,"語彙見習い"]],"slug":"spi-goi","url":"https://rakuraku-entry.com/game/spi-goi","version":"aa998015"}</script>
+    <script src="/game/engine/romaji.js?v=aa998015"></script>
+    <script src="/game/engine/game.js?v=aa998015"></script>
   </body>
 </html>

@@ -1,0 +1,3 @@
+# マイページ（app.rakuraku-entry.com）のホームで「今日の SPI 語」を出すため、言葉のリストだけは別のサイトからも読めるようにする
+/game/*/words.json
+  Access-Control-Allow-Origin: *

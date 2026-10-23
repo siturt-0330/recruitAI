@@ -7,6 +7,8 @@
 }
 html, body { height: 100%; }
 body { margin: 0; font-family: "Noto Sans JP", -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif; color: var(--ink); background: #f6f4fb; -webkit-font-smoothing: antialiased; }
+/* 日本語を文節で折り返す（「説くこ／と」のように言葉の途中で切らない）。auto-phrase が使えないブラウザでは、句読点のあとで折り返す */
+body { word-break: keep-all; overflow-wrap: anywhere; word-break: auto-phrase; text-wrap: pretty; }
 a { color: inherit; }
 button { font: inherit; cursor: pointer; }
 .top { display: flex; align-items: center; gap: 10px; max-width: 1180px; margin: 0 auto; padding: 18px 24px; }
@@ -94,7 +96,7 @@ button { font: inherit; cursor: pointer; }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .two .op { display: flex; align-items: center; gap: 16px; border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px; font-size: 17px; font-weight: 700; line-height: 1.5; background: #fff; color: var(--ink); text-align: left; }
 .two .op.k1 { flex-direction: row-reverse; text-align: right; }
-.two .op span { flex: 1; }
+.two .op span { flex: 1; text-wrap: balance; }
 .two .op.right { border: 2px solid var(--ok); background: #effaf4; }
 .two .op.wrong { border: 2px solid var(--stamp); background: #fff3f1; color: var(--sub); }
 /* キーボードの F・J キーそのものの見た目（指の目印の突起つき） */
@@ -118,9 +120,15 @@ button { font: inherit; cursor: pointer; }
 .choice.pc .card .w { font-size: 64px; }
 .choice.pc .opts { margin-top: 22px; }
 .choice.pc .two .op { padding: 22px 22px; font-size: 18px; min-height: 104px; }
+/* 答えたあとに出す例文 */
+.exs mark { background: linear-gradient(transparent 55%, #ffe36e 55%); color: var(--ink); font-weight: 700; padding: 0 1px; }
+.exs b { font-size: 12px; color: var(--accent); margin-right: 8px; letter-spacing: .04em; }
+.choice .card .exs { margin: 14px auto 0; max-width: 560px; font-size: 16px; line-height: 1.7; color: var(--sub); background: #f7f6fb; border-radius: 12px; padding: 10px 16px; }
+.qz .q .exs { font: 700 20px var(--head); color: var(--sub); }
+.qz .q .exs b { font: 700 13px "Noto Sans JP", sans-serif; margin-right: 10px; }
 .choice .card .q { margin-top: 10px; font-size: 13px; color: var(--sub); }
 .opts { display: grid; gap: 10px; margin-top: 16px; }
-.opt { background: #fff; border-radius: 16px; padding: 14px 16px; font-size: 14px; border: 1px solid var(--line); text-align: left; line-height: 1.6; color: var(--ink); }
+.opt { background: #fff; border-radius: 16px; padding: 14px 16px; font-size: 14px; border: 1px solid var(--line); text-align: left; line-height: 1.6; color: var(--ink);  text-wrap: balance; }
 .opt.right { border: 2px solid var(--ok); background: #effaf4; }
 .opt.wrong { border: 2px solid var(--stamp); background: #fff3f1; color: var(--sub); }
 

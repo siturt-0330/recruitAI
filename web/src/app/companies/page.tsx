@@ -107,6 +107,16 @@ function CompaniesView() {
     setFocusId(c.id);
   };
 
+  // ホームの「企業を追加」から来たときは、空の行を足してすぐ入力できるようにする
+  const adding = useRef(false);
+  useEffect(() => {
+    if (params.get('new') !== '1' || adding.current) return;
+    adding.current = true;
+    add();
+    router.replace('/companies');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
+
   // Notion と同じく、新しい行は下に増える
   const rows = [...companies].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const current = companies.find((c) => c.id === selected);
