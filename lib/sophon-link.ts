@@ -74,7 +74,9 @@ export type AppMessage =
   /** その会社のマイページを開いて、ID とパスワードを入れる */
   | { source: 'sophon-app'; type: 'openMypage'; companyId: string }
   /** 会社を消したので、保存したログイン情報も消す */
-  | { source: 'sophon-app'; type: 'forgetMypage'; companyId: string };
+  | { source: 'sophon-app'; type: 'forgetMypage'; companyId: string }
+  /** Web 版で打ったパスワードを、拡張機能にだけ保存してもらう（Web 版には残さない） */
+  | { source: 'sophon-app'; type: 'setPassword'; companyId: string; companyName: string; url: string; loginId: string; password: string };
 
 /** 拡張機能 → ページ（Sophon） */
 export type ExtMessage =

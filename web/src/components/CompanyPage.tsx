@@ -23,7 +23,7 @@ import {
 import { BlockEditor } from './BlockEditor';
 import { DEFAULT_INDUSTRIES } from './IndustrySelect';
 import { CompanyLogo } from './ui';
-import { forgetMypage, openMypage, useExtension } from '@/lib/extension';
+import { forgetMypage, openMypage, setPassword, useExtension } from '@/lib/extension';
 import { companyHref } from '@/lib/links';
 import { logoFor } from '@/lib/logo';
 import { uid } from '@/lib/seed';
@@ -122,14 +122,7 @@ export function CompanyPage({ company, mode, onClose }: { company: Company; mode
           <PlainInput value={company.loginId} placeholder="空" onChange={(v) => set({ loginId: v })} />
         </Prop>
         <Prop icon={<KeyRound size={15} />} label="パスワード">
-          {company.hasPassword ? (
-            <span className="flex items-center gap-2">
-              <span className="tracking-widest">••••••••</span>
-              <span className="rounded bg-fill px-1.5 py-px text-[12px] text-sub">拡張機能に保存済み</span>
-            </span>
-          ) : (
-            <span className="text-mute">未保存</span>
-          )}
+          <PasswordInput company={company} connected={connected} />
         </Prop>
         <Prop icon={<CircleDot size={15} />} label="選考状況">
           <TagSelect
@@ -206,6 +199,70 @@ export function CompanyPage({ company, mode, onClose }: { company: Company; mode
       <div className="my-4 border-t border-line" />
       <BlockEditor blocks={company.blocks} onChange={setBlocks} />
     </div>
+  );
+}
+
+/**
+ * パスワードの欄。打ったパスワードは拡張機能にだけ渡して保存し、このページには残さない。
+ * 拡張機能とつながっていないとき・マイページの URL がないときは保存できない
+ */
+/** Web 版からパスワードを受け取れるのは、拡張機能の 1.1.2 から */
+const PASSWORD_FROM_WEB = [1, 1, 2];
+const supports = (version: string) => {
+  const v = version.split('.').map(Number);
+  for (let i = 0; i < 3; i++) if ((v[i] ?? 0) !== PASSWORD_FROM_WEB[i]) return (v[i] ?? 0) > PASSWORD_FROM_WEB[i]!;
+  return true;
+};
+
+function PasswordInput({ company, connected }: { company: Company; connected: boolean }) {
+  const version = useExtension((s) => s.version);
+  const [value, setValue] = useState('');
+  const [editing, setEditing] = useState(false);
+
+  if (company.hasPassword && !editing) {
+    return (
+      <span className="flex items-center gap-2">
+        <span className="tracking-widest">••••••••</span>
+        <span className="rounded bg-fill px-1.5 py-px text-[12px] text-sub">拡張機能に保存済み</span>
+        <button onClick={() => setEditing(true)} className="rounded px-1.5 py-0.5 text-[12px] text-sub hover:bg-white hover:text-ink">
+          変更
+        </button>
+      </span>
+    );
+  }
+  const updated = connected && supports(version);
+  const ready = updated && !!company.mypageUrl;
+  const save = () => {
+    if (!ready || !value) return;
+    setPassword(company, value);
+    setValue('');
+    setEditing(false);
+  };
+  return (
+    <span className="flex min-w-0 flex-1 items-center gap-2">
+      <input
+        type="password"
+        value={value}
+        disabled={!ready}
+        autoComplete="new-password"
+        placeholder={
+          !connected ? '拡張機能と連携すると保存できます' : !updated ? '拡張機能を更新すると保存できます' : !company.mypageUrl ? '先にマイページの URL を入力' : 'パスワードを入力'
+        }
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => !e.nativeEvent.isComposing && e.key === 'Enter' && save()}
+        className="h-9 min-w-0 flex-1 bg-transparent outline-none placeholder:text-mute disabled:cursor-not-allowed"
+      />
+      {value && (
+        <button onClick={save} className="shrink-0 rounded-md bg-ink px-2.5 py-1 text-[12px] font-bold text-white">
+          保存
+        </button>
+      )}
+      {editing && !value && (
+        <button onClick={() => setEditing(false)} className="shrink-0 rounded px-1.5 py-0.5 text-[12px] text-sub hover:bg-white">
+          やめる
+        </button>
+      )}
+    </span>
   );
 }
 
