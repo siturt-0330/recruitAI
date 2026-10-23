@@ -348,6 +348,7 @@
       if (e.key === 'Escape') { toStart(); return; }
       var b = $('opts').querySelectorAll('[data-w]')[fj(e.key)];
       if (b) answer(b);
+      else if (G.answered && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); skipChoice(); }
       return;
     }
     if ($('play-pc').hidden || !G) return;
@@ -355,6 +356,7 @@
     if (e.key === ' ') e.preventDefault();
     if (!G.running) return;
     if (G.mode === 'quiz') { if (fj(e.key) >= 0) answerQuiz(fj(e.key)); return; }
+    if (G.mode === 'answered') { if ((fj(e.key) >= 0 || e.key === ' ' || e.key === 'Enter') && performance.now() - G.answeredAt >= SKIP_AFTER) G.wait = 0; return; }
     if (G.mode !== 'type') return;
     // 日本語入力のままだと打てないので知らせる
     if (e.isComposing || e.key === 'Process' || e.keyCode === 229) { $('ime').hidden = false; return; }
@@ -427,7 +429,10 @@
     G.mode = 'quiz';
     $('qz').innerHTML = '<div class="q"><b>' + esc(w.w) + '</b>の意味は？<small>正解で +200</small></div>' + twoHTML(opts);
     Array.prototype.forEach.call($('qz').querySelectorAll('.op'), function (b, i) {
-      b.addEventListener('click', function () { if (G && G.mode === 'quiz') answerQuiz(i); });
+      b.addEventListener('click', function () {
+        if (G && G.mode === 'quiz') answerQuiz(i);
+        else if (G && G.mode === 'answered' && performance.now() - G.answeredAt >= SKIP_AFTER) G.wait = 0;
+      });
     });
     setPanel('qz');
   }
@@ -442,9 +447,11 @@
       else if (j === i) btns[j].classList.add('wrong');
     });
     $('score').textContent = G.score.toLocaleString();
-    // 正解・不正解を少し見せてから戻る
+    // 正解・不正解と例文を少し見せてから戻る（キーで先へ進める）
+    $('qz').querySelector('.q').innerHTML = '<span class="exs">' + exampleHTML(q.w) + '</span>';
     G.mode = 'answered';
-    G.wait = ok ? 0.6 : 1.4;
+    G.wait = EXAMPLE_SEC[ok ? 0 : 1];
+    G.answeredAt = performance.now();
   }
 
   // ---- スマホ：意味を 4 択で選ぶ ----
@@ -458,14 +465,27 @@
     requestAnimationFrame(tickChoice);
   }
 
+  /** 答えたあとに例文を出しておく秒数（正解・不正解）。この間は残り時間を止め、キーやタップで先へ進める */
+  var EXAMPLE_SEC = [1.2, 2.0];
+  /** 押しまちがいで飛ばさないよう、答えてからこの時間（ミリ秒）は先へ進めない */
+  var SKIP_AFTER = 300;
+
+  /** 例文の HTML（言葉に印をつける） */
+  function exampleHTML(w) {
+    return '<b>例文</b>' + highlight(w.e, w.w);
+  }
+
   function askChoice() {
     if (!G || !G.running) return;
+    clearTimeout(G.nextTimer);
     var w = nextWord();
     if (!w) return finish();
     G.cur = w;
     G.answered = false;
     $('q-word').textContent = w.w;
     $('q-yomi').textContent = '';
+    $('q-ask').hidden = false;
+    $('q-ex').hidden = true;
     var others = shuffle(words.filter(function (x) { return x.m !== w.m; })).slice(0, mobile ? 3 : 1);
     var opts = shuffle([w].concat(others));
     $('opts').innerHTML = mobile ? opts.map(function (o) { return '<button class="opt" data-w="' + esc(o.w) + '">' + esc(o.m) + '</button>'; }).join('') : twoHTML(opts);
@@ -475,8 +495,11 @@
   }
 
   function answer(btn) {
-    if (!G || G.answered || !G.running) return;
+    if (!G || !G.running) return;
+    // 例文を出しているときにもう一度押したら、次の問題へ
+    if (G.answered) return skipChoice();
     G.answered = true;
+    G.answeredAt = performance.now();
     var ok = btn.dataset.w === G.cur.w;
     G.keys++;
     if (ok) { G.combo++; G.score += 50 + Math.min(G.combo, 20) * 5; } else { G.misses++; G.combo = 0; }
@@ -488,15 +511,23 @@
       else if (b === btn) b.classList.add('wrong');
     });
     $('q-yomi').textContent = G.cur.y;
+    // 答えたら、言葉のカードに例文を出す（使い方ごと覚えられるように）
+    $('q-ask').hidden = true;
+    $('q-ex').innerHTML = exampleHTML(G.cur);
+    $('q-ex').hidden = false;
     $('score-sp').textContent = G.score.toLocaleString();
-    // パソコンの 2 択は次々に進む。間違えたときは正解を少し長く見せる
-    G.nextTimer = setTimeout(askChoice, mobile ? (ok ? 700 : 1500) : (ok ? 350 : 1100));
+    G.nextTimer = setTimeout(askChoice, EXAMPLE_SEC[ok ? 0 : 1] * 1000);
+  }
+
+  function skipChoice() {
+    if (performance.now() - G.answeredAt < SKIP_AFTER) return;
+    askChoice();
   }
 
   function tickChoice(now) {
     if (!G || !G.running) return;
-    // アプリを切りかえて戻ったときに、残り時間が一気に減らないように
-    G.left -= Math.min(0.25, (now - G.last) / 1000);
+    // アプリを切りかえて戻ったときに、残り時間が一気に減らないように。例文を出している間は止める
+    if (!G.answered) G.left -= Math.min(0.25, (now - G.last) / 1000);
     G.last = now;
     $('left-sp').textContent = Math.max(0, Math.ceil(G.left));
     $('timer-sp').style.transform = 'scaleX(' + Math.max(0, G.left / G.course.sec) + ')';
@@ -596,5 +627,14 @@
 
   fetch('/game/' + CFG.slug + '/words.json?v=' + CFG.version)
     .then(function (r) { return r.json(); })
-    .then(function (data) { words = data; renderCourses(); show('start'); });
+    .then(function (data) {
+      words = data;
+      renderCourses();
+      show('start');
+      // ?mode=quiz で意味クイズ、?mode=book で単語帳をすぐ開く（マイページのホームなどから来たとき）
+      var mode = new URLSearchParams(location.search).get('mode');
+      if (mode) history.replaceState(null, '', location.pathname);
+      if (mode === 'quiz') start(course, true);
+      if (mode === 'book') openBook();
+    });
 })();
