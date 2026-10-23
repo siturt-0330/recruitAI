@@ -1,5 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import { classifyWithOpenAI } from '../../lib/openai';
+import { handleColumn } from './column';
 import { findLogo } from './logo';
 import type { RemoteQuestion } from '../../lib/types';
 
@@ -118,6 +119,8 @@ export default {
   async fetch(request, env, ctx): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === '/health') return json({ ok: true });
+    // コラム（記事を書き合うページ）。wrangler.jsonc の run_worker_first で、静的なファイルより先にここへ来る
+    if (url.pathname === '/column' || url.pathname.startsWith('/column/')) return handleColumn(request, env, ctx, url);
     // Google Search Console の所有確認。.html のままリダイレクトせずに返す必要がある
     if (url.pathname === '/googleb3c282b9a4c4b17b.html') {
       return new Response('google-site-verification: googleb3c282b9a4c4b17b.html', { headers: { 'Content-Type': 'text/html; charset=utf-8' } });

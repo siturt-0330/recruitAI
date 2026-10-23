@@ -8,8 +8,16 @@
     { "pattern": "api.rakuraku-entry.com", "custom_domain": true },
     { "pattern": "rakuraku-entry.com", "custom_domain": true }
   ],
-  // 公式サイト（site/）。ファイルがある URL はそのまま返し、ないものは下の API の処理に回す
-  "assets": { "directory": "../site", "html_handling": "drop-trailing-slash", "run_worker_first": ["/google*.html"] },
+  // 公式サイト（site/）。ファイルがある URL はそのまま返し、ないものは下の API の処理に回す。
+  // コラム（/column 以下）は Worker が先に処理する（記事のページを組み立てるため）。コラムの CSS・JS は /column-assets/ に置き、静的に返す
+  "assets": { "directory": "../site", "binding": "ASSETS", "html_handling": "drop-trailing-slash", "run_worker_first": ["/google*.html", "/column", "/column/*"] },
+  // コラムのデータ（記事・書き手・スキ・フォロー・コメントなど）。表は migrations/ のマイグレーションで作る
+  "d1_databases": [
+    // TODO: 本番の D1 を作ったら database_id を差しかえる（今はローカルの確認用の仮の値）
+    { "binding": "COLUMN_DB", "database_name": "rakuraku-column", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+  ],
+  // コラムの画像（見出し画像・本文の画像・アイコン）
+  "r2_buckets": [{ "binding": "COLUMN_IMAGES", "bucket_name": "rakuraku-column-images" }],
   "workers_dev": false,
   "observability": {
     "enabled": true,
@@ -35,9 +43,15 @@
     // Web 版からロゴを取りに来てよい Origin（カンマ区切り）と、1日の上限
     "APP_ORIGINS": "https://app.rakuraku-entry.com,http://localhost:3100",
     "LOGO_LIMIT_PER_IP": "300",
-    "LOGO_LIMIT_GLOBAL": "20000"
+    "LOGO_LIMIT_GLOBAL": "20000",
+    // コラムの運営にする Google アカウント（カンマ区切り）
+    "COLUMN_ADMIN_EMAILS": "",
+    // コラムのコメントを書ける人。members＝招待された書き手だけ、everyone＝ログインした人ならだれでも
+    "COLUMN_COMMENTS": "members"
   }
   // シークレット（リポジトリには書かない）:
   //   npx wrangler secret put OPENAI_API_KEY
   //   npx wrangler secret put ADMIN_TOKEN
+  //   npx wrangler secret put GOOGLE_CLIENT_ID      … コラムの Google ログイン（Google Cloud の OAuth クライアント）
+  //   npx wrangler secret put GOOGLE_CLIENT_SECRET
 }

@@ -35,9 +35,32 @@
         "--cwd",
         "worker",
         "--port",
-        "8788"
+        "8788",
+        "--local-upstream",
+        "localhost:8788"
       ],
       "port": 8788
+    },
+    {
+      "name": "column",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--prefix",
+        "worker",
+        "wrangler",
+        "dev",
+        "--cwd",
+        "worker",
+        "--port",
+        "8790",
+        "--local-upstream",
+        "localhost:8790",
+        "--var",
+        "COLUMN_DEV_LOGIN:1",
+        "--var",
+        "COLUMN_ADMIN_EMAILS:admin@example.com"
+      ],
+      "port": 8790
     }
   ]
 }

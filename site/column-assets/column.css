@@ -1,0 +1,84 @@
+/* コラム（/column）の見た目。モックアップ「note ベース改良案」の最終版（Apple のデザインの考え方で整えたもの）に合わせる。
+   色は文字の黒とグレーだけ。青は「書く」「公開」とリンクだけ。紫はロゴだけ。押せる場所は高さ 44px 以上 */
+*, *::before, *::after { box-sizing: border-box; }
+:root {
+  --ink: #1d1d1f; --sub: #6e6e73; --mute: #86868b; --line: #d2d2d7; --fill: #f5f5f7;
+  --blue: #0071e3; --link: #0066cc; --red: #ff2d55; --danger: #d70015;
+  --font: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: #fff; color: var(--ink); font-family: var(--font); font-size: 17px; line-height: 1.5; -webkit-font-smoothing: antialiased; word-break: auto-phrase; overflow-wrap: anywhere; }
+body.grouped { background: var(--fill); }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button, input, textarea, select { font: inherit; color: inherit; }
+img { max-width: 100%; }
+:focus-visible { outline: 3px solid rgba(0, 113, 227, .45); outline-offset: 2px; border-radius: 6px; }
+
+/* ヘッダー（半透明） */
+.bar { position: sticky; top: 0; z-index: 20; background: rgba(255, 255, 255, .8); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: .5px solid var(--line); }
+.bar-in { max-width: 980px; margin: 0 auto; min-height: 52px; padding: 0 22px; display: flex; align-items: center; gap: 4px; }
+.brand { display: flex; align-items: center; gap: 8px; margin-right: 12px; color: var(--ink); font-weight: 600; font-size: 15px; white-space: nowrap; }
+.brand:hover { text-decoration: none; }
+.nav-link { display: flex; align-items: center; min-height: 44px; padding: 0 10px; font-size: 13px; color: var(--sub); white-space: nowrap; }
+.nav-link:hover { color: var(--ink); text-decoration: none; }
+.nav-link[aria-current="page"] { color: var(--ink); font-weight: 600; }
+.nav-me { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; }
+.grow { flex: 1 1 auto; }
+@media (max-width: 640px) {
+  .bar-in { padding: 0 12px; }
+  .brand { font-size: 0; gap: 0; margin-right: 4px; }
+  .nav-link { padding: 0 8px; font-size: 13px; }
+}
+
+/* ボタン（青は大事な 1 つだけ） */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 22px; border: 0; border-radius: 980px; background: var(--blue); color: #fff; font-size: 17px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.btn:hover { text-decoration: none; background: #0077ed; }
+.btn-sm { min-height: 32px; padding: 0 16px; font-size: 13px; margin-right: 4px; }
+.btn-plain { background: var(--fill); color: var(--ink); }
+.btn-plain:hover { background: #ebebf0; }
+.btn-danger { background: var(--fill); color: var(--danger); }
+.btn:disabled { opacity: .45; cursor: default; }
+.link-btn { background: none; border: 0; padding: 0; min-height: 44px; color: var(--link); cursor: pointer; font-size: 17px; }
+
+/* 本文の幅 */
+.main { max-width: 720px; margin: 0 auto; padding: 0 22px 96px; }
+.narrow { max-width: 560px; margin: 0 auto; padding: 0 16px 96px; }
+.title { margin: 40px 0 8px; font-size: 34px; font-weight: 700; line-height: 1.2; letter-spacing: -.01em; }
+.sub { margin: 0 0 24px; color: var(--sub); font-size: 15px; }
+.av { display: inline-block; flex-shrink: 0; border-radius: 50%; object-fit: cover; vertical-align: middle; }
+
+/* 設定の画面などの、白いまとまり（iPhone の設定と同じ形） */
+.group-label { margin: 32px 16px 6px; font-size: 13px; color: var(--sub); }
+.group-note { margin: 6px 16px 0; font-size: 13px; color: var(--sub); }
+.group { background: #fff; border-radius: 12px; overflow: hidden; }
+.row { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 16px; position: relative; }
+.row + .row::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--line); }
+.row > label, .row > .k { flex-shrink: 0; min-width: 88px; }
+.row input[type="text"], .row textarea { flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent; padding: 11px 0; text-align: right; font-size: 17px; }
+.row textarea { text-align: left; resize: vertical; min-height: 88px; line-height: 1.5; }
+.row.stack { flex-direction: column; align-items: stretch; gap: 0; padding-top: 11px; }
+.row.stack textarea, .row.stack input[type="text"] { text-align: left; padding-top: 4px; }
+.row .v { margin-left: auto; color: var(--sub); }
+.swatches { display: flex; flex-wrap: wrap; gap: 10px; padding: 12px 0; }
+.swatches input { position: absolute; opacity: 0; pointer-events: none; }
+.swatches label { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .1); }
+.swatches input:checked + label { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--blue); }
+.swatches input:focus-visible + label { outline: 3px solid rgba(0, 113, 227, .45); outline-offset: 4px; }
+.sheet-head { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; min-height: 44px; margin: 32px 0 8px; }
+.sheet-head > :first-child { justify-self: start; }
+.sheet-head > :nth-child(2) { justify-self: center; font-weight: 600; }
+.sheet-head > :last-child { justify-self: end; }
+.sheet-head button { background: none; border: 0; color: var(--link); font-size: 17px; font-weight: 600; cursor: pointer; min-height: 44px; padding: 0; }
+.error { margin: 12px 16px 0; color: var(--danger); font-size: 15px; }
+.check { display: flex; gap: 10px; align-items: flex-start; padding: 12px 16px; font-size: 15px; }
+.check input { margin-top: 4px; width: 18px; height: 18px; }
+
+/* 表（運営の画面） */
+.table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.table th, .table td { text-align: left; padding: 10px 12px 10px 0; border-bottom: .5px solid var(--line); vertical-align: top; }
+.table th { color: var(--sub); font-weight: 600; font-size: 13px; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }
+
+/* 一覧（記事の行）・空のとき */
+.empty { padding: 64px 0; text-align: center; color: var(--sub); }
