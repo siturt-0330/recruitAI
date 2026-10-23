@@ -19,7 +19,7 @@ function isPublicHttpUrl(u: URL): boolean {
  * Wikidata はブラウザの User-Agent だと制限されるので、規約どおり名乗る
  */
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
-const BOT_UA = 'SophonLogoFetcher/1.0 (https://rakuraku-entry.com; contact@geek-app.com)';
+const BOT_UA = 'SophonLogoFetcher/1.0 (https://rakuraku-entry.com; contact@rakuraku-entry.com)';
 
 /**
  * リダイレクトは自分でたどり、行き先が手元やネットワーク内部のアドレスでないかを毎回確かめる
