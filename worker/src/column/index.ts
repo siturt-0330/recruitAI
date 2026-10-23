@@ -5,6 +5,7 @@ import { currentUser, devLogin, googleCallback, logout, startGoogle, type User }
 import { page } from './layout';
 import { article, home, image, profile, sitemap } from './read';
 import { htmlResponse } from './util';
+import { handleWriteApi, writeShell } from './write';
 
 function notFound(user: User | null, env: Env, path: string): Response {
   const body = `<h1 class="title">ページが見つかりません</h1><p class="sub">消されたか、URL がまちがっているかもしれません。</p><p><a href="/column">コラムのトップへ</a></p>`;
@@ -34,7 +35,10 @@ export async function handleColumn(request: Request, env: Env, _ctx: ExecutionCo
 
   const user = await currentUser(request, env);
   if (path === '/column') return home(env, url, user);
-  if (path.startsWith('/column/api/')) return (await handleApi(request, env, url, user)) ?? new Response('not found', { status: 404 });
+  if (path.startsWith('/column/api/')) {
+    return (await handleWriteApi(request, env, url, user)) ?? (await handleApi(request, env, url, user)) ?? new Response('not found', { status: 404 });
+  }
+  if (path === '/column/write' || /^\/column\/write\/[A-Za-z0-9_-]{1,40}$/.test(path)) return writeShell(url, user, env);
   let m = path.match(/^\/column\/p\/([A-Za-z0-9_-]{1,40})$/);
   if (m) return (await article(env, url, user, m[1]!)) ?? notFound(user, env, path);
   m = path.match(/^\/column\/u\/([a-z0-9_]{3,20})$/);
