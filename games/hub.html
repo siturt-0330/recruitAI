@@ -1,0 +1,50 @@
+<!-- このファイルは games/build.mjs でゲームの一覧ページ（site/game/index.html）になる。{{games}} にゲームのカードが入る -->
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SPI 用語集｜タイピングで覚える SPI の言葉｜らくらくエントリー</title>
+    <meta name="description" content="SPI に出る言葉を、タイピングで覚える無料の用語集。例文と意味を見ながら打つので、使い方ごと覚えられます。" />
+    <link rel="canonical" href="https://rakuraku-entry.com/game" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://rakuraku-entry.com/game" />
+    <meta property="og:title" content="SPI 用語集｜タイピングで覚える SPI の言葉" />
+    <meta property="og:description" content="SPI に出る言葉を、タイピングで覚える無料の用語集。" />
+    <meta property="og:image" content="https://rakuraku-entry.com/images/og.png" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@500;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/game/engine/game.css?v={{version}}" />
+    <style>
+      .hub { text-align: center; padding: 28px 0 10px; }
+      .games { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 10px; text-align: left; }
+      .gcard { display: block; background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 22px 24px; text-decoration: none; transition: transform .15s, box-shadow .15s; }
+      .gcard:hover { transform: translateY(-3px); box-shadow: 0 18px 36px rgba(60,50,140,.12); }
+      .gcard .k { font: 800 11px Inter, sans-serif; letter-spacing: .14em; color: var(--accent); }
+      .gcard b { display: block; font-family: var(--head); font-size: 21px; margin: 6px 0 6px; }
+      .gcard p { margin: 0; color: var(--sub); font-size: 14px; line-height: 1.7; }
+      .gcard .n { margin-top: 12px; font-size: 12px; color: var(--mute); }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="/"><img src="/images/icon.svg" alt="" />らくらくエントリー</a>
+      <span class="sp"></span>
+      <a class="link ext" href="/">拡張機能について</a>
+    </header>
+    <main class="wrap">
+      <section class="hub start">
+        <div class="kick">SPI WORDS</div>
+        <h1>打って覚える、<br /><em>SPI 用語集。</em></h1>
+        <div class="games">
+{{games}}
+        </div>
+      </section>
+    </main>
+    <footer>© らくらくエントリー ・ <a href="/privacy">プライバシーポリシー</a></footer>
+  </body>
+</html>
