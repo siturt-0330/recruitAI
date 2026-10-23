@@ -20,6 +20,8 @@ export interface PageOptions {
   width?: 'normal' | 'narrow';
   /** 背景を灰色にする（設定の画面など、白いまとまりを並べる画面） */
   grouped?: boolean;
+  /** 記事のページ（ヘッダーに文字の大きさの切りかえを出す） */
+  reading?: boolean;
 }
 
 /** 丸いアイコン（画像がなければ色の丸） */
@@ -30,10 +32,15 @@ export function avatar(user: Pick<User, 'icon_key' | 'icon_color'>, size: number
     : `<span class="av" aria-hidden="true" style="${style};background:${esc(user.icon_color)}"></span>`;
 }
 
-function header(user: User | null, env: Env, path: string): string {
-  const right = !user
+/** 文字の大きさ（小・中・大）。選んだ大きさは column.js がブラウザに覚える */
+const SIZE_SWITCH = `<div class="sizes" role="group" aria-label="文字の大きさ">${['小', '中', '大']
+  .map((l, i) => `<button type="button" data-size="${i}" aria-label="文字の大きさ ${l}" aria-pressed="${i === 1}">あ</button>`)
+  .join('')}</div>`;
+
+function header(user: User | null, env: Env, path: string, reading = false): string {
+  const right = (reading ? SIZE_SWITCH : '') + (!user
     ? `<a class="nav-link" href="/column/auth/google?next=${encodeURIComponent(path)}">ログイン</a>`
-    : `${canWrite(user, env) ? '<a class="btn btn-sm" href="/column/write">書く</a>' : ''}<a class="nav-me" href="/column/settings" aria-label="設定">${avatar(user, 28)}</a>`;
+    : `${canWrite(user, env) ? '<a class="btn btn-sm" href="/column/write">書く</a>' : ''}<a class="nav-me" href="/column/settings" aria-label="設定">${avatar(user, 28)}</a>`);
   return `<header class="bar"><nav class="bar-in" aria-label="メインメニュー">
 <a class="brand" href="/"><img src="/images/icon.svg" alt="" width="22" height="22">らくらくエントリー</a>
 <a class="nav-link" href="https://app.rakuraku-entry.com/companies">マイページ管理</a>
@@ -70,7 +77,7 @@ ${canonical ? `<meta property="og:url" content="${esc(canonical)}">` : ''}
 <link rel="stylesheet" href="/column-assets/column.css">
 </head>
 <body${opts.grouped ? ' class="grouped"' : ''}>
-${header(user, env, path)}
+${header(user, env, path, opts.reading)}
 <main class="${opts.width === 'narrow' ? 'narrow' : 'main'}">
 ${body}
 </main>
