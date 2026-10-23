@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>意味に目が行く案</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@500;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../site/game/engine/game.css" />
+<style>
+  body { padding: 28px 40px 40px; }
+  .mock { display: none; max-width: 1180px; margin: 0 auto; }
+  .mock.show { display: block; }
+  .cap { display: flex; align-items: baseline; gap: 14px; margin: 0 0 16px; }
+  .cap .id { font: 800 13px Inter, sans-serif; color: #fff; background: var(--accent); border-radius: 8px; padding: 3px 9px; }
+  .cap b { font-family: var(--head); font-weight: 900; font-size: 22px; }
+  .cap span { color: var(--sub); font-size: 14px; }
+  .es { transform: translateX(520px); }
+
+  /* A：意味を言い回しの真上に */
+  .focus.wide { grid-template-columns: minmax(0, 1fr); }
+  .focus.wide .fs { padding-top: 30px; }
+  .gl { position: relative; display: inline-block; }
+  .gloss { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap; font: 700 15px "Noto Sans JP", sans-serif; color: var(--accent); background: #f1efff; border-radius: 10px; padding: 4px 12px; letter-spacing: 0; }
+  .gloss::after { content: ""; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #f1efff; }
+  .sent.a { margin-top: 26px; }
+
+  /* B：打ち終わった直後に大きく */
+  .focus.learnt { grid-template-columns: 260px minmax(0, 1fr); background: #fff; }
+  .lw { display: flex; flex-direction: column; justify-content: center; align-items: center; border-right: 1px solid var(--line); position: relative; }
+  .lw .big { font-family: var(--head); font-weight: 900; font-size: 52px; letter-spacing: .04em; }
+  .lw .yo { color: var(--mute); font-size: 15px; margin-top: 2px; }
+  .lw .ok { position: absolute; left: 22px; top: 18px; width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--stamp); color: var(--stamp); font-weight: 900; font-size: 20px; display: flex; align-items: center; justify-content: center; transform: rotate(-14deg); }
+  .lm { padding: 22px 30px; display: flex; flex-direction: column; justify-content: center; }
+  .lm .lb { font: 800 11px Inter, sans-serif; letter-spacing: .14em; color: var(--accent); }
+  .lm .mean { font-family: var(--head); font-weight: 900; font-size: 30px; line-height: 1.4; margin-top: 4px; }
+  .lm .ex { margin-top: 10px; font-size: 15px; color: var(--sub); }
+  .lm .ex mark { background: linear-gradient(transparent 55%, #ffe36e 55%); color: var(--ink); }
+  .bar { position: absolute; left: 0; bottom: 0; height: 5px; width: 62%; background: var(--accent); border-radius: 0 99px 99px 0; }
+  .paused { font: 700 12px "Noto Sans JP", sans-serif; color: var(--accent); background: #f1efff; border-radius: 99px; padding: 3px 10px; }
+
+  /* C：2 択 */
+  .focus.quiz { grid-template-columns: minmax(0, 1fr); }
+  .qz { padding: 20px 28px; display: flex; flex-direction: column; justify-content: center; gap: 14px; }
+  .qz .q { font-family: var(--head); font-weight: 900; font-size: 22px; }
+  .qz .q b { font-size: 30px; margin-right: 6px; }
+  .qz .q small { font: 700 12px Inter, sans-serif; color: var(--accent); background: #f1efff; border-radius: 99px; padding: 3px 10px; margin-left: 10px; vertical-align: middle; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .two div { display: flex; align-items: center; gap: 14px; border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px; font-size: 17px; font-weight: 700; }
+  .two kbd { font: 800 18px Inter, sans-serif; width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 9px; background: #fff; }
+
+  /* D：カードは言葉だけ */
+  .es.only .w { font-size: 40px; margin-top: 34px; }
+  .es.only .yo { text-align: center; color: var(--mute); font-size: 12px; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<!-- A -->
+<section class="mock" id="A">
+  <div class="cap"><span class="id">A</span><b>意味を言い回しの真上に出す</b><span>打つときに見る場所に、意味がいっしょに入る</span></div>
+  <div class="stage">
+    <div class="wall"></div>
+    <div class="hud"><span class="cname">本選考コース</span><div class="timer"><i style="transform:scaleX(.7)"></i></div>残り<b>63</b>秒<span class="sp"></span>スコア<b>1,540</b></div>
+    <div class="belt"></div>
+    <div class="es on"><div class="t"><span>ES</span><span>No.9</span></div><div class="w">義憤</div><div class="m"><b>意味</b>不正や不道徳に対して抱く怒り</div></div>
+    <div class="focus wide">
+      <div class="fs">
+        <div class="sent a">不正の報道に<span class="gl"><span class="gloss">義憤＝不正や不道徳に対して抱く怒り</span><span class="tp"><mark>義憤</mark>を覚える</span></span></div>
+        <div class="y"><span class="dn">ぎふんを</span>おぼえる</div>
+        <div class="r"><span class="dn">gifunwo</span><span class="cu">o</span>boeru</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- B -->
+<section class="mock" id="B">
+  <div class="cap"><span class="id">B</span><b>打ち終わった直後に、意味を大きく 1 秒</b><span>指が止まる一瞬に読む。この間タイマーは止まる</span></div>
+  <div class="stage">
+    <div class="wall"></div>
+    <div class="hud"><span class="cname">本選考コース</span><div class="timer"><i style="transform:scaleX(.7)"></i></div>残り<b>63</b>秒<span class="paused">一時停止</span><span class="sp"></span>スコア<b>1,620</b></div>
+    <div class="belt"></div>
+    <div class="es done" style="transform:translateX(900px)"><div class="t"><span>ES</span><span>No.9</span></div><div class="w">義憤</div><div class="m"><b>意味</b>不正や不道徳に対して抱く怒り</div><div class="stamp">済</div></div>
+    <div class="es" style="transform:translateX(-60px)"><div class="t"><span>ES</span><span>No.10</span></div><div class="w">払拭</div><div class="m"><b>意味</b>疑いや不安をすっかり取り除くこと</div></div>
+    <div class="focus learnt">
+      <div class="lw"><span class="ok">済</span><div class="big">義憤</div><div class="yo">ぎふん</div></div>
+      <div class="lm">
+        <div class="lb">MEANING</div>
+        <div class="mean">不正や不道徳に対して抱く怒り</div>
+        <div class="ex">例：不正の報道に<mark>義憤</mark>を覚える</div>
+      </div>
+      <div class="bar"></div>
+    </div>
+  </div>
+</section>
+
+<!-- C -->
+<section class="mock" id="C">
+  <div class="cap"><span class="id">C</span><b>ときどき 2 択で確認する</b><span>5 語ごとに、打った言葉の意味を F／J で答える</span></div>
+  <div class="stage">
+    <div class="wall"></div>
+    <div class="hud"><span class="cname">本選考コース</span><div class="timer"><i style="transform:scaleX(.7)"></i></div>残り<b>63</b>秒<span class="paused">一時停止</span><span class="sp"></span>スコア<b>1,620</b></div>
+    <div class="belt"></div>
+    <div class="es done" style="transform:translateX(900px)"><div class="t"><span>ES</span><span>No.10</span></div><div class="w">義憤</div><div class="m"><b>意味</b>不正や不道徳に対して抱く怒り</div><div class="stamp">済</div></div>
+    <div class="focus quiz">
+      <div class="qz">
+        <div class="q"><b>義憤</b>の意味は？<small>正解で +200</small></div>
+        <div class="two">
+          <div><kbd>F</kbd>不正や不道徳に対して抱く怒り</div>
+          <div><kbd>J</kbd>思いがけない幸運</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- D -->
+<section class="mock" id="D">
+  <div class="cap"><span class="id">D</span><b>ES のカードは言葉だけにする</b><span>意味を出す場所を絞って、目が迷わないように</span></div>
+  <div class="stage">
+    <div class="wall"></div>
+    <div class="hud"><span class="cname">本選考コース</span><div class="timer"><i style="transform:scaleX(.7)"></i></div>残り<b>63</b>秒<span class="sp"></span>スコア<b>1,540</b></div>
+    <div class="belt"></div>
+    <div class="es on only"><div class="t"><span>ES</span><span>No.9</span></div><div class="w">義憤</div><div class="yo">ぎふん</div></div>
+    <div class="focus">
+      <div class="fs">
+        <div class="sent">不正の報道に<span class="tp"><mark>義憤</mark>を覚える</span></div>
+        <div class="y"><span class="dn">ぎふんを</span>おぼえる</div>
+        <div class="r"><span class="dn">gifunwo</span><span class="cu">o</span>boeru</div>
+      </div>
+      <div class="fm"><div class="lb">MEANING</div><div class="wd">義憤<small>ぎふん</small></div><div class="mean">不正や不道徳に対して抱く怒り</div></div>
+    </div>
+  </div>
+</section>
+
+<script>
+  function sh() { var id = location.hash.slice(1) || 'A'; document.querySelectorAll('.mock').forEach(function (m) { m.classList.toggle('show', m.id === id); }); }
+  addEventListener('hashchange', sh); sh();
+</script>
+</body>
+</html>

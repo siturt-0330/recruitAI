@@ -1,0 +1,121 @@
+<!-- このファイルは games/build.mjs で各ゲームのページ（site/game/<slug>/index.html）になる。{{…}} は game.json の値 -->
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{seoTitle}}｜らくらくエントリー</title>
+    <meta name="description" content="{{description}}" />
+    <link rel="canonical" href="{{url}}" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="{{url}}" />
+    <meta property="og:title" content="{{seoTitle}}" />
+    <meta property="og:description" content="{{description}}" />
+    <meta property="og:image" content="https://rakuraku-entry.com/images/og.png" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@500;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/game/engine/game.css?v={{version}}" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="/"><img src="/images/icon.svg" alt="" />らくらくエントリー</a>
+      <span class="sp"></span>
+      <a class="link" href="/game">SPI 用語集</a>
+      <a class="link ext" href="/">拡張機能について</a>
+    </header>
+
+    <main class="wrap">
+      <!-- スタート -->
+      <section id="start" class="start">
+        <div class="kick">{{kicker}}</div>
+        <h1>{{heading1}}<br /><em>{{heading2}}</em></h1>
+        <div class="courses" id="courses"></div>
+        <div class="go">
+          <button class="btn dark" id="play">スペースキーでスタート</button>
+          <div class="subs"><button class="btn ghost" id="quizStart">意味クイズ</button><button class="btn ghost" id="bookOpen">単語帳</button></div>
+          <p class="note" id="keys">ローマ字入力（<kbd>半角英数</kbd>）で打ちます。<kbd>Esc</kbd> でやめる</p>
+          <p class="note warn" id="empty" hidden></p>
+          <button class="weak-link" id="weakStart" hidden></button>
+        </div>
+      </section>
+
+      <!-- 単語帳（出題しない言葉を選ぶ） -->
+      <section id="wordbook" class="wb" hidden>
+        <div class="wbh"><button class="btn ghost" id="bookBack">戻る</button><h2>単語帳</h2><span class="sp"></span><span class="cnt" id="wbCount"></span></div>
+        <div class="tabs" id="wbTabs"><button data-t="all" data-label="すべて"></button><button data-t="off" data-label="出題しない"></button><button data-t="weak" data-label="苦手"></button></div>
+        <div id="wbList"></div>
+      </section>
+      <!-- プレイ（パソコン） -->
+      <section id="play-pc" hidden>
+        <div class="stage" id="stage">
+          <div class="wall"></div>
+          <div class="hud">
+            <span class="cname" id="cname"></span>
+            <div class="timer"><i id="timer"></i></div>
+            残り<b id="left">0</b>秒
+            <span class="paused" id="paused" hidden>一時停止</span>
+            <span class="combo" id="combo"></span>
+            <span class="sp"></span>
+            スコア<b id="score">0</b>
+          </div>
+          <div class="belt" id="belt"></div>
+          <div id="cards"></div>
+          <div class="focus" id="type">
+            <div class="fs" id="fs"><div class="sent" id="sent"></div><div class="y" id="yomi"></div><div class="r" id="roma"></div></div>
+            <div class="qz" id="qz" hidden></div>
+          </div>
+          <div class="ime" id="ime" hidden>入力を「半角英数」にしてください</div>
+          <div class="countdown" id="countdown" hidden></div>
+        </div>
+        <p class="quit"><kbd>Esc</kbd> でやめる</p>
+      </section>
+
+      <!-- プレイ（スマホ：4 択） -->
+      <section id="play-sp" class="choice" hidden>
+        <div class="hud">
+          <div class="timer" style="flex:1"><i id="timer-sp"></i></div>
+          残り<b id="left-sp">0</b>秒　スコア<b id="score-sp">0</b>
+        </div>
+        <div class="card"><div class="w" id="q-word"></div><div class="yo" id="q-yomi"></div><div class="q">この言葉の意味は？</div></div>
+        <div class="opts" id="opts"></div>
+        <p class="quit"><button class="quit-sp" id="quitSp">やめる</button></p>
+      </section>
+
+      <!-- 結果 -->
+      <section id="result" hidden>
+        <div class="res">
+          <div class="score">
+            <span class="rank" id="rank"></span>
+            <div class="pt"><span id="r-score">0</span><small> 点</small></div>
+            <div class="best" id="r-best"></div>
+            <div class="st"><div><b id="r-ok">0</b>正解</div><div><b id="r-weak">0</b><span id="r-weak-label">見送り</span></div><div><b id="r-acc">0%</b>正確さ</div></div>
+            <a class="btn dark" id="share" target="_blank" rel="noopener">𝕏 で結果をシェア</a>
+            <button class="btn ghost" id="again">もう一度（R キー）</button>
+            <button class="btn ghost" id="back">コースをえらぶ</button>
+          </div>
+          <div>
+            <div class="book">
+              <div class="hd"><h2>今回の単語帳</h2><div class="tabs"><button id="tab-all" aria-pressed="true"></button><button id="tab-weak" aria-pressed="false"></button></div></div>
+              <div id="words"></div>
+              <div class="review" id="review" hidden><span id="review-text"></span><button class="btn dark" id="reviewBtn">苦手だけ復習する</button></div>
+            </div>
+            <div class="cta">
+              <img src="/images/icon.svg" alt="" />
+              <div><b>エントリーの入力は、ワンクリックで。</b><br /><span>氏名・住所・学歴を、応募フォームに自動入力する Chrome 拡張機能</span></div>
+              <a class="btn dark" href="https://chromewebstore.google.com/detail/kdppelkdplekjbiehpodfmmfcpbbfeho" target="_blank" rel="noopener">Chrome に無料で追加</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>© らくらくエントリー ・ <a href="/privacy">プライバシーポリシー</a></footer>
+    <script type="application/json" id="game-config">{{config}}</script>
+    <script src="/game/engine/romaji.js?v={{version}}"></script>
+    <script src="/game/engine/game.js?v={{version}}"></script>
+  </body>
+</html>

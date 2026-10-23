@@ -2,4 +2,8 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://rakuraku-entry.com/</loc><lastmod>2026-10-17</lastmod></url>
   <url><loc>https://rakuraku-entry.com/privacy</loc><lastmod>2026-10-17</lastmod></url>
+  <!-- games -->
+  <url><loc>https://rakuraku-entry.com/game</loc><lastmod>2026-10-23</lastmod></url>
+  <url><loc>https://rakuraku-entry.com/game/spi-goi</loc><lastmod>2026-10-23</lastmod></url>
+  <!-- /games -->
 </urlset>
