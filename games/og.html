@@ -1,0 +1,71 @@
+<!-- このファイルは games/og.mjs でシェア画像（1200×630 の PNG）になる。{{left}} に左の文、{{word}} などに右のカードの中身が入る -->
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@500;700;800&display=swap" rel="stylesheet" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; }
+      html, body { width: 1200px; height: 630px; overflow: hidden; }
+      body { background: #e9e5f5; padding: 24px; font-family: "Noto Sans JP", sans-serif; color: #14161a; -webkit-font-smoothing: antialiased; }
+      .panel { position: relative; width: 100%; height: 100%; border-radius: 36px; background: linear-gradient(135deg, #fcfbff, #f3f0fb); overflow: hidden; display: flex; align-items: center; padding: 0 0 0 64px; }
+      .left { width: 620px; position: relative; z-index: 2; }
+      .brand { display: flex; align-items: center; gap: 14px; font: 900 26px "Zen Kaku Gothic New", sans-serif; }
+      .brand svg { width: 46px; height: 46px; }
+      .kick { margin-top: 34px; font: 800 18px Inter, sans-serif; letter-spacing: .18em; color: #5b4cf0; }
+      .lead { margin-top: 30px; font: 900 30px "Zen Kaku Gothic New", sans-serif; }
+      h1 { margin-top: 10px; font: 900 64px/1.25 "Zen Kaku Gothic New", sans-serif; letter-spacing: -.01em; }
+      h1 .ln { display: block; white-space: nowrap; }
+      h1 em { font-style: normal; background: linear-gradient(90deg, #5b4cf0, #c04fd8 55%, #f0786a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .after { margin-top: 6px; font: 900 40px "Zen Kaku Gothic New", sans-serif; }
+      .lv { display: flex; gap: 10px; margin-top: 22px; }
+      .lv i { width: 54px; height: 10px; border-radius: 99px; background: #dcd7ea; }
+      .lv i.on { background: linear-gradient(90deg, #5b4cf0, #c04fd8); }
+      .pill { display: inline-block; margin-top: 32px; background: #14161a; color: #fff; font: 700 24px "Noto Sans JP", sans-serif; border-radius: 999px; padding: 12px 28px; }
+      .url { margin-left: 16px; font: 700 20px Inter, sans-serif; color: #5b6470; }
+
+      /* 右：ベルトに乗った ES のカード（ゲームと同じ見た目） */
+      .wall { position: absolute; top: 0; right: 0; bottom: 0; width: 420px; background: repeating-linear-gradient(90deg, #f6f4fb 0 118px, #efecf7 118px 120px); }
+      .belt { position: absolute; right: 0; bottom: 96px; width: 420px; height: 52px; background: repeating-linear-gradient(90deg, #3b3f48 0 24px, #2f333b 24px 48px); border-top: 7px solid #565b66; border-bottom: 7px solid #565b66; }
+      .es { position: absolute; bottom: 148px; width: 236px; height: 268px; background: #fff; border-radius: 12px; box-shadow: 0 22px 44px rgba(20,22,26,.18); padding: 18px 20px; }
+      .es.back { right: 196px; opacity: .45; transform: scale(.92); transform-origin: bottom center; }
+      .es.main { right: 44px; outline: 4px solid #5b4cf0; }
+      .es .t { display: flex; justify-content: space-between; font: 600 13px Inter, sans-serif; color: #9aa3ad; border-bottom: 1px solid #ece9f2; padding-bottom: 8px; }
+      .es .w { font: 900 58px "Zen Kaku Gothic New", sans-serif; text-align: center; margin-top: 28px; letter-spacing: .04em; white-space: nowrap; }
+      .es .y { text-align: center; font-size: 16px; color: #9aa3ad; margin-top: 2px; }
+      .es .m { margin-top: 14px; font-size: 16px; line-height: 1.55; color: #5b6470; text-align: center; }
+      .es .m b { color: #14161a; margin-right: 6px; }
+      .stamp { position: absolute; right: -26px; top: -30px; width: 88px; height: 88px; border-radius: 50%; border: 4px solid #e0563f; color: #e0563f; font: 900 40px "Zen Kaku Gothic New", sans-serif; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.8); transform: rotate(-14deg); }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <div class="wall"></div>
+      <div class="belt"></div>
+      <div class="es back"><div class="t"><span>ES</span><span>No.{{noBack}}</span></div><div class="w">{{wordBack}}</div></div>
+      <div class="es main">
+        <div class="t"><span>ES</span><span>No.{{no}}</span></div>
+        <div class="w">{{word}}</div>
+        <div class="y">{{yomi}}</div>
+        <div class="m"><b>意味</b>{{meaning}}</div>
+        {{stamp}}
+      </div>
+      <div class="left">
+        <div class="brand">{{icon}}らくらくエントリー</div>
+        {{left}}
+      </div>
+    </div>
+    <script>
+      // 見出しが左の枠に収まるまで、文字を小さくする
+      document.fonts.ready.then(function () {
+        document.querySelectorAll('h1').forEach(function (h) {
+          var size = 64;
+          while (size > 36 && Array.prototype.some.call(h.querySelectorAll('.ln'), function (l) { return l.scrollWidth > h.parentNode.clientWidth; })) {
+            size -= 2;
+            h.style.fontSize = size + 'px';
+          }
+        });
+        document.body.dataset.ready = '1';
+      });
+    </script>
+  </body>

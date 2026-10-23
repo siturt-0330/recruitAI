@@ -123,15 +123,28 @@ if (errors.length) {
 const engineHash = createHash('sha1');
 for (const f of ['romaji.js', 'game.js', 'game.css']) engineHash.update(fs.readFileSync(path.join(siteGame, 'engine', f)));
 
+// シェア画像（games/og.mjs で作る）。画像が変わったら URL も変わるように ?v= を付ける。なければサイト共通の画像を使う
+const ogMissing = [];
+const ogImage = (file) => {
+  const p = path.join(siteGame, file);
+  if (!fs.existsSync(p)) { ogMissing.push(file); return `${SITE}/images/og.png`; }
+  return `${SITE}/game/${file}?v=${createHash('sha1').update(fs.readFileSync(p)).digest('hex').slice(0, 8)}`;
+};
+// 称号（[1 分あたりの点数, 称号] の高い順）。game.json になければこれを使う。game.js の称号と、称号ごとのシェアのページで使う
+const RANKS = [[6000, 'マスター'], [3500, 'エキスパート'], [1500, 'ルーキー'], [0, '見習い']];
+const share = template('share.html');
+
 const page = template('template.html');
 for (const g of games) {
   const url = `${SITE}/game/${g.slug}`;
   const version = createHash('sha1').update(engineHash.copy().digest('hex')).update(JSON.stringify(g)).digest('hex').slice(0, 8);
-  const config = { ...g.cfg, slug: g.slug, url, version };
+  const ranks = g.cfg.ranks || RANKS;
+  const config = { ...g.cfg, slug: g.slug, url, version, ranks };
   const html = page
     .replaceAll('{{seoTitle}}', esc(g.cfg.seoTitle))
     .replaceAll('{{description}}', esc(g.cfg.description))
     .replaceAll('{{url}}', url)
+    .replaceAll('{{ogImage}}', ogImage(`${g.slug}/og/game.png`))
     .replaceAll('{{kicker}}', esc(g.cfg.kicker))
     .replaceAll('{{heading1}}', esc(g.cfg.heading1))
     .replaceAll('{{heading2}}', esc(g.cfg.heading2))
@@ -147,6 +160,22 @@ for (const g of games) {
   fs.mkdirSync(out, { recursive: true });
   fs.writeFileSync(path.join(out, 'index.html'), html);
   fs.writeFileSync(path.join(out, 'words.json'), JSON.stringify(g.words));
+  // 結果をシェアするときのページ（/game/<slug>/r/<称号の番号>）。X には称号ごとの画像が出る
+  fs.rmSync(path.join(out, 'r'), { recursive: true, force: true });
+  ranks.forEach(([, name], n) => {
+    const dir = path.join(out, 'r', String(n));
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, 'index.html'),
+      share
+        .replaceAll('{{title}}', esc(`「${name}」の称号をとった！｜${g.cfg.title}`))
+        .replaceAll('{{description}}', esc(g.cfg.description))
+        .replaceAll('{{shareUrl}}', `${url}/r/${n}`)
+        .replaceAll('{{ogImage}}', ogImage(`${g.slug}/og/rank-${n}.png`))
+        .replaceAll('{{gamePath}}', `/game/${g.slug}`)
+        .replaceAll('{{gameTitle}}', esc(g.cfg.title)),
+    );
+  });
   console.log(`/game/${g.slug}  ${g.cfg.title}（${g.words.length} 語）`);
 }
 
@@ -161,7 +190,7 @@ const cards = games
 const hubVersion = engineHash.digest('hex').slice(0, 8);
 fs.writeFileSync(
   path.join(siteGame, 'index.html'),
-  template('hub.html').replaceAll('{{version}}', hubVersion).replace('{{adHead}}', adHead).replace('{{adHub}}', adSlot('hub', { now: true })).replace('{{games}}', cards),
+  template('hub.html').replaceAll('{{version}}', hubVersion).replace('{{ogImage}}', ogImage('og.png')).replace('{{adHead}}', adHead).replace('{{adHub}}', adSlot('hub', { now: true })).replace('{{games}}', cards),
 );
 console.log('/game  ゲーム一覧');
 
@@ -178,7 +207,8 @@ if (adClient) {
 // サイトマップ（<!-- games --> と <!-- /games --> のあいだを書きかえる）
 const sitemapPath = path.join(root, 'site', 'sitemap.xml');
 let sitemap = fs.readFileSync(sitemapPath, 'utf8');
-const today = new Date().toISOString().slice(0, 10);
+// 日本時間の日付（toISOString は世界標準時なので、朝 9 時まで前の日になる）
+const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' });
 const entries = ['/game', ...games.map((g) => `/game/${g.slug}`)].map((p) => `  <url><loc>${SITE}${p}</loc><lastmod>${today}</lastmod></url>`).join('\n');
 const block = `  <!-- games -->\n${entries}\n  <!-- /games -->`;
 sitemap = /<!-- games -->[\s\S]*<!-- \/games -->/.test(sitemap)
@@ -186,3 +216,5 @@ sitemap = /<!-- games -->[\s\S]*<!-- \/games -->/.test(sitemap)
   : sitemap.replace('</urlset>', block + '\n</urlset>');
 fs.writeFileSync(sitemapPath, sitemap);
 console.log('サイトマップを更新しました');
+if (ogMissing.length) console.warn(`シェア画像がありません（サイト共通の画像を使いました）：${ogMissing.join('・')}
+  node games/og.mjs で作ってから、もう一度書き出してください`);
