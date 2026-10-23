@@ -14,14 +14,6 @@ export interface Task {
   priority: number;
 }
 
-export interface CalendarEvent {
-  date: string;
-  time: string;
-  label: string;
-  company: Company;
-  kind: 'deadline' | 'interview' | 'event';
-}
-
 /**
  * 「今日やること」を、締切と面接の予定から優先順に作る。
  * Sophon（AI）を使わずにルールで作るので、キーがなくても動く。
@@ -61,27 +53,6 @@ export function todayTasks(data: AppData): Task[] {
   }
 
   return tasks.sort((a, b) => a.priority - b.priority);
-}
-
-/** 期間内の予定（締切・面接・説明会など） */
-export function eventsBetween(data: AppData, from: string, to: string): CalendarEvent[] {
-  const events: CalendarEvent[] = [];
-  const within = (d: string) => d >= from && d <= to;
-  for (const c of data.companies) {
-    if (c.deadline && within(c.deadline)) {
-      events.push({ date: c.deadline, time: '', label: `${c.deadlineLabel || '締切'} 締切`, company: c, kind: 'deadline' });
-    }
-    if (c.nextAt && within(c.nextAt.slice(0, 10))) {
-      events.push({
-        date: c.nextAt.slice(0, 10),
-        time: c.nextAt.slice(11, 16),
-        label: c.nextLabel || '予定',
-        company: c,
-        kind: /面接/.test(c.nextLabel) ? 'interview' : 'event',
-      });
-    }
-  }
-  return events.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
 }
 
 export function nextEventText(c: Company): string {
