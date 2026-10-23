@@ -278,7 +278,7 @@ export function Blocks({ blocks, onChange, onImage, onPickImage, onError, focusF
                   className="caption"
                   value={b.caption ?? ''}
                   maxLength={200}
-                  placeholder="画像の説明（なくてもよい）"
+                  placeholder="画像の説明"
                   onChange={(e) => update(b.id, { caption: e.target.value })}
                 />
               </figure>
@@ -321,9 +321,9 @@ export function Blocks({ blocks, onChange, onImage, onPickImage, onError, focusF
                       ? '引用'
                       : b.type === 'bullet'
                         ? '箇条書き'
-                        : '本文（「＋」か「/」で見出しや画像を足す）'
+                        : '本文'
                   : list.length === 1
-                    ? '本文を書く'
+                    ? '本文'
                     : ''
               }
               onFocus={() => setFocused(b.id)}

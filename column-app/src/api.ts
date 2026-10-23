@@ -67,7 +67,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     const code = String(data.error ?? 'error');
     const message =
-      typeof data.message === 'string' ? data.message : code === 'quota' ? '今日はこれ以上できません。また明日どうぞ' : code === 'too large' ? '画像が大きすぎます（5MB まで）' : 'うまくいきませんでした';
+      typeof data.message === 'string' ? data.message : code === 'quota' ? '今日はこれ以上できません' : code === 'too large' ? '画像が大きすぎます（5MB まで）' : 'うまくいきませんでした';
     throw new ApiError(res.status, code, message);
   }
   return data as T;

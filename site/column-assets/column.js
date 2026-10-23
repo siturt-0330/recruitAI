@@ -31,7 +31,9 @@ function toast(text) {
 /** ログインが要るときは、ログインの画面へ（戻り先はこのページ） */
 function needLogin(res, el) {
   if (res.status !== 401) return false;
-  location.href = el?.dataset.login || `/column/auth/google?next=${encodeURIComponent(location.pathname)}`;
+  // ログインはしているが、最初の登録（ペンネーム）がまだ
+  if (res.error === 'welcome') location.href = `/column/welcome?next=${encodeURIComponent(location.pathname)}`;
+  else location.href = el?.dataset.login || `/column/auth/google?next=${encodeURIComponent(location.pathname)}`;
   return true;
 }
 

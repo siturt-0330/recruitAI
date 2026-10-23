@@ -140,7 +140,7 @@ export function Editor({ id, me, toast }: { id: string; me: Me; toast(text: stri
       </div>
 
       <main className="w-main">
-        {article.hidden && <p className="notice">運営が非表示にしています。ほかの人には見えません。</p>}
+        {article.hidden && <p className="notice">運営が非表示にしています</p>}
         {article.coverKey ? (
           <div className="w-cover">
             <img src={imageUrl(article.coverKey)} alt="" />

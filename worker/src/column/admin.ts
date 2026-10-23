@@ -1,8 +1,8 @@
-// 運営の画面（/column/admin）。通報の確認・非表示と戻し・招待コードの発行。運営（COLUMN_ADMIN_EMAILS）だけが開ける
+// 運営の画面（/column/admin）。通報の確認・非表示と戻し。運営（COLUMN_ADMIN_EMAILS）だけが開ける
 import { isAdmin, type User } from './auth';
 import { page } from './layout';
 import { ago } from './read';
-import { esc, htmlResponse, jaDate, now, readForm, readableCode, redirect, sameOrigin } from './util';
+import { esc, htmlResponse, now, readForm, redirect, sameOrigin } from './util';
 
 type Target = 'article' | 'comment' | 'user';
 
@@ -58,15 +58,6 @@ export async function admin(request: Request, env: Env, url: URL, user: User | n
     if (!sameOrigin(request, url)) return htmlResponse('', 403);
     const f = await readForm(request);
     if (!f) return htmlResponse('', 413);
-    if (p === '/column/admin/invites') {
-      const n = Math.min(20, Math.max(1, Number(f.get('count') ?? '1') || 1));
-      const note = (f.get('note') ?? '').trim().slice(0, 60);
-      const t = now();
-      await db.batch(
-        Array.from({ length: n }, () => db.prepare('INSERT INTO invites (code, note, created_by, created_at) VALUES (?, ?, ?, ?)').bind(readableCode(), note, user!.id, t)),
-      );
-      return redirect('/column/admin#invites');
-    }
     if (p === '/column/admin/moderate') {
       const type = f.get('type') as Target;
       const id = f.get('id') ?? '';
@@ -106,10 +97,6 @@ export async function admin(request: Request, env: Env, url: URL, user: User | n
     )
     .all<{ type: Target; id: string; label: string }>();
 
-  const invites = await db
-    .prepare('SELECT i.code, i.note, i.created_at, i.used_at, u.pen_name, u.handle FROM invites i LEFT JOIN users u ON u.id = i.used_by ORDER BY i.created_at DESC LIMIT 200')
-    .all<{ code: string; note: string; created_at: number; used_at: number | null; pen_name: string | null; handle: string | null }>();
-
   const typeName = { article: '記事', comment: 'コメント', user: '書き手' };
   const body = `<h1 class="title">運営</h1>
 <p class="group-label">通報（未対応 ${reportRows.length} 件）</p>
@@ -125,21 +112,6 @@ ${
         )
         .join('')}</tbody></table>`
     : '<p class="group-note">ありません</p>'
-}
-
-<p class="group-label" id="invites">招待コードを作る</p>
-<form class="group" method="post" action="/column/admin/invites">
-<div class="row"><label for="note">メモ</label><input type="text" id="note" name="note" maxlength="60" placeholder="ゼミの〇〇さんに渡す" autocomplete="off"></div>
-<div class="row"><label for="count">数</label><input type="text" id="count" name="count" value="1" inputmode="numeric" maxlength="2"></div>
-<div class="row"><button class="link-btn" type="submit">作る</button></div>
-</form>
-<p class="group-label">招待コード</p>
-${
-  invites.results.length
-    ? `<table class="table"><thead><tr><th>コード</th><th>メモ</th><th>作った日</th><th>使った人</th></tr></thead><tbody>
-${invites.results.map((r) => `<tr><td class="mono">${esc(r.code)}</td><td>${esc(r.note)}</td><td>${jaDate(r.created_at)}</td><td>${r.used_at ? `${esc(r.pen_name ?? '（退会）')}${r.handle ? ` <a href="/column/u/${esc(r.handle)}">@${esc(r.handle)}</a>` : ''}` : '<span style="color:var(--mute)">まだ</span>'}</td></tr>`).join('')}
-</tbody></table>`
-    : '<p class="group-note">まだ招待コードがありません</p>'
 }`;
   return htmlResponse(page({ title: '運営', noindex: true, grouped: true }, body, user, env, url.pathname));
 }

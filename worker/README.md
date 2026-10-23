@@ -45,7 +45,7 @@ npx wrangler deploy
 
 ## コラム（/column）
 
-就活生が記事を書き合うページ。読むのはだれでも、書けるのは招待コードを持つ人だけ（いまは招待制）。コードは `src/column/`。
+就活生が記事を書き合うページ。読むのはだれでも、書くのは Google でログインした人ならだれでも。コードは `src/column/`。
 
 | URL | 中身 |
 | --- | --- |
@@ -53,9 +53,9 @@ npx wrangler deploy
 | `/column/p/<id>` | 記事 |
 | `/column/u/<handle>` | 書き手のページ |
 | `/column/write`、`/column/write/<id>` | 書く画面（`column-app/` の React。`npm run build:column` で `site/column-assets/write/` に書き出す） |
+| `/column/welcome` | 最初の登録（ペンネーム・立場・アイコンの色・利用規約への同意。URL の名前は自動） |
 | `/column/settings` | プロフィール・ログアウト・退会 |
-| `/column/join` | 招待コードを入れて書き手になる |
-| `/column/admin` | 運営の画面（通報・非表示と戻し・招待コード）。`COLUMN_ADMIN_EMAILS`（シークレット）のアカウントだけ |
+| `/column/admin` | 運営の画面（通報・非表示と戻し）。`COLUMN_ADMIN_EMAILS`（シークレット）のアカウントだけ |
 | `/column/terms` | 利用規約と投稿のルール |
 | `/column/sitemap.xml` | 記事のサイトマップ（`site/robots.txt` から案内） |
 
@@ -63,7 +63,6 @@ npx wrangler deploy
 - ログインは Google（OpenID Connect）。セッションは D1、Cookie は `__Host-col_sid`（30 日）
 - 記事の本文は JSON のブロック（`src/column/blocks.ts`）。表示するときに HTML にし、利用者の HTML はそのまま出さない
 - 1 日の上限：記事 20・画像 40・コメント 50・スキ 300・フォロー 200・通報 20（`api.ts` と `write.ts` の `DAILY`）
-- コメントを書ける人は `vars.COLUMN_COMMENTS`（`members`＝書き手どうしだけ、`everyone`＝ログインした人ならだれでも）
 - コラムのページには AdSense を出さない（人が書いた記事に広告を出すと、問題のある投稿で AdSense が止まるおそれがあるため）
 
 ### 初めて公開するとき
@@ -79,7 +78,6 @@ npx wrangler secret put GOOGLE_CLIENT_SECRET
 
 - Google Cloud の OAuth クライアントのリダイレクト URI：`https://rakuraku-entry.com/column/auth/callback`（手元で試すなら `http://localhost:8788/column/auth/callback` も）
 - 運営の Google アカウントを `npx wrangler secret put COLUMN_ADMIN_EMAILS` で入れる（カンマ区切り。リポジトリに書かない）
-- 公開したら、運営のアカウントでログインして `/column/admin` で招待コードを作る
 
 ### 手元で試す
 
