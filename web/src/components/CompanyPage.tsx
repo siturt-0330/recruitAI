@@ -339,8 +339,10 @@ function useOutside(open: boolean, close: () => void) {
 }
 
 /** Notion の選択プロパティ：タグを押すと一覧が開き、ないものは打てば新しく作れる */
-function TagSelect({ value, options, onChange, creatable }: { value: string; options: string[]; onChange(v: string): void; creatable?: boolean }) {
+export function TagSelect({ value, options, onChange, creatable }: { value: string; options: string[]; onChange(v: string): void; creatable?: boolean }) {
   const [open, setOpen] = useState(false);
+  // 表のセルの中でも切れないよう、一覧は画面に対する位置（fixed）で出す
+  const [at, setAt] = useState({ left: 0, top: 0 });
   const [q, setQ] = useState('');
   const ref = useOutside(open, () => setOpen(false));
   const shown = options.filter((o) => o.includes(q.trim()));
@@ -353,11 +355,18 @@ function TagSelect({ value, options, onChange, creatable }: { value: string; opt
 
   return (
     <div ref={ref} className="relative w-full">
-      <button onClick={() => setOpen(!open)} className="flex h-9 w-full items-center text-left">
+      <button
+        onClick={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          setAt({ left: Math.min(r.left, window.innerWidth - 272), top: r.bottom + 4 });
+          setOpen(!open);
+        }}
+        className="flex h-9 w-full items-center text-left"
+      >
         {value ? <span className="rounded bg-fill px-2 py-0.5 text-[13px] ring-1 ring-line">{value}</span> : <span className="text-mute">空</span>}
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-1 w-64 rounded-xl border border-line bg-white p-1.5 shadow-xl">
+        <div style={at} className="fixed z-50 w-64 rounded-xl border border-line bg-white p-1.5 shadow-xl">
           <input
             autoFocus
             value={q}
