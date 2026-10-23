@@ -15,7 +15,8 @@
     "postinstall": "wxt prepare",
     "harness": "vite --config test/vite.config.ts",
     "build:release": "wxt build",
-    "zip:release": "wxt zip"
+    "zip:release": "wxt zip",
+    "build:column": "tsc -p column-app && vite build --config column-app/vite.config.ts"
   },
   "dependencies": {
     "@fontsource-variable/noto-sans-jp": "^5.3.1",

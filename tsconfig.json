@@ -4,5 +4,11 @@
     "allowImportingTsExtensions": true,
     "jsx": "react-jsx"
   },
-  "exclude": ["**/node_modules", ".output", "web", "worker"]
+  "exclude": [
+    "**/node_modules",
+    ".output",
+    "web",
+    "worker",
+    "column-app"
+  ]
 }

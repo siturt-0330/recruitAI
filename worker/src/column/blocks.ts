@@ -83,8 +83,23 @@ export function richText(text: string): string {
     .replace(/\n/g, '<br>');
 }
 
+const hasContent = (b: Block) => b.type === 'image' || b.type === 'divider' || !!(b.text ?? '').trim();
+
+/** 中身のない見出し（型で入ったまま書かなかったもの）を外す。次の見出しまでに何も書いていなければ出さない */
+function dropEmptySections(blocks: Block[]): Block[] {
+  return blocks.filter((b, i) => {
+    if (b.type !== 'heading') return true;
+    for (const next of blocks.slice(i + 1)) {
+      if (next.type === 'heading') return false;
+      if (hasContent(next)) return true;
+    }
+    return false;
+  });
+}
+
 /** 本文の HTML。続いた箇条書きは 1 つの <ul> にまとめる */
-export function renderBlocks(blocks: Block[]): string {
+export function renderBlocks(all: Block[]): string {
+  const blocks = dropEmptySections(all);
   const out: string[] = [];
   let list: string[] = [];
   const flush = () => {
