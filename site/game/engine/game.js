@@ -567,7 +567,8 @@
     var perMin = G.score / (G.course.sec / 60);
     // 称号はゲームごとに決められる（[1 分あたりの点数, 称号] の高い順）
     var ranks = CFG.ranks || [[6000, 'マスター'], [3500, 'エキスパート'], [1500, 'ルーキー'], [0, '見習い']];
-    var rank = ranks.filter(function (r) { return perMin >= r[0]; })[0][1];
+    var rankAt = ranks.findIndex(function (r) { return perMin >= r[0]; });
+    var rank = ranks[rankAt][1];
     $('rank').textContent = rank;
     $('r-score').textContent = G.score.toLocaleString();
     $('r-ok').textContent = ok.length;
@@ -582,7 +583,7 @@
     if (isBest) { best[bestId] = G.score; save('best', best); }
     $('r-best').textContent = isBest && G.score > 0 ? '自己ベスト更新！' : '';
     var text = CFG.title + '（' + G.course.name + '）で ' + G.score.toLocaleString() + ' 点！' + ok.length + (G.choice ? ' 語の意味を当てました。' : ' 語を打てました。');
-    $('share').href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(CFG.url) + '&hashtags=' + encodeURIComponent(CFG.hashtags.join(','));
+    $('share').href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(CFG.url + '/r/' + rankAt) + '&hashtags=' + encodeURIComponent(CFG.hashtags.join(','));
     G.tab = 'all';
     renderBook();
     var weak = load('weak', []);
