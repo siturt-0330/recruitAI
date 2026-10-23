@@ -64,11 +64,30 @@ export default defineContentScript({
       } else if (msg.type === 'openMypage') {
         // マイページを開いて入力するのはバックグラウンド（新しいタブへの入力は、ここからはできない）
         await browser.runtime.sendMessage({ type: 'openMypage', companyId: msg.companyId });
+      } else if (msg.type === 'setPassword') {
+        await savePassword(msg);
       } else if (msg.type === 'forgetMypage') {
         const list = await mypagesItem.getValue();
         if (list.some((m) => m.companyId === msg.companyId)) await mypagesItem.setValue(list.filter((m) => m.companyId !== msg.companyId));
       }
     });
+
+    /** Web 版で打ったパスワードを、その会社のログイン情報として保存する */
+    const savePassword = async (msg: Extract<AppMessage, { type: 'setPassword' }>) => {
+      if (!msg.url || !msg.password) return;
+      const list = await mypagesItem.getValue();
+      const old = list.find((m) => m.companyId === msg.companyId);
+      const item = {
+        id: old?.id ?? crypto.randomUUID(),
+        companyId: msg.companyId,
+        companyName: msg.companyName,
+        url: msg.url,
+        loginId: msg.loginId,
+        password: msg.password,
+        updatedAt: new Date().toISOString(),
+      };
+      await mypagesItem.setValue([...list.filter((m) => m.companyId !== msg.companyId), item]);
+    };
 
     /** 保存したログイン情報の見出し（パスワードは渡さない） */
     const sendMypages = async () => {

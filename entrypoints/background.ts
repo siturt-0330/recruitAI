@@ -38,6 +38,17 @@ export default defineBackground(() => {
     void openMypage(msg.companyId);
   });
 
+  // 許可の画面で「許可して入力」を押したとき：開いておいたマイページに入れる
+  browser.runtime.onMessage.addListener((msg: { type?: string; companyId?: string; tabId?: number }, sender) => {
+    if (msg?.type !== 'fillMypage' || !msg.companyId || msg.tabId == null) return;
+    // 受け付けるのは拡張機能の許可の画面からだけ
+    if (!sender.url?.startsWith(browser.runtime.getURL('/grant.html'))) return;
+    void (async () => {
+      const m = (await mypagesItem.getValue()).find((x) => x.companyId === msg.companyId);
+      if (m) await fillMypage(msg.tabId!, m);
+    })();
+  });
+
   // AI への問い合わせは、ページ側からではなくバックグラウンドから中継 API に送る
   browser.runtime.onMessage.addListener((msg: ClassifyMessage, _sender, sendResponse) => {
     if (msg?.type !== 'classify') return;
@@ -71,13 +82,30 @@ async function openMypage(companyId: string) {
   const tab = await browser.tabs.create({ url: m.url });
   if (tab.id == null) return;
   await waitForLoad(tab.id);
-  // 保存したときにこのサイトへの許可をもらっていなければ、開くだけ（アイコンを押せば入力できる）
+  // このサイトへの許可がまだなければ、拡張機能の小さな画面で許可をお願いする（許可を求められるのは拡張機能の画面からだけ）
   const pattern = originPattern(m.url);
-  if (!pattern || !(await browser.permissions.contains({ origins: [pattern] }))) return;
+  if (!pattern) return;
+  if (!(await browser.permissions.contains({ origins: [pattern] }))) {
+    await browser.windows.create({
+      url: browser.runtime.getURL(`/grant.html?company=${encodeURIComponent(companyId)}&tab=${tab.id}`),
+      type: 'popup',
+      width: 420,
+      height: 300,
+    });
+    return;
+  }
+  await fillMypage(tab.id, m);
+}
+
+/** 開いたマイページに ID とパスワードを入れる */
+async function fillMypage(tabId: number, m: { url: string; loginId: string; password: string; companyName: string }) {
+  // 開いたあとに別のサイトへ移っていたら入れない（パスワードを別のサイトに入れないため）
+  const tab = await browser.tabs.get(tabId).catch(() => null);
+  if (!tab?.url || new URL(tab.url).origin !== new URL(m.url).origin) return;
   // 読み込みが終わってから画面を組み立てるログイン画面もあるので、欄が出てくるまで少し待ちながら試す
   for (let i = 0; i < 10; i++) {
     try {
-      const res = await runInTab(tab.id, 'fillLogin', { loginId: m.loginId, password: m.password, company: m.companyName });
+      const res = await runInTab(tabId, 'fillLogin', { loginId: m.loginId, password: m.password, company: m.companyName });
       if (res.some((f) => f.result.login?.found)) return;
     } catch (e) {
       console.warn('[らくらくエントリー] ログイン情報を入力できませんでした', e);

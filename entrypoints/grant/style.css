@@ -1,0 +1,58 @@
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.grant {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 24px;
+  text-align: center;
+}
+
+.grant-icon {
+  font-size: 28px;
+}
+
+.grant h1 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.grant-site {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.grant-btn {
+  width: 100%;
+  height: 42px;
+  border: none;
+  border-radius: 999px;
+  background: var(--text);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.grant-link {
+  border: none;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.grant-error {
+  margin: 0;
+  font-size: 12px;
+  color: #c41320;
+}

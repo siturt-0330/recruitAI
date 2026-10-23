@@ -18,6 +18,9 @@ const post = (msg: AppMessage) => window.postMessage(msg, location.origin);
 
 /** マイページを開いて、拡張機能に保存した ID とパスワードを入れてもらう */
 export const openMypage = (companyId: string) => post({ source: 'sophon-app', type: 'openMypage', companyId });
+/** パスワードを拡張機能にだけ保存してもらう。このページ（localStorage）には残さない */
+export const setPassword = (c: { id: string; name: string; mypageUrl: string; loginId: string }, password: string) =>
+  post({ source: 'sophon-app', type: 'setPassword', companyId: c.id, companyName: c.name, url: c.mypageUrl, loginId: c.loginId, password });
 /** 会社を消したとき、拡張機能に保存したログイン情報も消す */
 export const forgetMypage = (companyId: string) => post({ source: 'sophon-app', type: 'forgetMypage', companyId });
 
