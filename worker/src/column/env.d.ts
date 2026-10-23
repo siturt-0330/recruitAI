@@ -3,6 +3,8 @@ interface Env {
   /** Google Cloud の OAuth クライアント（npx wrangler secret put で入れる） */
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
+  /** コラムの運営にする Google アカウント（カンマ区切り。npx wrangler secret put で入れる） */
+  COLUMN_ADMIN_EMAILS: string;
   /** "1" のとき、localhost でだけ仮のログイン（/column/auth/dev）を使える。本番では入れない */
   COLUMN_DEV_LOGIN: string;
 }

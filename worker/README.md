@@ -55,7 +55,7 @@ npx wrangler deploy
 | `/column/write`、`/column/write/<id>` | 書く画面（`column-app/` の React。`npm run build:column` で `site/column-assets/write/` に書き出す） |
 | `/column/settings` | プロフィール・ログアウト・退会 |
 | `/column/join` | 招待コードを入れて書き手になる |
-| `/column/admin` | 運営の画面（通報・非表示と戻し・招待コード）。`COLUMN_ADMIN_EMAILS` のアカウントだけ |
+| `/column/admin` | 運営の画面（通報・非表示と戻し・招待コード）。`COLUMN_ADMIN_EMAILS`（シークレット）のアカウントだけ |
 | `/column/terms` | 利用規約と投稿のルール |
 | `/column/sitemap.xml` | 記事のサイトマップ（`site/robots.txt` から案内） |
 
@@ -78,7 +78,7 @@ npx wrangler secret put GOOGLE_CLIENT_SECRET
 ```
 
 - Google Cloud の OAuth クライアントのリダイレクト URI：`https://rakuraku-entry.com/column/auth/callback`（手元で試すなら `http://localhost:8788/column/auth/callback` も）
-- `wrangler.jsonc` の `vars.COLUMN_ADMIN_EMAILS` に運営の Google アカウントを入れる
+- 運営の Google アカウントを `npx wrangler secret put COLUMN_ADMIN_EMAILS` で入れる（カンマ区切り。リポジトリに書かない）
 - 公開したら、運営のアカウントでログインして `/column/admin` で招待コードを作る
 
 ### 手元で試す

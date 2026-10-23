@@ -13,8 +13,7 @@
   "assets": { "directory": "../site", "binding": "ASSETS", "html_handling": "drop-trailing-slash", "run_worker_first": ["/google*.html", "/column", "/column/*"] },
   // コラムのデータ（記事・書き手・スキ・フォロー・コメントなど）。表は migrations/ のマイグレーションで作る
   "d1_databases": [
-    // TODO: 本番の D1 を作ったら database_id を差しかえる（今はローカルの確認用の仮の値）
-    { "binding": "COLUMN_DB", "database_name": "rakuraku-column", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+    { "binding": "COLUMN_DB", "database_name": "rakuraku-column", "database_id": "adaa1c64-3046-4e49-9c1b-458e0a8d2694", "migrations_dir": "migrations" }
   ],
   // コラムの画像（見出し画像・本文の画像・アイコン）
   "r2_buckets": [{ "binding": "COLUMN_IMAGES", "bucket_name": "rakuraku-column-images" }],
@@ -44,8 +43,6 @@
     "APP_ORIGINS": "https://app.rakuraku-entry.com,http://localhost:3100",
     "LOGO_LIMIT_PER_IP": "300",
     "LOGO_LIMIT_GLOBAL": "20000",
-    // コラムの運営にする Google アカウント（カンマ区切り）
-    "COLUMN_ADMIN_EMAILS": "",
     // コラムのコメントを書ける人。members＝招待された書き手だけ、everyone＝ログインした人ならだれでも
     "COLUMN_COMMENTS": "members"
   }
@@ -54,4 +51,5 @@
   //   npx wrangler secret put ADMIN_TOKEN
   //   npx wrangler secret put GOOGLE_CLIENT_ID      … コラムの Google ログイン（Google Cloud の OAuth クライアント）
   //   npx wrangler secret put GOOGLE_CLIENT_SECRET
+  //   npx wrangler secret put COLUMN_ADMIN_EMAILS   … コラムの運営にする Google アカウント（カンマ区切り。リポジトリに書かないためシークレットにする）
 }
