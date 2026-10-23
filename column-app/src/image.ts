@@ -13,7 +13,7 @@ async function shrink(file: File): Promise<Blob> {
   try {
     bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
   } catch {
-    throw new Error('この画像は読みこめませんでした（JPEG・PNG・WebP にしてください）');
+    throw new Error('JPEG・PNG・WebP の画像を選んでください');
   }
   const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');
@@ -46,7 +46,7 @@ async function shrink(file: File): Promise<Blob> {
 
 /** 画像を縮めてアップロードし、R2 の key を返す */
 export async function uploadImage(file: File): Promise<string> {
-  if (!/^image\//.test(file.type)) throw new Error('画像のファイルを選んでください');
+  if (!/^image\//.test(file.type)) throw new Error('画像を選んでください');
   const blob = await shrink(file);
   const { key } = await api.upload(blob);
   return key;

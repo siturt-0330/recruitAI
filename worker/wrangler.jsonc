@@ -42,9 +42,7 @@
     // Web 版からロゴを取りに来てよい Origin（カンマ区切り）と、1日の上限
     "APP_ORIGINS": "https://app.rakuraku-entry.com,http://localhost:3100",
     "LOGO_LIMIT_PER_IP": "300",
-    "LOGO_LIMIT_GLOBAL": "20000",
-    // コラムのコメントを書ける人。members＝招待された書き手だけ、everyone＝ログインした人ならだれでも
-    "COLUMN_COMMENTS": "members"
+    "LOGO_LIMIT_GLOBAL": "20000"
   }
   // シークレット（リポジトリには書かない）:
   //   npx wrangler secret put OPENAI_API_KEY

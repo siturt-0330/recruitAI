@@ -12,8 +12,8 @@ const TEMPLATES = ['fail', 'exp', 'es', 'tips', 'free'];
 /** /column/write と /column/write/<id>。中身は site/column-assets/write/ の React のアプリが作る */
 export function writeShell(url: URL, user: User | null, env: Env): Response {
   if (!user) return redirect(`/column/auth/google?next=${encodeURIComponent(url.pathname)}`);
-  if (!hasProfile(user)) return redirect(`/column/settings?first=1&next=${encodeURIComponent(url.pathname)}`);
-  if (!canWrite(user, env)) return redirect('/column/join');
+  if (!hasProfile(user)) return redirect(`/column/welcome?next=${encodeURIComponent(url.pathname)}`);
+  if (!canWrite(user)) return redirect('/column');
   const me = { penName: user.pen_name, handle: user.handle, iconColor: user.icon_color, iconKey: user.icon_key };
   return htmlResponse(`<!doctype html>
 <html lang="ja">
@@ -103,7 +103,7 @@ export async function handleWriteApi(request: Request, env: Env, url: URL, user:
   const p = url.pathname;
   if (!p.startsWith('/column/api/articles') && p !== '/column/api/images') return null;
   if (!user || !hasProfile(user)) return jsonResponse({ error: 'login' }, 401);
-  if (!canWrite(user, env)) return jsonResponse({ error: 'forbidden' }, 403);
+  if (!canWrite(user)) return jsonResponse({ error: 'forbidden' }, 403);
   const db = env.COLUMN_DB;
 
   // 読むだけの API（自分の記事）

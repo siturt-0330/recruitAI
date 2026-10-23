@@ -1,5 +1,5 @@
 // コラム（/column 以下）の振り分け。読むページはここで HTML を組み立てて返す（検索に載るように）。
-import { deleteAccount, join, settings } from './account';
+import { deleteAccount, settings, welcome } from './account';
 import { admin } from './admin';
 import { handleApi } from './api';
 import { currentUser, devLogin, googleCallback, logout, startGoogle, type User } from './auth';
@@ -10,7 +10,7 @@ import { htmlResponse } from './util';
 import { handleWriteApi, writeShell } from './write';
 
 function notFound(user: User | null, env: Env, path: string): Response {
-  const body = `<h1 class="title">ページが見つかりません</h1><p class="sub">消されたか、URL がまちがっているかもしれません。</p><p><a href="/column">コラムのトップへ</a></p>`;
+  const body = `<h1 class="title">ページが見つかりません</h1><p><a href="/column">コラムへ</a></p>`;
   return htmlResponse(page({ title: 'ページが見つかりません', noindex: true }, body, user, env, path), 404);
 }
 
@@ -41,7 +41,9 @@ export async function handleColumn(request: Request, env: Env, _ctx: ExecutionCo
   if (m) return (await profile(env, url, user, m[1]!)) ?? notFound(user, env, path);
   if (path === '/column/settings') return settings(request, env, url, user);
   if (path === '/column/settings/delete') return deleteAccount(request, env, url, user);
-  if (path === '/column/join') return join(request, env, url, user);
+  if (path === '/column/welcome') return welcome(request, env, url, user);
+  // 招待制だったころの URL
+  if (path === '/column/join') return Response.redirect(`${url.origin}/column/write`, 301);
   if (path === '/column/terms') return terms(user, env, path);
   if (path === '/column/admin' || path.startsWith('/column/admin/')) return (await admin(request, env, url, user)) ?? notFound(user, env, path);
   return notFound(user, env, path);

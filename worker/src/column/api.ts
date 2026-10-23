@@ -1,15 +1,14 @@
 // 読むページの小さな JS が使う API（スキ・フォロー・コメント・通報）。書き込みはすべて POST で、このサイトのページからだけ受ける
-import { canWrite, hasProfile, isAdmin, type User } from './auth';
+import { hasProfile, isAdmin, type User } from './auth';
 import { countToday } from './data';
 import { jsonResponse, now, randomId, sameOrigin } from './util';
 
 /** 1 日（日本時間）の上限。連打や荒らしで表が膨らまないように */
 export const DAILY = { likes: 300, follows: 200, comments: 50, reports: 20 } as const;
 
-/** コメントを書けるか。招待のあいだ（COLUMN_COMMENTS=members）は書き手どうしだけ */
-export function canComment(user: User | null, env: Env): boolean {
-  if (!user || user.hidden || !hasProfile(user)) return false;
-  return (env.COLUMN_COMMENTS as string) === 'everyone' || canWrite(user, env);
+/** コメントを書けるか（最初の登録を済ませた人ならだれでも） */
+export function canComment(user: User | null): boolean {
+  return !!user && !user.hidden && hasProfile(user);
 }
 
 async function readJson(request: Request, max = 16 * 1024): Promise<Record<string, unknown> | null> {
@@ -39,7 +38,8 @@ export async function handleApi(request: Request, env: Env, url: URL, user: User
   if (!fn) return null;
   if (request.method !== 'POST') return jsonResponse({ error: 'method' }, 405);
   if (!sameOrigin(request, url)) return jsonResponse({ error: 'forbidden' }, 403);
-  if (!user || !hasProfile(user)) return jsonResponse({ error: 'login' }, 401);
+  if (!user) return jsonResponse({ error: 'login' }, 401);
+  if (!hasProfile(user)) return jsonResponse({ error: 'welcome' }, 401);
   if (user.hidden) return jsonResponse({ error: 'forbidden' }, 403);
   const body = await readJson(request);
   if (!body) return jsonResponse({ error: 'bad request' }, 400);
@@ -81,7 +81,7 @@ async function follow(env: Env, user: User, targetId: string): Promise<Response>
 
 async function addComment(env: Env, user: User, articleId: string, body: string): Promise<Response> {
   const db = env.COLUMN_DB;
-  if (!canComment(user, env)) return jsonResponse({ error: 'forbidden' }, 403);
+  if (!canComment(user)) return jsonResponse({ error: 'forbidden' }, 403);
   if (!body) return jsonResponse({ error: 'empty' }, 400);
   const a = await db.prepare("SELECT id FROM articles WHERE id = ? AND status = 'published' AND hidden = 0").bind(articleId).first();
   if (!a) return jsonResponse({ error: 'not found' }, 404);

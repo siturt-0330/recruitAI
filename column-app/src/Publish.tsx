@@ -15,8 +15,8 @@ interface Props {
 }
 
 const VIS: { id: Article['visibility']; label: string; note: string }[] = [
-  { id: 'public', label: 'すべての人', note: 'コラムの一覧と検索に出ます。' },
-  { id: 'unlisted', label: 'リンクを知っている人', note: '一覧や検索には出ません。' },
+  { id: 'public', label: 'すべての人', note: '一覧と検索に出ます' },
+  { id: 'unlisted', label: 'リンクを知っている人', note: '一覧と検索には出ません' },
 ];
 
 export function Publish({ article, me, chars, onChange, onChooseCover, onClose, saveNow, toast }: Props) {
@@ -61,7 +61,7 @@ export function Publish({ article, me, chars, onChange, onChooseCover, onClose, 
   };
 
   const unpublish = async () => {
-    if (!window.confirm('下書きに戻しますか？ ほかの人からは見えなくなります。')) return;
+    if (!window.confirm('下書きに戻しますか？')) return;
     try {
       await api.unpublish(article.id);
       onChange({ status: 'draft' });
@@ -73,7 +73,7 @@ export function Publish({ article, me, chars, onChange, onChooseCover, onClose, 
   };
 
   const remove = async () => {
-    if (!window.confirm('この記事を削除しますか？ スキとコメントも消え、元に戻せません。')) return;
+    if (!window.confirm('この記事を削除しますか？元に戻せません。')) return;
     try {
       await api.remove(article.id);
       location.href = '/column/write';
@@ -187,11 +187,6 @@ export function Publish({ article, me, chars, onChange, onChooseCover, onClose, 
               </button>
             </div>
           </>
-        )}
-        {!published && (
-          <p className="group-note">
-            公開すると、<a href="/column/terms" target="_blank" rel="noopener">投稿のルール</a>にそって運営が確認することがあります。
-          </p>
         )}
         {!published && (
           <div className="group" style={{ marginTop: 32 }}>

@@ -1,6 +1,6 @@
 // 読むページ（一覧・記事・書き手のページ）と、サイトマップ・画像
 import { canComment } from './api';
-import { canWrite, isAdmin, type User } from './auth';
+import { hasProfile, isAdmin, type User } from './auth';
 import { parseBody, readMinutes, renderBlocks, richText } from './blocks';
 import {
   commentsOf,
@@ -66,10 +66,10 @@ export async function home(env: Env, url: URL, user: User | null): Promise<Respo
   let more = false;
   let empty = 'まだ記事がありません';
   if (tab === 'following' && !user) {
-    empty = `<a href="/column/auth/google?next=${encodeURIComponent('/column?tab=following')}">ログイン</a>すると、フォローした人の記事がここに出ます`;
+    empty = `<a href="/column/auth/google?next=${encodeURIComponent('/column?tab=following')}">ログイン</a>すると表示されます`;
   } else {
     ({ rows, more } = await listArticles(env.COLUMN_DB, { followerId: tab === 'following' ? user!.id : undefined, tag: tag || undefined, q: q || undefined, before }));
-    if (tab === 'following') empty = 'フォローした人の記事がここに出ます';
+    if (tab === 'following') empty = 'まだありません';
     if (q) empty = `「${esc(q)}」の記事は見つかりませんでした`;
   }
 
@@ -83,8 +83,7 @@ export async function home(env: Env, url: URL, user: User | null): Promise<Respo
   const body = `<h1 class="title">コラム</h1>
 <form class="search" role="search" action="/column"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input type="search" name="q" value="${esc(q)}" placeholder="検索" aria-label="記事を検索" enterkeyhint="search"></form>
 <nav class="chips" aria-label="テーマ">${chips}</nav>
-${list(rows, more, base, empty)}
-${!user || !canWrite(user, env) ? `<p class="join-note">いまは招待された人だけが書けます。<a href="/column/join">書き手になる</a></p>` : ''}`;
+${list(rows, more, base, empty)}`;
   const filtered = !!(tab || tag || q || before);
   return htmlResponse(
     page(
@@ -124,7 +123,7 @@ export async function article(env: Env, url: URL, user: User | null, id: string)
   const when = a.published_at ?? a.updated_at;
   const next = others.rows.filter((o) => o.id !== a.id).slice(0, 3);
   const loginNext = `/column/auth/google?next=${encodeURIComponent(url.pathname)}`;
-  const commentable = canComment(user, env);
+  const commentable = canComment(user);
 
   const notice =
     a.status === 'draft'
@@ -146,10 +145,12 @@ export async function article(env: Env, url: URL, user: User | null, id: string)
     })
     .join('');
   const commentForm = !user
-    ? `<p class="comment-login"><a href="${esc(loginNext)}">ログイン</a>するとコメントできます</p>`
+    ? `<p class="comment-login"><a href="${esc(loginNext)}">ログインしてコメント</a></p>`
     : commentable
       ? `<form class="comment-form" data-comment-form data-article="${esc(a.id)}"><textarea name="body" rows="3" maxlength="1000" placeholder="コメントを書く" aria-label="コメント" required></textarea><button class="btn btn-sm" type="submit">送信</button></form>`
-      : '<p class="comment-login">いまは、招待された書き手どうしだけがコメントできます</p>';
+      : user && !hasProfile(user)
+        ? `<p class="comment-login"><a href="/column/welcome?next=${encodeURIComponent(url.pathname)}">登録してコメント</a></p>`
+        : '<p class="comment-login">コメントできません</p>';
 
   const jsonLd = listed
     ? `<script type="application/ld+json">${JSON.stringify({

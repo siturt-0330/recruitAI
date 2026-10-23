@@ -39,13 +39,13 @@ export function isAdmin(user: User | null, env: Env): boolean {
   return list.includes(user.email.toLowerCase());
 }
 
-/** 記事を書けるか（招待コードで書き手になった人と運営） */
-export function canWrite(user: User | null, env: Env): boolean {
-  return !!user && !user.hidden && (user.role === 'writer' || isAdmin(user, env));
+/** 記事を書けるか（ログインしていて、運営に止められていない人ならだれでも。最初の登録がまだなら、書く画面が登録へ案内する） */
+export function canWrite(user: User | null): boolean {
+  return !!user && !user.hidden;
 }
 
-/** プロフィール（ペンネームと URL の名前）を設定し終えたか */
-export const hasProfile = (user: User | null) => !!user?.pen_name && !!user.handle;
+/** 最初の登録（ペンネーム・URL の名前・利用規約への同意）を済ませたか */
+export const hasProfile = (user: User | null) => !!user?.pen_name && !!user.handle && !!user.terms_at;
 
 /** Cookie のセッションから、ログインしている人を引く（いなければ null） */
 export async function currentUser(request: Request, env: Env): Promise<User | null> {
@@ -70,7 +70,7 @@ async function signIn(env: Env, userId: string, next: string): Promise<Response>
   ]);
   const user = await env.COLUMN_DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first<User>();
   // 初めての人は、先にペンネームなどを決めてもらう
-  const to = hasProfile(user) ? next : `/column/settings?first=1&next=${encodeURIComponent(next)}`;
+  const to = hasProfile(user) ? next : `/column/welcome?next=${encodeURIComponent(next)}`;
   return redirect(to, { 'Set-Cookie': [hostCookie(SID, token, SESSION_DAYS * 86400), hostCookie(OAUTH, '', 0)] });
 }
 

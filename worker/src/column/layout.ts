@@ -38,9 +38,11 @@ const SIZE_SWITCH = `<div class="sizes" role="group" aria-label="文字の大き
   .join('')}</div>`;
 
 function header(user: User | null, env: Env, path: string, reading = false): string {
+  // 書くボタンはだれにでも出す（ログインしていなければ、ログインしてから書く画面へ）
+  const write = !user || canWrite(user) ? '<a class="btn btn-sm" href="/column/write">書く</a>' : '';
   const right = (reading ? SIZE_SWITCH : '') + (!user
-    ? `<a class="nav-link" href="/column/auth/google?next=${encodeURIComponent(path)}">ログイン</a>`
-    : `${canWrite(user, env) ? '<a class="btn btn-sm" href="/column/write">書く</a>' : ''}<a class="nav-me" href="/column/settings" aria-label="設定">${avatar(user, 28)}</a>`);
+    ? `<a class="nav-link nav-login" href="/column/auth/google?next=${encodeURIComponent(path)}">ログイン</a>${write}`
+    : `${write}<a class="nav-me" href="/column/settings" aria-label="プロフィール">${avatar(user, 28)}</a>`);
   return `<header class="bar"><nav class="bar-in" aria-label="メインメニュー">
 <a class="brand" href="/"><img src="/images/icon.svg" alt="" width="22" height="22">らくらくエントリー</a>
 <a class="nav-link" href="https://app.rakuraku-entry.com/companies">マイページ管理</a>

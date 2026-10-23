@@ -192,3 +192,44 @@ dialog.sheet form { padding: 8px 16px 16px; }
 dialog.sheet .sheet-head { margin-top: 0; }
 dialog.sheet label.row { cursor: pointer; }
 dialog.sheet textarea { width: 100%; margin-top: 12px; padding: 10px 12px; border: 0; border-radius: 12px; font-size: 15px; resize: vertical; outline: 0; }
+
+/* ---- 登録・プロフィール（見出しを上に置いた、ふつうの入力欄） ---- */
+.form-page { max-width: 440px; margin: 0 auto; padding: 40px 0 64px; }
+.pv { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 16px; background: var(--fill); }
+.pv-main { min-width: 0; line-height: 1.35; }
+.pv-main b { display: block; font-size: 19px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-main span { font-size: 14px; color: var(--sub); }
+.pv .is-empty { color: var(--mute); }
+.form-title { margin: 28px 0 4px; font-size: 28px; font-weight: 700; line-height: 1.25; }
+.form-lead { margin: 0; font-size: 15px; color: var(--sub); }
+.form { margin-top: 24px; }
+.field { margin-bottom: 22px; }
+.field > label, .field-label { display: block; margin-bottom: 8px; font-size: 15px; font-weight: 600; }
+.field input[type="text"], .field textarea { display: block; width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font-size: 17px; line-height: 1.4; outline: 0; transition: border-color .15s, box-shadow .15s; }
+.field textarea { resize: vertical; min-height: 88px; }
+.field input[type="text"]:focus, .field textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0, 113, 227, .15); }
+.field input::placeholder, .field textarea::placeholder { color: #c7c7cc; }
+.field .swatches { padding: 2px 0; }
+.field-hint { margin: 6px 0 0; font-size: 13px; color: var(--sub); }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.picks-gap { flex-basis: 100%; height: 0; }
+.pick { min-height: 36px; padding: 0 14px; border: 1px solid var(--line); border-radius: 980px; background: #fff; color: var(--ink); font-size: 15px; cursor: pointer; }
+.pick[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: #fff; }
+.prefixed { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 12px; background: #fff; overflow: hidden; }
+.prefixed:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0, 113, 227, .15); }
+.prefixed span { flex-shrink: 1; min-width: 0; padding-left: 14px; font-size: 14px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prefixed input[type="text"] { flex: 1 0 120px; border: 0; box-shadow: none; padding-left: 2px; }
+.prefixed input[type="text"]:focus { box-shadow: none; }
+.agree { display: flex; align-items: center; gap: 10px; margin: 4px 0 24px; font-size: 15px; cursor: pointer; }
+.agree input { width: 20px; height: 20px; accent-color: var(--blue); }
+.btn-block { display: flex; width: 100%; min-height: 50px; font-size: 17px; font-weight: 600; }
+.form-error { margin: 20px 0 0; padding: 12px 14px; border-radius: 12px; background: #fff0f0; color: var(--danger); font-size: 15px; }
+.form-ok { margin: 16px 0 0; font-size: 15px; color: #1f8a4c; }
+.form-cancel { margin: 16px 0 0; text-align: center; font-size: 15px; }
+.account-box { margin-top: 40px; padding-top: 24px; border-top: .5px solid var(--line); }
+.account-mail { margin: 0 0 12px; font-size: 15px; color: var(--sub); overflow-wrap: anywhere; }
+.account-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; font-size: 15px; }
+.account-actions form { display: contents; }
+.account-actions .link-btn { font-size: 15px; min-height: 44px; }
+.danger-link { color: var(--danger); }
+@media (max-width: 640px) { .nav-login { display: none; } .form-page { padding-top: 24px; } }

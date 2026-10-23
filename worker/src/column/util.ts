@@ -13,13 +13,6 @@ export function randomId(bytes = 12): string {
   return toBase64Url(crypto.getRandomValues(new Uint8Array(bytes)));
 }
 
-/** 読み間違えにくい文字だけの短いコード（招待コード） */
-export function readableCode(length = 8): string {
-  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const r = crypto.getRandomValues(new Uint8Array(length));
-  return Array.from(r, (b) => chars[b % chars.length]).join('');
-}
-
 export async function sha256(text: string): Promise<Uint8Array> {
   return new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
 }
