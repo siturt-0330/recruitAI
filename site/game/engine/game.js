@@ -12,7 +12,8 @@
   var CFG = JSON.parse(document.getElementById('game-config').textContent);
   var COURSES = CFG.courses;
   var REVIEW = { id: 'review', name: '苦手の復習', sec: 60, levels: COURSES.reduce(function (a, c) { return a.concat(c.levels); }, []), cross: COURSES[0].cross };
-  var STORE_URL = 'https://chromewebstore.google.com/detail/kdppelkdplekjbiehpodfmmfcpbbfeho';
+  // ストアの統計で、SPI 用語集から来た人を見分けられるように印を付ける
+  var STORE_URL = 'https://chromewebstore.google.com/detail/kdppelkdplekjbiehpodfmmfcpbbfeho?utm_source=rakuraku-entry.com&utm_campaign=game';
 
   var $ = function (id) { return document.getElementById(id); };
   var words = [];
