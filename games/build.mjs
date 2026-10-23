@@ -102,15 +102,15 @@ const adHead = adClient
   : '';
 /**
  * 広告の枠。見えるようになってから読み込むので、class は adsbygoogle ではなく ad-unit にしておく（ゲームのページでは game.js、一覧では now で埋め込むスクリプトが読み込む）。
- * small はプレイ中の小さい横長の枠（大きさは game.css の .ad-small で画面の幅ごとに決める）
+ * size をつけると大きさの決まった枠になる（大きさは game.css の .ad-small・.ad-side で決める）。small はプレイ中の小さい横長、side は結果画面のスコアの下の縦長
  */
-const adSlot = (name, { now = false, small = false } = {}) => {
+const adSlot = (name, { now = false, size = '' } = {}) => {
   const id = adClient && ads.slots?.[name];
   if (!id) return '';
   const load = now ? '<script>(window.adsbygoogle = window.adsbygoogle || []).push({});</script>' : '';
   const cls = now ? 'adsbygoogle' : 'ad-unit';
-  const size = small ? 'style="display:inline-block"' : 'style="display:block" data-ad-format="auto" data-full-width-responsive="true"';
-  return `<aside class="ad${small ? ' ad-small' : ''}"><span class="ad-label">広告</span><ins class="${cls}" ${size} data-ad-client="${adClient}" data-ad-slot="${id}"></ins>${load}</aside>`;
+  const attrs = size ? 'style="display:inline-block"' : 'style="display:block" data-ad-format="auto" data-full-width-responsive="true"';
+  return `<aside class="ad${size ? ' ad-' + size : ''}"><span class="ad-label">広告</span><ins class="${cls}" ${attrs} data-ad-client="${adClient}" data-ad-slot="${id}"></ins>${load}</aside>`;
 };
 
 if (errors.length) {
@@ -139,7 +139,8 @@ for (const g of games) {
     .replaceAll('{{adHead}}', adHead)
     .replaceAll('{{wordCount}}', String(g.words.length))
     .replaceAll('{{adStart}}', adSlot('start'))
-    .replaceAll('{{adPlay}}', adSlot('play', { small: true }))
+    .replaceAll('{{adPlay}}', adSlot('play', { size: 'small' }))
+    .replaceAll('{{adSide}}', adSlot('side', { size: 'side' }))
     .replaceAll('{{adResult}}', adSlot('result'))
     .replaceAll('{{config}}', JSON.stringify(config).replace(/</g, '\\u003c'));
   const out = path.join(siteGame, g.slug);
