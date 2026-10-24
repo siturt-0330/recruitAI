@@ -140,7 +140,14 @@ export default {
       return json({ day: dayJst(), ...(await env.QUOTA.getByName('global').today(dayJst())) });
     }
     if (url.pathname === '/v1/logo') return logo(request, env, ctx, url);
-    if (url.pathname !== '/v1/classify') return json({ error: 'not found' }, 404);
+    if (url.pathname !== '/v1/classify') {
+      // 公式サイトのないページは、404 のページ（site/404.html）をステータス 404 で返す
+      if (request.method === 'GET' && !url.pathname.startsWith('/v1/')) {
+        const page = await env.ASSETS.fetch(new URL('/404', url));
+        return new Response(page.body, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+      }
+      return json({ error: 'not found' }, 404);
+    }
     if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
 
     // 公開後は拡張機能の ID（chrome-extension://...）だけを許可する。空なら開発用にすべて許可

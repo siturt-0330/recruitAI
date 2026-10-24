@@ -9,7 +9,7 @@
     { "pattern": "rakuraku-entry.com", "custom_domain": true }
   ],
   // 公式サイト（site/）。ファイルがある URL はそのまま返し、ないものは下の API の処理に回す
-  "assets": { "directory": "../site", "html_handling": "drop-trailing-slash", "run_worker_first": ["/google*.html"] },
+  "assets": { "binding": "ASSETS", "directory": "../site", "html_handling": "drop-trailing-slash", "run_worker_first": ["/google*.html"] },
   "workers_dev": false,
   "observability": {
     "enabled": true,

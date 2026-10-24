@@ -85,7 +85,7 @@
     <style>
       *, *::before, *::after { box-sizing: border-box; }
       :root {
-        --ink: #14161a; --sub: #5b6470; --mute: #9aa3ad; --line: #ece9f2; --paper: #fbfaf8;
+        --ink: #14161a; --sub: #5b6470; --mute: #6b7480; --line: #ece9f2; --paper: #fbfaf8;
         --lav: #ece8ff; --peach: #ffe8dc; --mint: #dcf5ea; --sky: #dfeeff; --butter: #fff3c4; --rose: #ffe4ec;
         --accent: #5b4cf0; --stamp: #e0563f;
         --head: "Zen Kaku Gothic New", "Noto Sans JP", sans-serif;
@@ -140,7 +140,7 @@
       .demo .body { padding: 22px 26px 30px; }
       .demo .ttl { margin: 0 0 14px; font-family: var(--head); font-size: 18px; font-weight: 700; }
       .row { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: 12px; margin-bottom: 11px; }
-      .row label { font-size: 13px; color: var(--sub); font-weight: 500; }
+      .row .lb { font-size: 13px; color: var(--sub); font-weight: 500; }
       .input { position: relative; height: 40px; border: 1px solid #e2e0ea; border-radius: 10px; background: #fff; display: flex; align-items: center; padding: 0 12px; font-size: 14px; }
       .val { white-space: nowrap; overflow: hidden; animation: type 9s infinite; animation-delay: var(--d); clip-path: inset(0 100% 0 0); }
       .input::after { content: ""; position: absolute; inset: -1px; border-radius: 10px; border: 2px solid rgba(224,86,63,.35); opacity: 0; animation: ring 9s infinite; animation-delay: var(--d); }
@@ -233,7 +233,7 @@
       .pp-head b { display: block; font-size: 15px; } .pp-head small { color: var(--sub); font-size: 13px; }
       .pp-gear { margin-left: auto; color: var(--sub); }
       .pp-stats { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; margin: 16px 0 12px; font-size: 12px; color: var(--sub); }
-      .pp-stats b { display: block; font-size: 18px; color: var(--ink); } .pp-stats b.warn { color: #f4a100; }
+      .pp-stats b { display: block; font-size: 18px; color: var(--ink); } .pp-stats b.warn { color: #9a6500; }
       .pp-bar { height: 4px; border-radius: 4px; background: #eff3f4; overflow: hidden; } .pp-bar i { display: block; width: 92%; height: 100%; background: linear-gradient(90deg, #5b4cf0, #ff7a59); }
       .pp-btn { margin: 14px 0 18px; background: var(--ink); color: #fff; border-radius: 999px; text-align: center; padding: 12px; font-weight: 700; }
       .pp-h { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
@@ -328,8 +328,11 @@
         h1 { font-size: 24px; }
         .hero p.lead { font-size: 15.5px; }
         .demo .body { padding: 18px 16px 26px; }
+        h2 { font-size: 22px; }
+        #mypage .mp-chip { font-size: 11px; gap: 6px; padding: 7px 7px 7px 12px; }
+        #mypage .mp-chip em { padding: 4px 8px; font-size: 11px; }
         .row { grid-template-columns: 64px minmax(0, 1fr); gap: 8px; }
-        .row label { font-size: 12px; }
+        .row .lb { font-size: 12px; }
         .input { font-size: 13px; padding: 0 10px; }
       }
       @media (max-width: 600px) {
@@ -341,13 +344,14 @@
         .ty { clip-path: none; }
         .sw-b, .c1 { background: var(--ink); color: #fff; }
         .pp-orb { animation: none; }
-        .val, .input::after, .stamp, .float-bar { animation: none; clip-path: none; opacity: 1; transform: rotate(-12deg); }
-        .float-bar { transform: none; }
+        .val, .input::after, .stamp, .float-bar { animation: none; clip-path: none; opacity: 1; }
+        .stamp { transform: rotate(-12deg); }
+        html { scroll-behavior: auto; }
         .track { animation: none; }
       }
 
       /* マイページ管理（Web 版）：左に説明、右に大きな画面（PC では画面を右にはみ出させる） */
-      #mypage { overflow: hidden; }
+      #mypage, #spi { overflow: hidden; }
       .mp { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 56px; align-items: center; }
       .mp h2 { font-size: clamp(28px, 3.1vw, 40px); margin-bottom: 32px; }
       .mp-visual { position: relative; }
@@ -426,12 +430,12 @@
             <div class="bar"><i></i><i></i><i></i><span>recruit.example.co.jp/entry</span></div>
             <div class="body">
               <p class="ttl">エントリー</p>
-              <div class="row"><label>氏名</label><div class="input" style="--d:.2s"><span class="val">山田 花子</span><span class="stamp">済</span></div></div>
-              <div class="row"><label>フリガナ</label><div class="input" style="--d:.55s"><span class="val">ヤマダ ハナコ</span><span class="stamp">済</span></div></div>
-              <div class="row"><label>生年月日</label><div class="input" style="--d:.9s"><span class="val">2004 年 5 月 12 日</span><span class="stamp">済</span></div></div>
-              <div class="row"><label>住所</label><div class="input" style="--d:1.25s"><span class="val">東京都渋谷区神南 1-2-3</span><span class="stamp">済</span></div></div>
-              <div class="row"><label>携帯電話</label><div class="input" style="--d:1.6s"><span class="val">090-1234-5678</span><span class="stamp">済</span></div></div>
-              <div class="row"><label>大学・学部</label><div class="input" style="--d:1.95s"><span class="val">〇〇大学 経済学部</span><span class="stamp">済</span></div></div>
+              <div class="row"><span class="lb">氏名</span><div class="input" style="--d:.2s"><span class="val">山田 花子</span><span class="stamp">済</span></div></div>
+              <div class="row"><span class="lb">フリガナ</span><div class="input" style="--d:.55s"><span class="val">ヤマダ ハナコ</span><span class="stamp">済</span></div></div>
+              <div class="row"><span class="lb">生年月日</span><div class="input" style="--d:.9s"><span class="val">2004 年 5 月 12 日</span><span class="stamp">済</span></div></div>
+              <div class="row"><span class="lb">住所</span><div class="input" style="--d:1.25s"><span class="val">東京都渋谷区神南 1-2-3</span><span class="stamp">済</span></div></div>
+              <div class="row"><span class="lb">携帯電話</span><div class="input" style="--d:1.6s"><span class="val">090-1234-5678</span><span class="stamp">済</span></div></div>
+              <div class="row"><span class="lb">大学・学部</span><div class="input" style="--d:1.95s"><span class="val">〇〇大学 経済学部</span><span class="stamp">済</span></div></div>
             </div>
             <div class="float-bar">6 件入力しました<em>元に戻す</em></div>
           </div>
@@ -464,7 +468,7 @@
         </div>
       </section>
 
-      <section id="features" style="padding-top:0">
+      <section id="features" style="padding-top:0;scroll-margin-top:100px">
         <div class="wrap">
           <div class="kicker">Features</div>
           <h2><span class="nb">らくらくエントリーなら、</span><span class="nb">全部まかせられる。</span></h2>
@@ -504,7 +508,7 @@
           <h2><span class="nb">氏名から資格まで、</span><span class="nb">まるごと入力。</span></h2>
           <div style="height:28px"></div>
         </div>
-        <div class="marquee" aria-label="入力できる項目">
+        <div class="marquee" role="region" aria-label="入力できる項目">
           <div class="track">
             <span>氏名</span><span>フリガナ</span><span>ローマ字</span><span>生年月日</span><span>性別</span><span>郵便番号</span><span>住所</span><span>帰省先・休暇中の連絡先</span><span>緊急連絡先</span><span>携帯電話</span><span>自宅電話</span>
             <span>氏名</span><span>フリガナ</span><span>ローマ字</span><span>生年月日</span><span>性別</span><span>郵便番号</span><span>住所</span><span>帰省先・休暇中の連絡先</span><span>緊急連絡先</span><span>携帯電話</span><span>自宅電話</span>
@@ -630,7 +634,7 @@
         </div>
       </section>
 
-      <section id="faq" style="padding-top:0">
+      <section id="faq" style="padding-top:0;scroll-margin-top:100px">
         <div class="wrap">
           <div class="center"><div class="kicker">FAQ</div><h2>よくある質問</h2><div style="height:28px"></div></div>
           <div class="faq">
@@ -668,6 +672,6 @@
         <a href="mailto:contact@geek-app.com">お問い合わせ</a>
       </div>
     </footer>
-    <script src="/howto.js?v=4" defer></script>
+    <script src="/howto.js?v=5" defer></script>
   </body>
 </html>
