@@ -219,10 +219,11 @@ function Row({ company: c, active, connected, autoFocus, onOpen }: { company: Co
             // 会社名を変えたら、ロゴを探し直す
             if (c.name.trim() && c.name !== nameAtFocus.current) {
               const logo = await logoFor({ ...c, url: '', mypageUrl: '' });
-              useStore.getState().patchCompany(c.id, { logo });
+              // 見つからなかったときは、今のロゴを消さない
+              if (logo) useStore.getState().patchCompany(c.id, { logo });
             }
           }}
-          onKeyDown={(e) => !e.nativeEvent.isComposing && e.key === 'Enter' && e.currentTarget.blur()}
+          onKeyDown={(e) => !e.nativeEvent.isComposing && e.keyCode !== 229 && e.key === 'Enter' && e.currentTarget.blur()}
           className="min-w-0 flex-1 bg-transparent font-bold outline-none placeholder:font-normal placeholder:text-mute"
         />
         <button
@@ -336,7 +337,7 @@ function CellInput({
       onFocus={() => setEditing(true)}
       onBlur={() => setEditing(false)}
       onChange={(e) => onChange(e.target.value)}
-      onKeyDown={(e) => !e.nativeEvent.isComposing && e.key === 'Enter' && e.currentTarget.blur()}
+      onKeyDown={(e) => !e.nativeEvent.isComposing && e.keyCode !== 229 && e.key === 'Enter' && e.currentTarget.blur()}
       className={`h-9 min-w-0 flex-1 truncate bg-transparent text-[13px] outline-none ${value && !editing ? className : ''}`}
     />
   );

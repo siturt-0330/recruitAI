@@ -55,11 +55,16 @@ export function IndustrySelect({ value, onChange, variant = 'field', className =
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => {
-        if (e.key === 'Enter') {
+        // 日本語入力の変換を確定する Enter では追加しない
+        if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
           e.preventDefault();
           commit();
         }
-        if (e.key === 'Escape') setAdding(false);
+        if (e.key === 'Escape') {
+          // ダイアログの中では、Esc で入力だけをやめる（ダイアログは閉じない）
+          e.stopPropagation();
+          setAdding(false);
+        }
       }}
       className={cell ? cellCls : undefined}
     />
