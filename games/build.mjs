@@ -77,8 +77,17 @@ function load(slug, errors) {
     }
     const out = { w: w.w, y: w.y, m: w.m, e: w.e, p: w.p, pre, post, lv: w.lv };
     if (w.alt && w.alt.length) out.alt = w.alt;
+    if (w.syn !== undefined && !Array.isArray(w.syn)) err(`${at}: syn は言葉の配列で書いてください`);
+    else if (w.syn && w.syn.length) out.syn = w.syn;
     return out;
   });
+  // 似た意味の言葉（syn）は、このゲームにある言葉を指していること
+  for (const w of words) {
+    for (const s of w.syn || []) {
+      if (s === w.w) err(`${w.w}: syn に自分自身が入っています`);
+      else if (!seen.has(s)) err(`${w.w}: syn の「${s}」は words.json にない言葉です`);
+    }
+  }
   for (const c of cfg.courses || []) {
     const n = words.filter((w) => c.levels.includes(w.lv)).length;
     if (n < 10) err(`コース「${c.name}」の言葉が ${n} 語しかありません（10 語以上にしてください）`);
@@ -180,25 +189,25 @@ for (const g of games) {
     ],
   };
   const html = page
-    .replaceAll('{{seoTitle}}', esc(g.cfg.seoTitle))
-    .replaceAll('{{description}}', esc(g.cfg.description))
-    .replaceAll('{{url}}', url)
-    .replaceAll('{{ogImage}}', ogImage)
-    .replaceAll('{{kicker}}', esc(g.cfg.kicker))
-    .replaceAll('{{heading1}}', esc(g.cfg.heading1))
-    .replaceAll('{{heading2}}', esc(g.cfg.heading2))
-    .replaceAll('{{aboutHeading}}', esc(g.cfg.aboutHeading || `${g.cfg.title}とは`))
-    .replaceAll('{{aboutText}}', esc(g.cfg.aboutText || g.cfg.description))
-    .replaceAll('{{listPath}}', listPath)
-    .replaceAll('{{version}}', version)
-    .replaceAll('{{adHead}}', adHead)
-    .replaceAll('{{wordCount}}', String(g.words.length))
-    .replaceAll('{{adStart}}', adSlot('start'))
-    .replaceAll('{{adPlay}}', adSlot('play', { size: 'small' }))
-    .replaceAll('{{adSide}}', adSlot('side', { size: 'side' }))
-    .replaceAll('{{adResult}}', adSlot('result'))
-    .replaceAll('{{jsonLd}}', ld(gameLd))
-    .replaceAll('{{config}}', JSON.stringify(config).replace(/</g, '\\u003c'));
+    .replaceAll('{{seoTitle}}', () => esc(g.cfg.seoTitle))
+    .replaceAll('{{description}}', () => esc(g.cfg.description))
+    .replaceAll('{{url}}', () => url)
+    .replaceAll('{{ogImage}}', () => ogImage)
+    .replaceAll('{{kicker}}', () => esc(g.cfg.kicker))
+    .replaceAll('{{heading1}}', () => esc(g.cfg.heading1))
+    .replaceAll('{{heading2}}', () => esc(g.cfg.heading2))
+    .replaceAll('{{aboutHeading}}', () => esc(g.cfg.aboutHeading || `${g.cfg.title}とは`))
+    .replaceAll('{{aboutText}}', () => esc(g.cfg.aboutText || g.cfg.description))
+    .replaceAll('{{listPath}}', () => listPath)
+    .replaceAll('{{version}}', () => version)
+    .replaceAll('{{adHead}}', () => adHead)
+    .replaceAll('{{wordCount}}', () => String(g.words.length))
+    .replaceAll('{{adStart}}', () => adSlot('start'))
+    .replaceAll('{{adPlay}}', () => adSlot('play', { size: 'small' }))
+    .replaceAll('{{adSide}}', () => adSlot('side', { size: 'side' }))
+    .replaceAll('{{adResult}}', () => adSlot('result'))
+    .replaceAll('{{jsonLd}}', () => ld(gameLd))
+    .replaceAll('{{config}}', () => JSON.stringify(config).replace(/</g, '\\u003c'));
   const out = path.join(siteGame, g.slug);
   fs.mkdirSync(out, { recursive: true });
   write(path.join(out, 'index.html'), html, gamePath);
@@ -252,18 +261,18 @@ for (const g of games) {
     ],
   };
   const listHtml = listPage
-    .replaceAll('{{listTitle}}', esc(listTitle))
-    .replaceAll('{{listDescription}}', esc(listDescription))
-    .replaceAll('{{listHeading}}', esc(g.cfg.listHeading || listTitle))
-    .replaceAll('{{listLead}}', esc(g.cfg.listLead || listDescription))
-    .replaceAll('{{listUrl}}', listUrl)
-    .replaceAll('{{gamePath}}', gamePath)
-    .replaceAll('{{title}}', esc(g.cfg.title))
-    .replaceAll('{{ogImage}}', ogImage)
-    .replaceAll('{{version}}', version)
-    .replaceAll('{{toc}}', toc)
-    .replaceAll('{{sections}}', sections)
-    .replaceAll('{{jsonLd}}', ld(listLd));
+    .replaceAll('{{listTitle}}', () => esc(listTitle))
+    .replaceAll('{{listDescription}}', () => esc(listDescription))
+    .replaceAll('{{listHeading}}', () => esc(g.cfg.listHeading || listTitle))
+    .replaceAll('{{listLead}}', () => esc(g.cfg.listLead || listDescription))
+    .replaceAll('{{listUrl}}', () => listUrl)
+    .replaceAll('{{gamePath}}', () => gamePath)
+    .replaceAll('{{title}}', () => esc(g.cfg.title))
+    .replaceAll('{{ogImage}}', () => ogImage)
+    .replaceAll('{{version}}', () => version)
+    .replaceAll('{{toc}}', () => toc)
+    .replaceAll('{{sections}}', () => sections)
+    .replaceAll('{{jsonLd}}', () => ld(listLd));
   fs.mkdirSync(path.join(out, 'words'), { recursive: true });
   write(path.join(out, 'words', 'index.html'), listHtml, listPath);
   console.log(`${listPath}  単語一覧`);
@@ -302,12 +311,12 @@ const hubVersion = engineHash.digest('hex').slice(0, 8);
 write(
   path.join(siteGame, 'index.html'),
   template('hub.html')
-    .replaceAll('{{version}}', hubVersion)
-    .replace('{{adHead}}', adHead)
-    .replace('{{adHub}}', adSlot('hub', { now: true }))
-    .replace('{{jsonLd}}', ld(hubLd))
-    .replace('{{games}}', cards)
-    .replace('{{lists}}', lists),
+    .replaceAll('{{version}}', () => hubVersion)
+    .replace('{{adHead}}', () => adHead)
+    .replace('{{adHub}}', () => adSlot('hub', { now: true }))
+    .replace('{{jsonLd}}', () => ld(hubLd))
+    .replace('{{games}}', () => cards)
+    .replace('{{lists}}', () => lists),
   '/game',
 );
 console.log('/game  ゲーム一覧');
@@ -336,7 +345,7 @@ const entries = ['/game', ...games.flatMap((g) => [`/game/${g.slug}`, `/game/${g
   .join('\n');
 const block = `  <!-- games -->\n${entries}\n  <!-- /games -->`;
 sitemap = /<!-- games -->[\s\S]*<!-- \/games -->/.test(sitemap)
-  ? sitemap.replace(/  <!-- games -->[\s\S]*<!-- \/games -->/, block)
-  : sitemap.replace('</urlset>', block + '\n</urlset>');
+  ? sitemap.replace(/  <!-- games -->[\s\S]*<!-- \/games -->/, () => block)
+  : sitemap.replace('</urlset>', () => block + '\n</urlset>');
 write(sitemapPath, sitemap);
 console.log('サイトマップを更新しました');

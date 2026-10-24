@@ -17,12 +17,20 @@
   var $ = function (id) { return document.getElementById(id); };
   var words = [];
   var course = COURSES[CFG.defaultCourse || 0];
-  var mobile = window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 820;
+  // 画面の幅ではなく入力の種類で決める（タブレットにキーボードをつないだときや、狭いウィンドウのパソコンでも正しく分かれるように）
+  var mobile = window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(any-pointer: fine)').matches;
 
   // ---- 保存（ブラウザの中だけ。使えなくても遊べる） ----
   function load(key, fallback) {
-    try { var v = localStorage.getItem('rkgame:' + CFG.slug + ':' + key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
+    try {
+      var v = localStorage.getItem('rkgame:' + CFG.slug + ':' + key);
+      if (!v) return fallback;
+      v = JSON.parse(v);
+      // 壊れた値（配列のはずが {} など）は使わない
+      return kind(v) === kind(fallback) ? v : fallback;
+    } catch (e) { return fallback; }
   }
+  function kind(v) { return Array.isArray(v) ? 'array' : v === null ? 'null' : typeof v; }
   function save(key, value) {
     try { localStorage.setItem('rkgame:' + CFG.slug + ':' + key, JSON.stringify(value)); } catch (e) { /* 保存できなくても続ける */ }
   }
@@ -56,7 +64,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('.course'), function (b) {
       b.addEventListener('click', function () { course = COURSES[+b.dataset.i]; renderCourses(); });
     });
-    var weak = load('weak', []).filter(function (w) { return !isOff(w); });
+    var weak = weakList();
     $('weakStart').hidden = !weak.length;
     $('weakStart').textContent = '苦手な言葉（' + weak.length + ' 語）だけ復習する';
     $('play').textContent = mobile ? 'スタート' : 'スペースキーでスタート';
@@ -86,12 +94,21 @@
   // ---- 単語帳（出題しない言葉を選ぶ） ----
   /** 単語帳で「出題しない」にした言葉か */
   function isOff(w) { return load('off', []).indexOf(typeof w === 'string' ? w : w.w) >= 0; }
+  /** 保存した一覧（出題しない・苦手）から、いまの言葉のリストにない言葉（名前を直した言葉など）を除く */
+  function known(list) {
+    return list.filter(function (n) { return words.some(function (w) { return w.w === n; }); });
+  }
+  /** 苦手な言葉のうち、出題するもの */
+  function weakList() {
+    var off = load('off', []);
+    return known(load('weak', [])).filter(function (n) { return off.indexOf(n) < 0; });
+  }
 
   var bookTab = 'all';
   function openBook() { bookTab = 'all'; renderWordbook(); show('wordbook'); }
 
   function renderWordbook() {
-    var off = load('off', []), weak = load('weak', []);
+    var off = known(load('off', [])), weak = known(load('weak', []));
     $('wbCount').textContent = '出題する言葉 ' + (words.length - off.length) + ' / ' + words.length;
     Array.prototype.forEach.call($('wbTabs').children, function (b) {
       var n = b.dataset.t === 'off' ? off.length : b.dataset.t === 'weak' ? weak.length : words.length;
@@ -164,7 +181,9 @@
     var choice = mobile || !!quiz || c === REVIEW;
     var queue = pickWords(c, choice);
     if (!queue.length) {
-      if (!$('start').hidden) { $('empty').textContent = 'このコースの言葉は、すべて「出題しない」になっています'; $('empty').hidden = false; }
+      if (!$('start').hidden) { $('empty').textContent = c === REVIEW ? '復習する言葉がありません' : 'このコースの言葉は、すべて「出題しない」になっています'; $('empty').hidden = false; }
+      // 結果の画面から押したときは、その場で知らせる（ボタンが反応しないように見えないように）
+      else toast(c === REVIEW ? '復習する言葉がありません（苦手な言葉は、すべて「出題しない」になっています）' : 'このコースの言葉は、すべて「出題しない」になっています');
       return;
     }
     stop();
@@ -227,6 +246,7 @@
     $('sent').dataset.w = '';
     $('yomi').innerHTML = '';
     $('roma').innerHTML = '';
+    $('ime').hidden = true;
     // 3・2・1 のあとに始める
     var n = 3;
     $('countdown').hidden = false;
@@ -312,7 +332,8 @@
 
   function tick(now) {
     if (!G || !G.running) return;
-    var dt = Math.min(0.05, (now - G.last) / 1000);
+    // タブを切りかえて戻ったときに、一気に進まないように（重い端末でカードが遅れすぎないよう、少しは追いつく）
+    var dt = Math.min(0.25, (now - G.last) / 1000);
     G.last = now;
     // 2 択の間は、残り時間を止める
     if (G.mode === 'type') G.left -= dt;
@@ -350,7 +371,9 @@
 
   function onKey(e) {
     if (!$('start').hidden) {
-      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); start(course); }
+      // ボタンやリンクにフォーカスがあるときは、そちらを押す（単語帳などを Tab と Enter で開けるように）
+      var focused = e.target.closest && e.target.closest('button, a, input');
+      if ((e.key === ' ' || e.key === 'Enter') && !focused) { e.preventDefault(); start(course); }
       if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
         var i = COURSES.indexOf(course) + (e.key === 'ArrowRight' ? 1 : -1);
         course = COURSES[(i + COURSES.length) % COURSES.length];
@@ -437,13 +460,19 @@
     void k.offsetWidth;
     k.classList.add('press');
   }
+  /** 選択肢に混ぜる言葉。同じ意味の言葉と、意味の近い言葉（words.json の syn）は、どちらも正解に見えるので外す */
+  function distractors(w) {
+    return words.filter(function (x) {
+      return x.w !== w.w && x.m !== w.m && (w.syn || []).indexOf(x.w) < 0 && (x.syn || []).indexOf(w.w) < 0;
+    });
+  }
   function fj(key) { return key === 'f' || key === 'F' ? 0 : key === 'j' || key === 'J' ? 1 : -1; }
 
   function startQuiz() {
     var pool = G.recent.slice(0, -1);
     var w = pool[Math.floor(Math.random() * pool.length)];
     G.recent = [];
-    var other = shuffle(words.filter(function (x) { return x.m !== w.m; }))[0];
+    var other = shuffle(distractors(w))[0];
     var opts = shuffle([w, other]);
     G.quiz = { w: w, opts: opts };
     G.mode = 'quiz';
@@ -506,7 +535,7 @@
     $('q-yomi').textContent = '';
     $('q-ask').hidden = false;
     $('q-ex').hidden = true;
-    var others = shuffle(words.filter(function (x) { return x.m !== w.m; })).slice(0, mobile ? 3 : 1);
+    var others = shuffle(distractors(w)).slice(0, mobile ? 3 : 1);
     var opts = shuffle([w].concat(others));
     $('opts').innerHTML = mobile ? opts.map(function (o) { return '<button class="opt" data-w="' + esc(o.w) + '">' + esc(o.m) + '</button>'; }).join('') : twoHTML(opts);
     Array.prototype.forEach.call($('opts').querySelectorAll('[data-w]'), function (b) {
@@ -584,9 +613,6 @@
     $('share').href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(CFG.url) + '&hashtags=' + encodeURIComponent(CFG.hashtags.join(','));
     G.tab = 'all';
     renderBook();
-    var weak = load('weak', []);
-    $('review').hidden = !G.choice || !weak.length;
-    $('review-text').innerHTML = '苦手な言葉が <b>' + weak.length + ' 語</b>';
   }
 
   function renderBook() {
@@ -621,6 +647,10 @@
     $('hideOk').hidden = !okNames.length;
     $('hideOk').innerHTML = '<span class="o">○</span>正解した ' + okNames.length + ' 語を、もう出さない';
     $('hideOk').dataset.names = JSON.stringify(okNames);
+    // 苦手の復習（「もう出さない」にした言葉は数えない。外したり戻したりしたら数え直す）
+    var weak = weakList();
+    $('review').hidden = !G.choice || !weak.length;
+    $('review-text').innerHTML = '苦手な言葉が <b>' + weak.length + ' 語</b>';
   }
 
   // ---- 結果の単語帳から言葉を外す（単語帳の「出題しない」と同じ一覧に入れる） ----
