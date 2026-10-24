@@ -109,14 +109,28 @@ function onScreen(field: ScannedField): boolean {
   );
 }
 
+/**
+ * 入れた値と今の値が同じか。サイトが少し遅れて書式を整える（ハイフン・スペースを消すなど）こともあるので、
+ * 全角半角・スペース・ハイフンの違いは無視する
+ */
+function sameText(a: string, b: string): boolean {
+  const loose = (s: string) => s.normalize('NFKC').replace(/[\s\-‐－−ー―]/g, '');
+  return a === b || loose(a) === loose(b);
+}
+
 /** 入れた値がそのまま残っているか（入力できなかった欄・ユーザーが書き直した欄は false） */
 function keptAsFilled(r: Result): boolean {
   if (r.status !== 'ok' && r.status !== 'warn') return false;
   const el = r.field.elements[0]!;
   if (r.field.combo) return comboStill(el, r.value);
-  if (r.field.desc.kind === 'radio' || r.field.desc.kind === 'checkbox' || r.field.desc.kind === 'file') return true;
+  if (r.field.desc.kind === 'file') return true;
+  if (r.field.desc.kind === 'checkbox') return (el as HTMLInputElement).checked === (r.value === 'チェックあり');
+  if (r.field.desc.kind === 'radio') {
+    const i = r.field.elements.findIndex((e) => (e as HTMLInputElement).checked);
+    return i >= 0 && r.field.desc.options[i] === r.value;
+  }
   if (el instanceof HTMLSelectElement) return stillSelected(r);
-  return (el as HTMLInputElement | HTMLTextAreaElement).value === r.value;
+  return sameText((el as HTMLInputElement | HTMLTextAreaElement).value, r.value);
 }
 
 function stillSelected(r: Result): boolean {
@@ -277,7 +291,7 @@ export class FormFiller {
       const el = r.field.elements[0];
       if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) continue;
       if (el.type === 'radio' || el.type === 'checkbox' || el.type === 'file') continue;
-      if (el.value !== r.value) this.apply(r, threshold);
+      if (!sameText(el.value, r.value)) this.apply(r, threshold);
     }
   }
 
