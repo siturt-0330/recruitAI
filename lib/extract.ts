@@ -1,7 +1,7 @@
 import { COMBO_SELECTOR, isCombo } from './combo';
 
 export type FieldKind =
-  | 'text' | 'email' | 'tel' | 'number' | 'date' | 'month' | 'select' | 'radio' | 'textarea' | 'file' | 'checkbox';
+  | 'text' | 'email' | 'tel' | 'url' | 'number' | 'date' | 'month' | 'select' | 'radio' | 'textarea' | 'file' | 'checkbox';
 
 /** 扱うチェックボックスは「現住所と同じ」系だけ（同意チェックなどには触らない） */
 export function isSameAsCurrent(text: string): boolean {
@@ -48,7 +48,7 @@ export interface ScannedField {
   elements: HTMLElement[];
 }
 
-const TEXT_TYPES = new Set(['', 'text', 'email', 'tel', 'number', 'date', 'month']);
+const TEXT_TYPES = new Set(['', 'text', 'email', 'tel', 'url', 'number', 'date', 'month']);
 const SKIP_TEXT_PARENTS = new Set(['SELECT', 'OPTION', 'TEXTAREA', 'SCRIPT', 'STYLE', 'NOSCRIPT', 'BUTTON']);
 /** 入力欄（独自デザインのプルダウンを含む） */
 const CONTROLS = `input, select, textarea, ${COMBO_SELECTOR}`;
@@ -115,7 +115,8 @@ function isCandidate(el: Element): el is HTMLElement {
     return !el.disabled && !(el instanceof HTMLTextAreaElement && el.readOnly) && isVisible(el);
   }
   if (!(el instanceof HTMLInputElement) || el.disabled || el.readOnly) return false;
-  const type = (el.getAttribute('type') ?? '').toLowerCase();
+  // type 属性が大文字・未対応の値でも、el.type はブラウザが解釈した種類を返す
+  const type = el.type;
   // 「現住所と同じ」チェックボックスは、本体もラベルも隠して飾りの要素で見せていることがある。
   // 扱うのは文言で絞り込んだものだけなので、見えるかどうかは問わない
   if (type === 'checkbox') return true;
@@ -194,10 +195,14 @@ function structuralHeader(el: HTMLElement): string {
     if (node.tagName === 'TD' || node.tagName === 'TH') {
       const cell = node as HTMLTableCellElement;
       const row = cell.parentElement as HTMLTableRowElement | null;
-      // 同じ行の、入力欄のないセル（ふつうは th）が行見出し
-      const header = Array.from(row?.children ?? []).find(
-        (c) => c !== cell && !c.contains(el) && !c.querySelector(CONTROLS),
-      );
+      // 同じ行の、入力欄のないセル（ふつうは th）が行見出し。
+      // 「姓｜［ ］｜名｜［ ］」のように th と欄が交互に並ぶ行もあるので、欄より手前でいちばん近い th を優先する。
+      // td は「［ ］｜年｜［ ］｜月」の単位のこともあるので、これまでどおり行の最初のものを使う
+      const cells = Array.from(row?.children ?? []);
+      const isHeader = (c: Element) => c !== cell && !c.contains(el) && !c.querySelector(CONTROLS);
+      const header =
+        cells.slice(0, Math.max(0, cells.indexOf(cell))).reverse().find((c) => c.tagName === 'TH' && isHeader(c)) ??
+        cells.find(isHeader);
       const t = textOf(header ?? null, 60);
       if (t && !/^[\s\-‐ー－~〜()（）]*$/.test(t)) return t;
       // 行見出しがない表（「年｜月｜学歴・職歴」のような表）は、列の見出しを使う
@@ -389,7 +394,9 @@ export function scanFields(doc: Document): ScannedField[] {
     fields.push(field);
   }
 
-  const result = fields.filter((f) => !inLoginForm(f));
+  // フォームごとに1回だけ調べる
+  const login = new Map<HTMLFormElement, boolean>();
+  const result = fields.filter((f) => !inLoginForm(f, login));
   assignGroups(result);
   return result;
 }
@@ -404,9 +411,15 @@ function radioGroupKey(el: HTMLInputElement): string | Element | null {
 }
 
 /** ページ上部などにあるログインフォーム（ID とパスワードだけ）には入れない */
-function inLoginForm(f: ScannedField): boolean {
+function inLoginForm(f: ScannedField, cache: Map<HTMLFormElement, boolean>): boolean {
   const form = (f.elements[0] as HTMLInputElement).form;
   if (!form) return false;
+  let v = cache.get(form);
+  if (v === undefined) cache.set(form, (v = isLoginForm(form)));
+  return v;
+}
+
+function isLoginForm(form: HTMLFormElement): boolean {
   // 会員登録はパスワードと確認用の2つがあることが多いので、パスワード欄が1つのときだけ
   if (form.querySelectorAll('input[type="password"]').length !== 1) return false;
   const textInputs = Array.from(form.querySelectorAll('input')).filter((el) =>

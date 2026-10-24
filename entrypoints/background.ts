@@ -1,9 +1,12 @@
 import { browser, defineBackground } from '#imports';
 import { classifyViaApi } from '@/lib/api';
 import { originPattern } from '@/lib/mypages';
+import { SOPHON_MATCHES } from '@/lib/sophon-link';
 import { getInstallId, mypagesItem, settingsItem } from '@/lib/store';
 import { activeTabId, runInTab } from '@/lib/tab';
 import type { RemoteQuestion } from '@/lib/types';
+
+const SOPHON_ORIGINS = SOPHON_MATCHES.map((m) => m.replace(/\/\*$/, ''));
 
 interface ClassifyMessage {
   type: 'classify';
@@ -33,8 +36,10 @@ export default defineBackground(() => {
   });
 
   // Sophon で会社を押したとき：マイページを開き、許可があれば ID とパスワードを入れる
-  browser.runtime.onMessage.addListener((msg: { type?: string; companyId?: string }) => {
+  browser.runtime.onMessage.addListener((msg: { type?: string; companyId?: string }, sender) => {
     if (msg?.type !== 'openMypage' || !msg.companyId) return;
+    // 受け付けるのは Sophon のページの中継スクリプトからだけ
+    if (!SOPHON_ORIGINS.some((o) => sender.url?.startsWith(o + '/'))) return;
     void openMypage(msg.companyId);
   });
 
@@ -105,7 +110,7 @@ async function fillMypage(tabId: number, m: { url: string; loginId: string; pass
   // 読み込みが終わってから画面を組み立てるログイン画面もあるので、欄が出てくるまで少し待ちながら試す
   for (let i = 0; i < 10; i++) {
     try {
-      const res = await runInTab(tabId, 'fillLogin', { loginId: m.loginId, password: m.password, company: m.companyName });
+      const res = await runInTab(tabId, 'fillLogin', { loginId: m.loginId, password: m.password, company: m.companyName, origin: new URL(m.url).origin });
       if (res.some((f) => f.result.login?.found)) return;
     } catch (e) {
       console.warn('[らくらくエントリー] ログイン情報を入力できませんでした', e);

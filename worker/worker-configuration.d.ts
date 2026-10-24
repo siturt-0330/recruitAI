@@ -14,6 +14,7 @@ interface __BaseEnv_Env {
 	MOCK_AI: string;
 	SPONSOR: string;
 	QUOTA: DurableObjectNamespace<import("./src/index").Quota>;
+	ASSETS: Fetcher;
 }
 declare namespace Cloudflare {
 	interface GlobalProps {

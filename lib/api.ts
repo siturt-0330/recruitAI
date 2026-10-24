@@ -30,15 +30,16 @@ export interface Sponsor {
 }
 
 /** ポップアップのスポンサー枠。中身は中継 API の設定で差し替える（なければ null） */
-export async function fetchSponsor(): Promise<Sponsor | null> {
+/** スポンサーがなければ null、取れなかったら undefined（取れなかったときはキャッシュしない） */
+export async function fetchSponsor(): Promise<Sponsor | null | undefined> {
   try {
     const res = await fetch(`${API_URL}/v1/sponsor`);
-    if (!res.ok) return null;
+    if (!res.ok) return undefined;
     const s = (await res.json()) as { sponsor?: Partial<Sponsor> | null };
     const x = s.sponsor;
     if (!x?.title || !x.url || !/^https:\/\//.test(x.url)) return null;
     return { title: x.title, body: x.body ?? '', url: x.url, cta: x.cta || '詳しく見る' };
   } catch {
-    return null;
+    return undefined;
   }
 }

@@ -7,7 +7,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, CalendarClock, Download, LayoutGrid, P
 import { AddCompanyDialog } from '@/components/AddCompanyDialog';
 import { IndustrySelect } from '@/components/IndustrySelect';
 import { Button, Chip, CompanyLogo, DueBadge, PageHeader, StagePill } from '@/components/ui';
-import { dueBadge, md, mdTime, ymd } from '@/lib/dates';
+import { dueBadge, md, mdTime, today, ymd } from '@/lib/dates';
 import { emptyCompany } from '@/lib/seed';
 import { COLUMNS, STAGES, stageOrder } from '@/lib/stages';
 import { useStore } from '@/lib/store';
@@ -357,7 +357,7 @@ function downloadCsv(companies: Company[]) {
   const blob = new Blob(['﻿' + [head.map(esc).join(','), ...lines].join('\r\n')], { type: 'text/csv' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `sophon-companies-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `sophon-companies-${today()}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
 }

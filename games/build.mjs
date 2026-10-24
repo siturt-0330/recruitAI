@@ -1,5 +1,5 @@
 // 単語タイピングゲームのページを作る。games/<slug>/game.json と words.json から、
-//   site/game/<slug>/index.html と words.json、ゲーム一覧（site/game/index.html）、サイトマップを書き出す。
+//   site/game/<slug>/index.html と words.json、単語一覧（site/game/<slug>/words/index.html）、ゲーム一覧（site/game/index.html）、サイトマップを書き出す。
 // 言葉のデータに間違いがあれば、何も書き出さずに止まる。
 //
 //   node games/build.mjs
@@ -77,8 +77,17 @@ function load(slug, errors) {
     }
     const out = { w: w.w, y: w.y, m: w.m, e: w.e, p: w.p, pre, post, lv: w.lv };
     if (w.alt && w.alt.length) out.alt = w.alt;
+    if (w.syn !== undefined && !Array.isArray(w.syn)) err(`${at}: syn は言葉の配列で書いてください`);
+    else if (w.syn && w.syn.length) out.syn = w.syn;
     return out;
   });
+  // 似た意味の言葉（syn）は、このゲームにある言葉を指していること
+  for (const w of words) {
+    for (const s of w.syn || []) {
+      if (s === w.w) err(`${w.w}: syn に自分自身が入っています`);
+      else if (!seen.has(s)) err(`${w.w}: syn の「${s}」は words.json にない言葉です`);
+    }
+  }
   for (const c of cfg.courses || []) {
     const n = words.filter((w) => c.levels.includes(w.lv)).length;
     if (n < 10) err(`コース「${c.name}」の言葉が ${n} 語しかありません（10 語以上にしてください）`);
@@ -124,44 +133,191 @@ const engineHash = createHash('sha1');
 for (const f of ['romaji.js', 'game.js', 'game.css']) engineHash.update(fs.readFileSync(path.join(siteGame, 'engine', f)));
 
 const page = template('template.html');
+const listPage = template('words.html');
+/** <script type="application/ld+json"> に埋め込む（</script> で切れないように < を逃がす） */
+const ld = (data) => JSON.stringify(data).replace(/</g, '\\u003c');
+const PUBLISHER = { '@type': 'Organization', name: 'らくらくエントリー', url: `${SITE}/`, logo: `${SITE}/images/icon-128.png` };
+const crumbs = (items) => ({
+  '@type': 'BreadcrumbList',
+  itemListElement: items.map(([name, item], i) => ({ '@type': 'ListItem', position: i + 1, name, item })),
+});
+/** 例文の中の言葉に印をつける（々で書いた形も） */
+const markWord = (w) => {
+  const f = forms(w.w).find((x) => w.e.includes(x));
+  return f ? w.e.split(f).map(esc).join(`<mark>${esc(f)}</mark>`) : esc(w.e);
+};
+/** 中身が同じなら書きかえない。書きかえたら true（サイトマップの更新日に使う） */
+const changed = new Set();
+const write = (file, text, url) => {
+  const same = fs.existsSync(file) && fs.readFileSync(file, 'utf8') === text;
+  if (!same) {
+    fs.writeFileSync(file, text);
+    if (url) changed.add(url);
+  }
+};
+
 for (const g of games) {
   const url = `${SITE}/game/${g.slug}`;
+  const gamePath = `/game/${g.slug}`;
+  const listPath = `${gamePath}/words`;
   const version = createHash('sha1').update(engineHash.copy().digest('hex')).update(JSON.stringify(g)).digest('hex').slice(0, 8);
   const config = { ...g.cfg, slug: g.slug, url, version };
+  const ogImage = SITE + (g.cfg.ogImage || '/images/og.png');
+  const names = g.cfg.levelNames || {};
+  const levelName = (lv) => names[lv] || `レベル ${lv}`;
+  const gameLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebApplication',
+        name: g.cfg.title,
+        url,
+        description: g.cfg.description,
+        applicationCategory: 'EducationalApplication',
+        operatingSystem: 'Web',
+        inLanguage: 'ja',
+        isAccessibleForFree: true,
+        image: ogImage,
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
+        publisher: PUBLISHER,
+      },
+      crumbs([
+        ['らくらくエントリー', `${SITE}/`],
+        ['SPI 用語集', `${SITE}/game`],
+        [g.cfg.title, url],
+      ]),
+    ],
+  };
   const html = page
-    .replaceAll('{{seoTitle}}', esc(g.cfg.seoTitle))
-    .replaceAll('{{description}}', esc(g.cfg.description))
-    .replaceAll('{{url}}', url)
-    .replaceAll('{{kicker}}', esc(g.cfg.kicker))
-    .replaceAll('{{heading1}}', esc(g.cfg.heading1))
-    .replaceAll('{{heading2}}', esc(g.cfg.heading2))
-    .replaceAll('{{version}}', version)
-    .replaceAll('{{adHead}}', adHead)
-    .replaceAll('{{wordCount}}', String(g.words.length))
-    .replaceAll('{{adStart}}', adSlot('start'))
-    .replaceAll('{{adPlay}}', adSlot('play', { size: 'small' }))
-    .replaceAll('{{adSide}}', adSlot('side', { size: 'side' }))
-    .replaceAll('{{adResult}}', adSlot('result'))
-    .replaceAll('{{config}}', JSON.stringify(config).replace(/</g, '\\u003c'));
+    .replaceAll('{{seoTitle}}', () => esc(g.cfg.seoTitle))
+    .replaceAll('{{description}}', () => esc(g.cfg.description))
+    .replaceAll('{{url}}', () => url)
+    .replaceAll('{{ogImage}}', () => ogImage)
+    .replaceAll('{{kicker}}', () => esc(g.cfg.kicker))
+    .replaceAll('{{heading1}}', () => esc(g.cfg.heading1))
+    .replaceAll('{{heading2}}', () => esc(g.cfg.heading2))
+    .replaceAll('{{aboutHeading}}', () => esc(g.cfg.aboutHeading || `${g.cfg.title}とは`))
+    .replaceAll('{{aboutText}}', () => esc(g.cfg.aboutText || g.cfg.description))
+    .replaceAll('{{listPath}}', () => listPath)
+    .replaceAll('{{version}}', () => version)
+    .replaceAll('{{adHead}}', () => adHead)
+    .replaceAll('{{wordCount}}', () => String(g.words.length))
+    .replaceAll('{{adStart}}', () => adSlot('start'))
+    .replaceAll('{{adPlay}}', () => adSlot('play', { size: 'small' }))
+    .replaceAll('{{adSide}}', () => adSlot('side', { size: 'side' }))
+    .replaceAll('{{adResult}}', () => adSlot('result'))
+    .replaceAll('{{jsonLd}}', () => ld(gameLd))
+    .replaceAll('{{config}}', () => JSON.stringify(config).replace(/</g, '\\u003c'));
   const out = path.join(siteGame, g.slug);
   fs.mkdirSync(out, { recursive: true });
-  fs.writeFileSync(path.join(out, 'index.html'), html);
-  fs.writeFileSync(path.join(out, 'words.json'), JSON.stringify(g.words));
+  write(path.join(out, 'index.html'), html, gamePath);
+  write(path.join(out, 'words.json'), JSON.stringify(g.words), gamePath);
   console.log(`/game/${g.slug}  ${g.cfg.title}（${g.words.length} 語）`);
+
+  // 単語一覧（言葉をすべて HTML に書き出す。検索から言葉を探して来た人が読める）
+  const levels = [...new Set(g.words.map((w) => w.lv))].sort((a, b) => a - b);
+  const byYomi = (a, b) => a.y.localeCompare(b.y, 'ja');
+  const sections = levels
+    .map((lv) => {
+      const list = g.words.filter((w) => w.lv === lv).sort(byYomi);
+      const items = list
+        .map(
+          (w) =>
+            `              <div class="it" id="${esc(w.w)}"><dt><b>${esc(w.w)}</b><span class="y">${esc([w.y, ...(w.alt || [])].join('・'))}</span></dt><dd>${esc(w.m)}<span class="ex">例：${markWord(w)}</span></dd></div>`,
+        )
+        .join('\n');
+      return `        <section class="wbg" id="lv${lv}">\n          <div class="wbgh"><h2>${esc(levelName(lv))}<small>${list.length} 語</small></h2></div>\n          <dl>\n${items}\n          </dl>\n        </section>`;
+    })
+    .join('\n');
+  const toc = levels.map((lv) => `          <li><a href="#lv${lv}">${esc(levelName(lv))}（${g.words.filter((w) => w.lv === lv).length} 語）</a></li>`).join('\n');
+  const listUrl = SITE + listPath;
+  const listTitle = g.cfg.listTitle || `${g.cfg.title}の単語一覧（${g.words.length} 語）`;
+  const listDescription = g.cfg.listDescription || `${g.cfg.title}に出る ${g.words.length} 語を、読み・意味・例文つきで一覧にしました。`;
+  const listLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'DefinedTermSet',
+        '@id': `${listUrl}#terms`,
+        name: listTitle,
+        url: listUrl,
+        description: listDescription,
+        inLanguage: 'ja',
+        publisher: PUBLISHER,
+        hasDefinedTerm: g.words.map((w) => ({
+          '@type': 'DefinedTerm',
+          name: w.w,
+          alternateName: [w.y, ...(w.alt || [])],
+          description: w.m,
+          url: `${listUrl}#${w.w}`,
+        })),
+      },
+      crumbs([
+        ['らくらくエントリー', `${SITE}/`],
+        ['SPI 用語集', `${SITE}/game`],
+        [g.cfg.title, url],
+        ['単語一覧', listUrl],
+      ]),
+    ],
+  };
+  const listHtml = listPage
+    .replaceAll('{{listTitle}}', () => esc(listTitle))
+    .replaceAll('{{listDescription}}', () => esc(listDescription))
+    .replaceAll('{{listHeading}}', () => esc(g.cfg.listHeading || listTitle))
+    .replaceAll('{{listLead}}', () => esc(g.cfg.listLead || listDescription))
+    .replaceAll('{{listUrl}}', () => listUrl)
+    .replaceAll('{{gamePath}}', () => gamePath)
+    .replaceAll('{{title}}', () => esc(g.cfg.title))
+    .replaceAll('{{ogImage}}', () => ogImage)
+    .replaceAll('{{version}}', () => version)
+    .replaceAll('{{toc}}', () => toc)
+    .replaceAll('{{sections}}', () => sections)
+    .replaceAll('{{jsonLd}}', () => ld(listLd));
+  fs.mkdirSync(path.join(out, 'words'), { recursive: true });
+  write(path.join(out, 'words', 'index.html'), listHtml, listPath);
+  console.log(`${listPath}  単語一覧`);
 }
 
 // ゲームの一覧
+games.sort((a, b) => (a.cfg.order ?? 99) - (b.cfg.order ?? 99) || a.cfg.title.localeCompare(b.cfg.title));
 const cards = games
-  .sort((a, b) => (a.cfg.order ?? 99) - (b.cfg.order ?? 99) || a.cfg.title.localeCompare(b.cfg.title))
   .map(
     (g) =>
       `          <a class="gcard" href="/game/${g.slug}"><span class="k">${esc(g.cfg.kicker)}</span><b>${esc(g.cfg.title)}</b><p>${esc(g.cfg.summary)}</p><div class="n">${g.words.length} 語 ・ ${g.cfg.courses.length} コース</div></a>`,
   )
   .join('\n');
+const lists = games.map((g) => `          <li><a href="/game/${g.slug}/words">${esc(g.cfg.title)}の単語一覧（${g.words.length} 語）</a></li>`).join('\n');
+const hubLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'CollectionPage',
+      name: 'SPI 用語集',
+      url: `${SITE}/game`,
+      inLanguage: 'ja',
+      publisher: PUBLISHER,
+      mainEntity: {
+        '@type': 'ItemList',
+        itemListElement: games.map((g, i) => ({ '@type': 'ListItem', position: i + 1, name: g.cfg.title, url: `${SITE}/game/${g.slug}` })),
+      },
+    },
+    crumbs([
+      ['らくらくエントリー', `${SITE}/`],
+      ['SPI 用語集', `${SITE}/game`],
+    ]),
+  ],
+};
 const hubVersion = engineHash.digest('hex').slice(0, 8);
-fs.writeFileSync(
+write(
   path.join(siteGame, 'index.html'),
-  template('hub.html').replaceAll('{{version}}', hubVersion).replace('{{adHead}}', adHead).replace('{{adHub}}', adSlot('hub', { now: true })).replace('{{games}}', cards),
+  template('hub.html')
+    .replaceAll('{{version}}', () => hubVersion)
+    .replace('{{adHead}}', () => adHead)
+    .replace('{{adHub}}', () => adSlot('hub', { now: true }))
+    .replace('{{jsonLd}}', () => ld(hubLd))
+    .replace('{{games}}', () => cards)
+    .replace('{{lists}}', () => lists),
+  '/game',
 );
 console.log('/game  ゲーム一覧');
 
@@ -175,14 +331,21 @@ if (adClient) {
   console.log('広告：なし（ads.txt を消しました）');
 }
 
-// サイトマップ（<!-- games --> と <!-- /games --> のあいだを書きかえる）
+// サイトマップ（<!-- games --> と <!-- /games --> のあいだを書きかえる）。
+// 更新日は中身が変わったページだけ今日にする（毎回今日にすると、検索エンジンが更新日を信用しなくなる）
 const sitemapPath = path.join(root, 'site', 'sitemap.xml');
 let sitemap = fs.readFileSync(sitemapPath, 'utf8');
 const today = new Date().toISOString().slice(0, 10);
-const entries = ['/game', ...games.map((g) => `/game/${g.slug}`)].map((p) => `  <url><loc>${SITE}${p}</loc><lastmod>${today}</lastmod></url>`).join('\n');
+const lastmod = (p) => {
+  const m = sitemap.match(new RegExp(`<loc>${SITE}${p}</loc><lastmod>([\\d-]+)</lastmod>`));
+  return changed.has(p) || !m ? today : m[1];
+};
+const entries = ['/game', ...games.flatMap((g) => [`/game/${g.slug}`, `/game/${g.slug}/words`])]
+  .map((p) => `  <url><loc>${SITE}${p}</loc><lastmod>${lastmod(p)}</lastmod></url>`)
+  .join('\n');
 const block = `  <!-- games -->\n${entries}\n  <!-- /games -->`;
 sitemap = /<!-- games -->[\s\S]*<!-- \/games -->/.test(sitemap)
-  ? sitemap.replace(/  <!-- games -->[\s\S]*<!-- \/games -->/, block)
-  : sitemap.replace('</urlset>', block + '\n</urlset>');
-fs.writeFileSync(sitemapPath, sitemap);
+  ? sitemap.replace(/  <!-- games -->[\s\S]*<!-- \/games -->/, () => block)
+  : sitemap.replace('</urlset>', () => block + '\n</urlset>');
+write(sitemapPath, sitemap);
 console.log('サイトマップを更新しました');
