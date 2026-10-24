@@ -7,6 +7,7 @@
 games/
   build.mjs          … ページを書き出すスクリプト（言葉のチェックもする）
   template.html      … 各ゲームのページのひな形
+  words.html         … 各ゲームの単語一覧（/game/<slug>/words）のひな形
   hub.html           … ゲーム一覧（/game）のひな形
   spi-goi/
     game.json        … 設定（題名・コース・カードの名前など）
@@ -14,7 +15,7 @@ games/
 site/game/
   engine/            … 共通のエンジン（romaji.js・game.js・game.css）。ここは手で直す
   index.html         … ゲーム一覧（書き出し）
-  spi-goi/           … 各ゲーム（書き出し。手で直さない）
+  spi-goi/           … 各ゲーム（書き出し。手で直さない。words/ は単語一覧）
 ```
 
 ## 新しいゲームを足す
@@ -37,6 +38,9 @@ site/game/
 | --- | --- |
 | `title` | ゲームの名前（シェアの文にも使う） |
 | `seoTitle` / `description` | 検索結果に出る題名と説明 |
+| `ogImage` | SNS でシェアされたときの画像（`/images/...`。なければ公式サイトと同じ画像） |
+| `aboutHeading` / `aboutText` | スタート画面の下の説明（検索から来た人向け。なければ「〇〇とは」と `description`） |
+| `listTitle` / `listDescription` / `listHeading` / `listLead` | 単語一覧のページの、検索結果に出る題名と説明・見出し・リード文（なければ題名から作る） |
 | `summary` | ゲーム一覧のカードに出る一言 |
 | `kicker` / `heading1` / `heading2` | スタート画面の小見出し・見出し 2 行 |
 | `card` | ベルトに流れるカードの名前（例：`ES`、`名刺`） |
@@ -64,6 +68,12 @@ site/game/
 | `p` | 打つ言い回し（例文の中にそのまま入っていること） |
 | `pr` | 言い回しの読み（ひらがな。言葉の読みを含むこと） |
 | `lv` | 難しさ（コースの `levels` と合わせる） |
+
+## 単語一覧のページ
+
+`build.mjs` は、言葉をすべて HTML に書き出した単語一覧（`/game/<slug>/words`）も作る。ゲームの言葉は JavaScript で読み込むので検索エンジンからは見えにくいが、このページは「〇〇 意味」などで探して来た人が読める。レベルごとに五十音順で並べ、言葉ごとにページ内リンク（`/game/spi-goi/words#逡巡`）がある。構造化データ（`DefinedTermSet` とパンくず）も入れている。
+
+サイトマップの更新日は、中身が変わったページだけ書きかえる（毎回今日の日付にすると、検索エンジンが更新日を信用しなくなる）。
 
 `build.mjs` は、次のどれかがあると何も書き出さずに止まる。
 
