@@ -98,7 +98,8 @@ export function CompanyPage({ company, mode, onClose }: { company: Company; mode
           if (!company.name.trim()) set({ name: nameAtFocus.current });
           else if (company.name !== nameAtFocus.current) {
             const logo = await logoFor({ ...company, url: '', mypageUrl: '' });
-            useStore.getState().patchCompany(company.id, { logo });
+            // 見つからなかったときは、今のロゴを消さない
+            if (logo) useStore.getState().patchCompany(company.id, { logo });
           }
         }}
         placeholder="会社名"
@@ -249,7 +250,7 @@ function PasswordInput({ company, connected }: { company: Company; connected: bo
           !connected ? '拡張機能と連携すると保存できます' : !updated ? '拡張機能を更新すると保存できます' : !company.mypageUrl ? '先にマイページの URL を入力' : 'パスワードを入力'
         }
         onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => !e.nativeEvent.isComposing && e.key === 'Enter' && save()}
+        onKeyDown={(e) => !e.nativeEvent.isComposing && e.keyCode !== 229 && e.key === 'Enter' && save()}
         className="h-9 min-w-0 flex-1 bg-transparent outline-none placeholder:text-mute disabled:cursor-not-allowed"
       />
       {value && (
@@ -372,8 +373,11 @@ export function TagSelect({ value, options, onChange, creatable }: { value: stri
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => {
-              if (e.nativeEvent.isComposing || e.key !== 'Enter') return;
-              if (canCreate) pick(q.trim());
+              if (e.nativeEvent.isComposing || e.keyCode === 229 || e.key !== 'Enter') return;
+              // 打った名前とぴったり同じものがあれば、それを選ぶ（「IT」で「IT・通信」を選ばないように）
+              const exact = options.find((o) => o === q.trim());
+              if (exact) pick(exact);
+              else if (canCreate) pick(q.trim());
               else if (shown[0]) pick(shown[0]);
             }}
             placeholder={creatable ? '検索または新しく作る' : '検索'}

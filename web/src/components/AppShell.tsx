@@ -13,6 +13,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     Promise.resolve(useStore.persist.rehydrate()).then(() => setReady(true));
+    // ほかのタブで保存したら読み込み直す（古いデータのまま保存して、ほかのタブの変更を消さないように）
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === useStore.persist.getOptions().name) void useStore.persist.rehydrate();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   return (
