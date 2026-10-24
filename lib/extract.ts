@@ -52,6 +52,8 @@ const TEXT_TYPES = new Set(['', 'text', 'email', 'tel', 'number', 'date', 'month
 const SKIP_TEXT_PARENTS = new Set(['SELECT', 'OPTION', 'TEXTAREA', 'SCRIPT', 'STYLE', 'NOSCRIPT', 'BUTTON']);
 /** 入力欄（独自デザインのプルダウンを含む） */
 const CONTROLS = `input, select, textarea, ${COMBO_SELECTOR}`;
+/** 見出しやラベルを探すときに「欄がある」とみなすもの。type=hidden はサイトの裏のデータで、見出しのセルに入っていることがある（snar.jp など）ので数えない */
+const VISIBLE_CONTROLS = `input:not([type="hidden"]), select, textarea, ${COMBO_SELECTOR}`;
 
 export function textOf(node: Node | null, limit = 120): string {
   if (!node) return '';
@@ -156,7 +158,7 @@ function siblingText(el: HTMLElement, dir: 1 | -1, max: number): string {
     if (t) return t;
     const parent = target.parentElement;
     if (!parent || /^(TD|TH|DD|DT|TR|LI|FORM|BODY|FIELDSET)$/.test(parent.tagName)) break;
-    if (parent.querySelectorAll(CONTROLS).length > 1) break;
+    if (parent.querySelectorAll(VISIBLE_CONTROLS).length > 1) break;
     target = parent;
   }
   return '';
@@ -166,7 +168,7 @@ function adjacentText(el: HTMLElement, dir: 1 | -1, max: number): string {
   let out = '';
   let n: Node | null = dir === 1 ? el.nextSibling : el.previousSibling;
   while (n && out.length < max) {
-    if (isControl(n) || (n instanceof HTMLElement && n.querySelector(CONTROLS))) break;
+    if (isControl(n) || (n instanceof HTMLElement && n.querySelector(VISIBLE_CONTROLS))) break;
     const t = n.nodeType === Node.TEXT_NODE ? (n.nodeValue ?? '') : textOf(n, max);
     out = dir === 1 ? `${out} ${t}` : `${t} ${out}`;
     n = dir === 1 ? n.nextSibling : n.previousSibling;
@@ -182,7 +184,7 @@ function columnHeader(cell: HTMLTableCellElement): string {
   if (!table || !row) return '';
   const headerRow =
     table.tHead?.rows[0] ??
-    Array.from(table.rows).find((r) => r !== row && r.querySelector('th') && !r.querySelector(CONTROLS));
+    Array.from(table.rows).find((r) => r !== row && r.querySelector('th') && !r.querySelector(VISIBLE_CONTROLS));
   if (!headerRow || headerRow === row) return '';
   return textOf(headerRow.cells[cell.cellIndex] ?? null, 40);
 }
@@ -196,7 +198,7 @@ function structuralHeader(el: HTMLElement): string {
       const row = cell.parentElement as HTMLTableRowElement | null;
       // 同じ行の、入力欄のないセル（ふつうは th）が行見出し
       const header = Array.from(row?.children ?? []).find(
-        (c) => c !== cell && !c.contains(el) && !c.querySelector(CONTROLS),
+        (c) => c !== cell && !c.contains(el) && !c.querySelector(VISIBLE_CONTROLS),
       );
       const t = textOf(header ?? null, 60);
       if (t && !/^[\s\-‐ー－~〜()（）]*$/.test(t)) return t;
@@ -249,7 +251,7 @@ function questionText(el: HTMLElement): string {
   for (let depth = 0; node && depth < 6; depth++) {
     for (let n = node.previousSibling; n; n = n.previousSibling) {
       // 前の設問の欄まで来たら、それより前の文字は前の設問のもの
-      if (isControl(n) || (n instanceof HTMLElement && n.querySelector(CONTROLS))) return finish(parts);
+      if (isControl(n) || (n instanceof HTMLElement && n.querySelector(VISIBLE_CONTROLS))) return finish(parts);
       const t = n.nodeType === Node.TEXT_NODE ? (n.nodeValue ?? '') : textOf(n, 80);
       if (t.trim()) parts.unshift(t.trim());
     }
@@ -317,7 +319,7 @@ function checkboxText(el: HTMLInputElement): string {
   const parts = [labelText(el), siblingText(el, 1, 60), siblingText(el, -1, 30)];
   let node = el.parentElement;
   for (let depth = 0; node && depth < 3; depth++, node = node.parentElement) {
-    if (node.querySelectorAll(CONTROLS).length > 1) break;
+    if (node.querySelectorAll(VISIBLE_CONTROLS).length > 1) break;
     const t = textOf(node, 100);
     if (t && t.length <= 100) parts.push(t);
   }
