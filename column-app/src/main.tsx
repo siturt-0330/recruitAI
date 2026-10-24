@@ -1,12 +1,11 @@
-// コラムの書く画面。/column/write は書きはじめる画面、/column/write/<id> はエディタ
+// コラムの書く画面。/column/write は白紙のエディタ、/column/write/<id> は下書きのエディタ
 import { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Me } from './api';
 import { Editor } from './Editor';
-import { NewArticle } from './NewArticle';
 import './write.css';
 
-function App({ me }: { me: Me }) {
+function App({ me, id }: { me: Me; id?: string }) {
   const [message, setMessage] = useState('');
   const toast = useCallback((text: string) => setMessage(text), []);
   useEffect(() => {
@@ -15,10 +14,9 @@ function App({ me }: { me: Me }) {
     return () => window.clearTimeout(t);
   }, [message]);
 
-  const id = location.pathname.match(/^\/column\/write\/([A-Za-z0-9_-]+)$/)?.[1];
   return (
     <>
-      {id ? <Editor id={id} me={me} toast={toast} /> : <NewArticle toast={toast} />}
+      {id ? <Editor id={id} me={me} toast={toast} /> : <Editor me={me} toast={toast} />}
       {message && (
         <div className="toast" role="status">
           {message}
@@ -30,4 +28,6 @@ function App({ me }: { me: Me }) {
 
 const root = document.getElementById('app')!;
 const me = JSON.parse(root.dataset.me ?? '{}') as Me;
-createRoot(root).render(<App me={me} />);
+// id は開いたときの URL から一度だけ読む（白紙から書いて下書きができると URL がかわるが、読み直さない）
+const id = location.pathname.match(/^\/column\/write\/([A-Za-z0-9_-]+)$/)?.[1];
+createRoot(root).render(<App me={me} id={id} />);

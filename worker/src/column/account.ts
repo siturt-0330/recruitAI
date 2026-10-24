@@ -1,33 +1,31 @@
 // プロフィール：最初の登録（/column/welcome）・設定（/column/settings）・退会
 import { hasProfile, type User } from './auth';
-import { avatar, page } from './layout';
+import { page } from './layout';
 import { esc, hostCookie, htmlResponse, now, readForm, redirect, safeNext, sameOrigin } from './util';
 
 /** アイコンの色（写真を出さない人のための丸）。ここにない色は保存しない */
 export const ICON_COLORS = ['#c4a68d', '#9c8873', '#d1b06b', '#7d8a7b', '#a7b29a', '#6f7a86', '#8e9fb5', '#b39a9f'];
 /** URL の名前に使えない言葉（コラムの URL とぶつかるもの・紛らわしいもの） */
 const RESERVED = new Set(['admin', 'api', 'auth', 'column', 'join', 'settings', 'terms', 'write', 'welcome', 'img', 'new', 'edit', 'rakuraku', 'official', 'support']);
-/** 立場をすぐ入れられるように出す候補 */
-const YEARS = ['26卒', '27卒', '28卒', '29卒'];
-const KINDS = ['文系', '理系'];
 
 const loginUrl = (next: string) => `/column/auth/google?next=${encodeURIComponent(next)}`;
 
 interface ProfileInput {
   pen_name: string;
   handle: string;
-  status_line: string;
   bio: string;
   icon_color: string;
+  /** アイコンの写真（R2 の key）。空なら色の丸 */
+  icon_key: string;
 }
 
 function readProfile(f: URLSearchParams): ProfileInput {
   return {
     pen_name: (f.get('pen_name') ?? '').trim(),
     handle: (f.get('handle') ?? '').trim().toLowerCase(),
-    status_line: (f.get('status_line') ?? '').trim(),
     bio: (f.get('bio') ?? '').trim(),
     icon_color: f.get('icon_color') ?? '',
+    icon_key: (f.get('icon_key') ?? '').trim(),
   };
 }
 
@@ -37,9 +35,10 @@ async function checkProfile(env: Env, user: User, v: ProfileInput): Promise<stri
   if (v.pen_name.length > 20) return 'ペンネームは 20 文字以内にしてください';
   if (!/^[a-z0-9_]{3,20}$/.test(v.handle)) return 'URL の名前は、半角の小文字・数字・_ で 3〜20 文字にしてください';
   if (RESERVED.has(v.handle)) return 'その URL の名前は使えません';
-  if (v.status_line.length > 24) return '立場は 24 文字以内にしてください';
   if (v.bio.length > 160) return 'ひと言は 160 文字以内にしてください';
   if (!ICON_COLORS.includes(v.icon_color)) return 'アイコンの色を選んでください';
+  // 写真は、その人がアップロードしたものだけ
+  if (v.icon_key && !(await env.COLUMN_DB.prepare('SELECT 1 FROM images WHERE key = ? AND user_id = ?').bind(v.icon_key, user.id).first())) return '写真をもう一度選んでください';
   const taken = await env.COLUMN_DB.prepare('SELECT 1 FROM users WHERE handle = ? AND id <> ?').bind(v.handle, user.id).first();
   if (taken) return 'その URL の名前は、もう使われています';
   return '';
@@ -57,32 +56,26 @@ async function freeHandle(env: Env): Promise<string> {
 
 /** 自分がどう表示されるかの見本（打つとすぐ変わる。onboard.js） */
 function preview(v: ProfileInput): string {
+  const photo = v.icon_key ? `;background-image:url(/column/img/${encodeURIComponent(v.icon_key)})` : '';
   return `<div class="pv" aria-hidden="true" data-preview>
-${avatar({ icon_key: null, icon_color: v.icon_color }, 56).replace('class="av"', 'class="av" data-pv-av')}
-<span class="pv-main"><b data-pv-name data-empty="ペンネーム">${esc(v.pen_name || 'ペンネーム')}</b><span data-pv-status data-empty="立場">${esc(v.status_line || '立場')}</span></span>
+<span class="av pv-av" data-pv-av style="width:56px;height:56px;background-color:${esc(v.icon_color)}${photo}"></span>
+<span class="pv-main"><b data-pv-name data-empty="ペンネーム">${esc(v.pen_name || 'ペンネーム')}</b></span>
 </div>`;
 }
 
-/** 立場の入力欄と、押すだけで入る候補 */
-function statusField(value: string): string {
-  const chip = (group: string, label: string) => `<button type="button" class="pick" data-${group}="${label}" aria-pressed="${value.includes(label)}">${label}</button>`;
-  return `<div class="field">
-<label for="status_line">立場</label>
-<div class="picks" data-picks>${YEARS.map((y) => chip('year', y)).join('')}<span class="picks-gap"></span>${KINDS.map((k) => chip('kind', k)).join('')}</div>
-<input type="text" id="status_line" name="status_line" value="${esc(value)}" maxlength="24" placeholder="27卒・文系" autocomplete="off">
-</div>`;
-}
-
-function colorField(selected: string): string {
+/** アイコン：写真か色。色を選び直すと写真は外れる（onboard.js） */
+function iconField(v: ProfileInput): string {
   return `<div class="field"><span class="field-label">アイコン</span>
+<div class="icon-pick"><button type="button" class="pick" data-photo>写真を選ぶ</button><button type="button" class="link-btn small-inline" data-photo-remove${v.icon_key ? '' : ' hidden'}>写真を外す</button></div>
+<input type="hidden" name="icon_key" value="${esc(v.icon_key)}">
 <div class="swatches" role="radiogroup" aria-label="アイコンの色">
-${ICON_COLORS.map((c, i) => `<input type="radio" id="c${i}" name="icon_color" value="${c}"${c === selected ? ' checked' : ''}><label for="c${i}" style="background:${c}" aria-label="色 ${i + 1}"></label>`).join('')}
+${ICON_COLORS.map((c, i) => `<input type="radio" id="c${i}" name="icon_color" value="${c}"${c === v.icon_color ? ' checked' : ''}><label for="c${i}" style="background:${c}" aria-label="色 ${i + 1}"></label>`).join('')}
 </div></div>`;
 }
 
 const errorBox = (error: string) => (error ? `<p class="form-error" role="alert">${esc(error)}</p>` : '');
 
-/** 最初の登録。ペンネーム・立場・アイコンの色と、利用規約への同意だけ。URL の名前は自動で決める */
+/** 最初の登録。聞くのはペンネームとアイコンの色だけ。立場・ひと言は空、URL の名前は自動（どれも設定で変えられる）。「はじめる」で利用規約に同意したことにする */
 export async function welcome(request: Request, env: Env, url: URL, user: User | null): Promise<Response> {
   if (!user) return redirect(loginUrl('/column/welcome'));
   const next = safeNext(url.searchParams.get('next'));
@@ -91,23 +84,20 @@ export async function welcome(request: Request, env: Env, url: URL, user: User |
   let v: ProfileInput = {
     pen_name: user.pen_name ?? '',
     handle: user.handle ?? '',
-    status_line: user.status_line,
     bio: user.bio,
     icon_color: user.icon_color,
+    icon_key: user.icon_key ?? '',
   };
   let error = '';
-  let agreed = false;
   if (request.method === 'POST') {
     if (!sameOrigin(request, url)) return htmlResponse('', 403);
     const f = await readForm(request);
     if (!f) return htmlResponse('', 413);
     v = { ...readProfile(f), bio: user.bio, handle: user.handle ?? (await freeHandle(env)) };
-    agreed = f.get('terms') === 'on';
     error = await checkProfile(env, user, v);
-    if (!error && !agreed) error = '利用規約に同意してください';
     if (!error) {
-      await env.COLUMN_DB.prepare('UPDATE users SET pen_name = ?, handle = ?, status_line = ?, icon_color = ?, terms_at = COALESCE(terms_at, ?) WHERE id = ?')
-        .bind(v.pen_name, v.handle, v.status_line, v.icon_color, now(), user.id)
+      await env.COLUMN_DB.prepare('UPDATE users SET pen_name = ?, handle = ?, icon_color = ?, icon_key = ?, terms_at = COALESCE(terms_at, ?) WHERE id = ?')
+        .bind(v.pen_name, v.handle, v.icon_color, v.icon_key || null, now(), user.id)
         .run();
       return redirect(safeNext(f.get('next')));
     }
@@ -124,10 +114,9 @@ ${errorBox(error)}
 <label for="pen_name">ペンネーム</label>
 <input type="text" id="pen_name" name="pen_name" value="${esc(v.pen_name)}" maxlength="20" required placeholder="みお" autocomplete="nickname" autofocus>
 </div>
-${statusField(v.status_line)}
-${colorField(v.icon_color)}
-<label class="agree"><input type="checkbox" name="terms"${agreed ? ' checked' : ''}><span><a href="/column/terms" target="_blank">利用規約</a>に同意する</span></label>
+${iconField(v)}
 <button class="btn btn-block" type="submit">はじめる</button>
+<p class="fine">はじめると<a href="/column/terms" target="_blank">利用規約</a>に同意したことになります</p>
 </form>
 </div>`;
   return htmlResponse(page({ title: 'ようこそ', noindex: true, width: 'narrow', scripts: ['onboard.js'] }, body, user, env, url.pathname), error ? 400 : 200);
@@ -140,9 +129,9 @@ export async function settings(request: Request, env: Env, url: URL, user: User 
   let v: ProfileInput = {
     pen_name: user.pen_name ?? '',
     handle: user.handle ?? '',
-    status_line: user.status_line,
     bio: user.bio,
     icon_color: user.icon_color,
+    icon_key: user.icon_key ?? '',
   };
   let error = '';
   let saved = url.searchParams.get('saved') === '1';
@@ -153,8 +142,8 @@ export async function settings(request: Request, env: Env, url: URL, user: User 
     v = readProfile(f);
     error = await checkProfile(env, user, v);
     if (!error) {
-      await env.COLUMN_DB.prepare('UPDATE users SET pen_name = ?, handle = ?, status_line = ?, bio = ?, icon_color = ? WHERE id = ?')
-        .bind(v.pen_name, v.handle, v.status_line, v.bio, v.icon_color, user.id)
+      await env.COLUMN_DB.prepare('UPDATE users SET pen_name = ?, handle = ?, bio = ?, icon_color = ?, icon_key = ? WHERE id = ?')
+        .bind(v.pen_name, v.handle, v.bio, v.icon_color, v.icon_key || null, user.id)
         .run();
       return redirect('/column/settings?saved=1');
     }
@@ -171,12 +160,11 @@ ${errorBox(error)}
 <label for="pen_name">ペンネーム</label>
 <input type="text" id="pen_name" name="pen_name" value="${esc(v.pen_name)}" maxlength="20" required placeholder="みお" autocomplete="nickname">
 </div>
-${statusField(v.status_line)}
 <div class="field">
 <label for="bio">ひと言</label>
 <textarea id="bio" name="bio" maxlength="160" rows="3" placeholder="金融と IT を中心にエントリー中">${esc(v.bio)}</textarea>
 </div>
-${colorField(v.icon_color)}
+${iconField(v)}
 <div class="field">
 <label for="handle">URL の名前</label>
 <div class="prefixed"><span>rakuraku-entry.com/column/u/</span><input type="text" id="handle" name="handle" value="${esc(v.handle)}" maxlength="20" required pattern="[a-z0-9_]{3,20}" autocomplete="off" autocapitalize="none" spellcheck="false"></div>

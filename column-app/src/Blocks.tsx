@@ -31,9 +31,11 @@ interface Props {
   onError(message: string): void;
   /** 本文の外から、最初の行に入る（タイトルで Enter を押したとき） */
   focusFirst: number;
+  /** 本文の外から、この行までスクロールして入る（目次を押したとき。押すたびに新しいものを渡す） */
+  jumpTo?: { id: string } | null;
 }
 
-export function Blocks({ blocks, onChange, onImage, onPickImage, onError, focusFirst }: Props) {
+export function Blocks({ blocks, onChange, onImage, onPickImage, onError, focusFirst, jumpTo }: Props) {
   const list = blocks.length ? blocks : [{ id: 'first', type: 'text' as const, text: '' }];
   const refs = useRef(new Map<string, HTMLTextAreaElement | HTMLDivElement>());
   const [focus, setFocus] = useState<{ id: string; caret: number } | null>(null);
@@ -42,7 +44,8 @@ export function Blocks({ blocks, onChange, onImage, onPickImage, onError, focusF
   const latest = useRef(list);
   latest.current = list;
 
-  useEffect(() => {
+  // 移る先のフォーカスは、描く前に動かす（Enter のすぐあとに打った文字が、前の欄に入らないように）
+  useLayoutEffect(() => {
     if (!focus) return;
     const el = refs.current.get(focus.id);
     if (el) {
@@ -52,13 +55,23 @@ export function Blocks({ blocks, onChange, onImage, onPickImage, onError, focusF
     setFocus(null);
   }, [focus]);
 
-  // タイトルで Enter を押したら、書きはじめる行（型の最初の見出しの下の空いた行）へ
-  useEffect(() => {
+  // タイトルで Enter を押したら、書きはじめる行（見出しから始まる記事なら、その下の空いた行）へ
+  useLayoutEffect(() => {
     if (!focusFirst || !list[0]) return;
     const empty = list.slice(0, 3).find((b) => b.type === 'text' && !b.text);
     setFocus(empty ? { id: empty.id, caret: 0 } : { id: list[0].id, caret: (list[0].text ?? '').length });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusFirst]);
+
+  // 目次で見出しを押したら、その行を画面のまん中まで動かして、行の終わりに入る
+  useEffect(() => {
+    const el = jumpTo && refs.current.get(jumpTo.id);
+    if (!el) return;
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' });
+    el.focus({ preventScroll: true });
+    if (el instanceof HTMLTextAreaElement) el.setSelectionRange(el.value.length, el.value.length);
+  }, [jumpTo]);
 
   const replace = (next: Block[]) => onChange(next);
   const update = (id: string, patch: Partial<Block>) => replace(latest.current.map((b) => (b.id === id ? { ...b, ...patch } : b)));

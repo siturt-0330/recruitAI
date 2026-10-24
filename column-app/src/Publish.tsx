@@ -1,7 +1,6 @@
 // 公開設定（モックアップ X5）。見出し画像・ハッシュタグ・公開範囲の 3 つだけ
 import { useEffect, useState } from 'react';
 import { api, ApiError, imageUrl, type Article, type Me } from './api';
-import { COMMON_TAGS, TEMPLATES } from './templates';
 
 interface Props {
   article: Article;
@@ -19,6 +18,9 @@ const VIS: { id: Article['visibility']; label: string; note: string }[] = [
   { id: 'unlisted', label: 'リンクを知っている人', note: '一覧と検索には出ません' },
 ];
 
+/** ハッシュタグの候補 */
+const COMMON_TAGS = ['27卒', '28卒', 'インターン', 'ES', '面接', 'マイページ', 'SPI'];
+
 export function Publish({ article, me, chars, onChange, onChooseCover, onClose, saveNow, toast }: Props) {
   // 開いているあいだは、うしろのエディタがスクロールしないようにする
   useEffect(() => {
@@ -32,8 +34,7 @@ export function Publish({ article, me, chars, onChange, onChooseCover, onClose, 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const published = article.status === 'published';
-  const tpl = TEMPLATES.find((t) => t.id === article.template);
-  const suggest = [...(tpl?.tags ?? []), ...COMMON_TAGS].filter((t, i, a) => a.indexOf(t) === i && !article.tags.includes(t)).slice(0, 6);
+  const suggest = COMMON_TAGS.filter((t) => !article.tags.includes(t));
 
   const addTag = (raw: string) => {
     const t = raw.replace(/^[#＃]+/, '').replace(/\s+/g, '').slice(0, 20);
@@ -76,7 +77,7 @@ export function Publish({ article, me, chars, onChange, onChooseCover, onClose, 
     if (!window.confirm('この記事を削除しますか？元に戻せません。')) return;
     try {
       await api.remove(article.id);
-      location.href = '/column/write';
+      location.href = `/column/u/${me.handle}`;
     } catch (e) {
       setError((e as ApiError).message);
     }

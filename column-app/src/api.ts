@@ -25,16 +25,6 @@ export interface Article {
   updatedAt: number;
 }
 
-export interface ArticleSummary {
-  id: string;
-  title: string;
-  status: 'draft' | 'published';
-  visibility: 'public' | 'unlisted';
-  hidden: number;
-  updated_at: number;
-  published_at: number | null;
-}
-
 export interface Me {
   penName: string;
   handle: string;
@@ -79,7 +69,6 @@ const json = (body: unknown): RequestInit => ({ method: 'POST', headers: { 'Cont
 const forSave = (blocks: Block[]) => blocks.filter((b) => b.type !== 'image' || b.key).map(({ preview: _, ...b }) => b);
 
 export const api = {
-  mine: () => call<{ articles: ArticleSummary[] }>('/column/api/articles'),
   get: (id: string) => call<{ article: Article }>(`/column/api/articles/${id}`),
   create: (template: string, body: Block[]) => call<{ id: string }>('/column/api/articles', json({ template, body })),
   save: (a: Pick<Article, 'id' | 'title' | 'body' | 'coverKey' | 'tags' | 'visibility'>) =>
@@ -96,3 +85,6 @@ export const uid = () => Math.random().toString(36).slice(2, 10);
 
 /** 文字数（空白を数えない。サーバーと同じ数え方） */
 export const countChars = (blocks: Block[]) => blocks.reduce((n, b) => n + (b.text ?? '').replace(/\s/g, '').length, 0);
+
+/** 読む時間の目安（1 分あたり 500 文字。サーバーと同じ） */
+export const readMinutes = (chars: number) => Math.max(1, Math.round(chars / 500));

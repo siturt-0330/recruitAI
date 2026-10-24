@@ -184,7 +184,7 @@ ${tags.length ? `<p class="tags">${tags.map((t) => `<a href="/column?tag=${encod
 <button type="button" class="icon-btn" data-share data-title="${esc(a.title)}" aria-label="共有"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 9l5-5 5 5M5 14v5h14v-5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 ${user && !mine ? `<button type="button" class="icon-btn" data-report="article" data-id="${esc(a.id)}" aria-label="通報"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4h11l-2 4 2 4H6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></button>` : ''}
 </div>
-<a class="author" href="/column/u/${esc(a.handle)}">${avatar(a, 48)}<span class="author-main"><span class="author-name">${esc(a.pen_name)}</span><span class="author-status">${esc(a.status_line)}</span></span><svg width="9" height="15" viewBox="0 0 9 15" aria-hidden="true"><path d="M1.5 1.5l6 6-6 6" fill="none" stroke="#c7c7cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+<a class="author" href="/column/u/${esc(a.handle)}">${avatar(a, 48)}<span class="author-main"><span class="author-name">${esc(a.pen_name)}</span></span><svg width="9" height="15" viewBox="0 0 9 15" aria-hidden="true"><path d="M1.5 1.5l6 6-6 6" fill="none" stroke="#c7c7cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
 <section id="comments" class="comments" aria-label="コメント"><h2>コメント ${a.comment_count || ''}</h2><ul class="comment-list" data-comment-list>${commentList}</ul>${commentForm}</section>
 ${next.length ? `<section class="next" aria-label="この人の記事"><h2>${esc(a.pen_name)}の記事</h2><div class="posts">${next.map(row).join('')}</div></section>` : ''}
 </article>
@@ -220,22 +220,41 @@ export async function profile(env: Env, url: URL, user: User | null, handle: str
     user && user.id !== p.id ? isFollowing(env.COLUMN_DB, user.id, p.id) : false,
   ]);
   const me = user?.id === p.id;
+  // 自分のページには、下書きと、一覧に出ない自分の記事（リンクのみ・非表示）も出す
+  const mine = me
+    ? (
+        await env.COLUMN_DB.prepare(
+          `SELECT id, title, status, visibility, hidden, updated_at FROM articles
+           WHERE user_id = ? AND (status = 'draft' OR visibility = 'unlisted' OR hidden = 1) ORDER BY updated_at DESC LIMIT 50`,
+        )
+          .bind(p.id)
+          .all<{ id: string; title: string; status: string; visibility: string; hidden: number; updated_at: number }>()
+      ).results
+    : [];
+  const drafts = mine.length
+    ? `<section class="drafts" aria-label="下書き"><h2>下書きなど</h2>${mine
+        .map(
+          (d) =>
+            `<a class="post" href="/column/write/${esc(d.id)}"><span class="post-main"><span class="post-title">${esc(d.title || '無題')}</span><span class="post-meta">${d.hidden ? '非表示' : d.status === 'draft' ? '下書き' : 'リンクのみ'}<span aria-hidden="true">·</span>${ago(d.updated_at)}</span></span></a>`,
+        )
+        .join('')}</section>`
+    : '';
   const loginNext = `/column/auth/google?next=${encodeURIComponent(url.pathname)}`;
   const body = `<header class="profile">
 ${avatar(p, 72)}
 <h1 class="profile-name">${esc(p.pen_name)}</h1>
-${p.status_line ? `<p class="profile-status">${esc(p.status_line)}</p>` : ''}
 ${p.bio ? `<p class="profile-bio">${richText(p.bio)}</p>` : ''}
 <p class="profile-counts"><span><b>${counts.articles}</b> 記事</span><span><b data-followers>${counts.followers}</b> フォロワー</span><span><b>${counts.following}</b> フォロー</span></p>
 ${me ? '<a class="btn btn-sm btn-plain" href="/column/settings">プロフィールを編集</a>' : `<button type="button" class="follow" data-follow="${esc(p.id)}" data-login="${esc(loginNext)}" aria-pressed="${following}">${following ? 'フォロー中' : 'フォロー'}</button>`}
 ${user && !me ? `<button type="button" class="link-btn small" data-report="user" data-id="${esc(p.id)}">通報</button>` : ''}
 </header>
-${list(rows, more, `/column/u/${p.handle}`, me ? 'まだ記事がありません。<a href="/column/write">書いてみる</a>' : 'まだ記事がありません')}`;
+${drafts}
+${list(rows, more, `/column/u/${p.handle}`, me ? '<a href="/column/write">書いてみる</a>' : 'まだ記事がありません')}`;
   return htmlResponse(
     page(
       {
         title: p.pen_name,
-        description: p.bio || `${p.pen_name}（${p.status_line || 'らくらくエントリー コラム'}）のコラム`,
+        description: p.bio || `${p.pen_name}のコラム`,
         canonical: before || p.hidden ? undefined : `/column/u/${p.handle}`,
         noindex: !!before || !!p.hidden || counts.articles === 0,
         scripts: ['column.js'],

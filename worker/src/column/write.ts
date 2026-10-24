@@ -204,8 +204,8 @@ export async function handleWriteApi(request: Request, env: Env, url: URL, user:
   return jsonResponse({ ok: true, savedAt: t, url: `/column/p/${a.id}` });
 }
 
-/** 画像のアップロード。ブラウザで縮めてから送られてくる。中身の先頭のバイトで種類を確かめる */
-async function uploadImage(request: Request, env: Env, user: User): Promise<Response> {
+/** 画像のアップロード。ブラウザで縮めてから送られてくる。中身の先頭のバイトで種類を確かめる（アイコンの写真にも使う） */
+export async function uploadImage(request: Request, env: Env, user: User): Promise<Response> {
   const db = env.COLUMN_DB;
   if (Number(request.headers.get('Content-Length') ?? '0') > MAX_IMAGE) return jsonResponse({ error: 'too large' }, 413);
   if ((await countToday(db, 'images', user.id)) >= DAILY.images) return jsonResponse({ error: 'quota' }, 429);

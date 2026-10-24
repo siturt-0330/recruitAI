@@ -173,6 +173,8 @@ img { max-width: 100%; }
 .profile-bio { max-width: 480px; margin: 12px auto 0; font-size: 15px; line-height: 1.7; }
 .profile-counts { display: flex; justify-content: center; gap: 16px; margin: 16px 0; font-size: 13px; color: var(--sub); }
 .profile-counts b { color: var(--ink); font-size: 15px; }
+.drafts { margin-top: 24px; }
+.drafts h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--sub); }
 .link-btn.small { display: block; margin: 8px auto 0; min-height: 32px; font-size: 13px; color: var(--sub); }
 
 /* ---- 文字の大きさ（記事のページのヘッダー） ---- */
@@ -225,6 +227,9 @@ dialog.sheet textarea { width: 100%; margin-top: 12px; padding: 10px 12px; borde
 .btn-block { display: flex; width: 100%; min-height: 50px; font-size: 17px; font-weight: 600; }
 .form-error { margin: 20px 0 0; padding: 12px 14px; border-radius: 12px; background: #fff0f0; color: var(--danger); font-size: 15px; }
 .form-ok { margin: 16px 0 0; font-size: 15px; color: #1f8a4c; }
+.icon-pick { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.pv-av { background-size: cover; background-position: center; }
+.fine { margin: 12px 0 0; text-align: center; font-size: 13px; color: var(--sub); }
 .form-cancel { margin: 16px 0 0; text-align: center; font-size: 15px; }
 .account-box { margin-top: 40px; padding-top: 24px; border-top: .5px solid var(--line); }
 .account-mail { margin: 0 0 12px; font-size: 15px; color: var(--sub); overflow-wrap: anywhere; }
