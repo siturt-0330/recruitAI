@@ -1319,4 +1319,24 @@ export const CASES: Case[] = [
     profile: { gender: 'female', bunri: '理系' },
     expect: { '#r11a': false, '#r11b': true, '#r11c': false, '#r11d': true },
   },
+  {
+    name: 'snar.jp：見出しが左の td、右の td にラベルなしの欄が並ぶ（フリガナ・携帯3分割・郵便2分割）',
+    html: `<form><table>
+      <tr id="input01"><td class="td01">氏名<span class="required">*</span><input type="hidden" name="hdn_name_T" value="氏名"><input type="hidden" name="hdn_name" value="1"></td><td><input name="sn_name1" type="text" class="inputMText"> <input name="sn_name2" type="text" class="inputMText"><p></p></td></tr>
+      <tr id="input02"><td class="td01">フリガナ<span class="required">*</span><input type="hidden" name="hdn_kana_T" value="フリガナ"><input type="hidden" name="hdn_kana" value="1"></td><td><input name="sn_kana1" type="text" class="inputMText"> <input name="sn_kana2" type="text" class="inputMText"><p></p></td></tr>
+      <tr id="input18"><td class="td01">携帯電話<span class="required">*</span><input type="hidden" name="hdn_keitai_T" value="携帯電話"><input type="hidden" name="hdn_keitai" value="1"></td><td><input name="sn_keitai1" type="text" class="inputSText"> - <input name="sn_keitai2" type="text" class="inputSText"> - <input name="sn_keitai3" type="text" class="inputSText"><p></p></td></tr>
+      <tr id="input07"><td class="td01">郵便番号<span class="required">*</span></td><td><input name="sn_zip1" type="text" maxlength="3" class="inputSText"> - <input name="sn_zip2" type="text" maxlength="4" class="inputSText"> <a href="#">住所検索</a><p></p></td></tr>
+    </table></form>`,
+    expect: {
+      '[name=sn_name1]': '山田',
+      '[name=sn_name2]': '太郎',
+      '[name=sn_kana1]': 'ヤマダ',
+      '[name=sn_kana2]': 'タロウ',
+      '[name=sn_keitai1]': '090',
+      '[name=sn_keitai2]': '1234',
+      '[name=sn_keitai3]': '5678',
+      '[name=sn_zip1]': '150',
+      '[name=sn_zip2]': '0041',
+    },
+  },
 ];
