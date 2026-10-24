@@ -6,8 +6,8 @@ import { currentUser, devLogin, googleCallback, logout, startGoogle, type User }
 import { page } from './layout';
 import { article, home, image, profile, sitemap } from './read';
 import { terms } from './terms';
-import { htmlResponse } from './util';
-import { handleWriteApi, writeShell } from './write';
+import { htmlResponse, jsonResponse, sameOrigin } from './util';
+import { handleWriteApi, uploadImage, writeShell } from './write';
 
 function notFound(user: User | null, env: Env, path: string): Response {
   const body = `<h1 class="title">ページが見つかりません</h1><p><a href="/column">コラムへ</a></p>`;
@@ -31,6 +31,13 @@ export async function handleColumn(request: Request, env: Env, _ctx: ExecutionCo
 
   const user = await currentUser(request, env);
   if (path === '/column') return home(env, url, user);
+  // アイコンの写真。最初の登録の前でも使うので、ログインしているかだけを見る
+  if (path === '/column/api/icon') {
+    if (request.method !== 'POST' || !sameOrigin(request, url)) return jsonResponse({ error: 'forbidden' }, 403);
+    if (!user) return jsonResponse({ error: 'login' }, 401);
+    if (user.hidden) return jsonResponse({ error: 'forbidden' }, 403);
+    return uploadImage(request, env, user);
+  }
   if (path.startsWith('/column/api/')) {
     return (await handleWriteApi(request, env, url, user)) ?? (await handleApi(request, env, url, user)) ?? new Response('not found', { status: 404 });
   }

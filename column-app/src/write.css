@@ -1,4 +1,4 @@
-/* 書く画面（column.css の上に足す）。モックアップ「note ベース改良案」の X3〜X5 に合わせる */
+/* 書く画面（column.css の上に足す）。モックアップ「note ベース改良案」の X4・X5 に合わせる */
 .loading { padding: 80px 0; text-align: center; color: var(--sub); }
 
 /* 上のバー（戻る・保存の状態・公開） */
@@ -56,8 +56,7 @@
 .menu button.on, .menu button:hover { background: rgba(0, 0, 0, .05); }
 .menu-empty { margin: 0; padding: 12px 16px; font-size: 15px; color: var(--sub); }
 
-/* 書きはじめる画面・公開設定（灰色の地に白いまとまり） */
-.grouped-page { display: flow-root; min-height: 100vh; background: var(--fill); }
+/* 公開設定（灰色の地に白いまとまり） */
 .sheet-page { position: fixed; inset: 0; z-index: 40; overflow-y: auto; background: var(--fill); padding-bottom: 64px; }
 .sheet-head .plain { font-weight: 400; }
 .sheet-head button:disabled { opacity: .45; cursor: default; }
@@ -65,11 +64,7 @@
 .row-btn:hover { text-decoration: none; background: #fafafa; }
 .row-btn .v { margin-left: auto; margin-right: 10px; }
 .row-btn.danger { color: var(--danger); }
-.row.muted { color: var(--mute); }
 .row .tick { margin-left: auto; }
-.mine { color: var(--ink); }
-.mine-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mine .v { margin-right: 0; font-size: 13px; flex-shrink: 0; }
 .preview { display: flex; gap: 14px; align-items: center; padding: 14px 16px; margin-top: 16px; }
 .preview img, .preview-blank { flex: 0 0 64px; width: 64px; height: 64px; border-radius: 10px; object-fit: cover; background: #e8e8ed; }
 .preview-main { min-width: 0; line-height: 1.4; }
@@ -81,3 +76,33 @@
 .tag-list input { flex: 1 1 96px; min-width: 96px; max-width: 160px; border: 0; outline: 0; padding: 6px 0; text-align: right; font-size: 17px; background: transparent; }
 .suggest { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 16px 0; }
 .suggest button { min-height: 32px; padding: 0; border: 0; background: none; color: var(--link); font-size: 15px; cursor: pointer; }
+
+/* 広い画面だけ：灰色の地に白い紙のカード、左に目次、右に「この記事」と「書き方」 */
+.w-side { display: none; }
+@media (min-width: 1100px) {
+  body { background: var(--fill); }
+  .w-desk { display: grid; grid-template-columns: minmax(192px, 1fr) minmax(0, 760px) minmax(192px, 1fr); gap: 32px; align-items: start; padding: 40px 24px 120px; }
+  .w-desk .w-main { width: 100%; max-width: none; min-height: calc(100vh - 132px); margin: 0; padding: 48px clamp(44px, 4vw, 64px); background: #fff; border-radius: 20px; box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 12px 40px rgba(0, 0, 0, .06); }
+  .w-side { display: block; position: sticky; top: 76px; width: 100%; }
+  .w-toc { justify-self: end; max-width: 220px; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .w-info { justify-self: start; max-width: 248px; }
+}
+.w-side-title { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--sub); }
+.w-toc ol { list-style: none; margin: 0; padding: 0; }
+.w-toc button { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; width: 100%; min-height: 32px; padding: 6px 0; border: 0; background: none; text-align: left; font-size: 14px; line-height: 1.45; color: var(--sub); cursor: pointer; }
+.w-toc button:hover { color: var(--ink); }
+.w-toc-empty { margin: 0; font-size: 13px; line-height: 1.6; color: #aeaeb2; }
+.w-card { padding: 14px 16px; border-radius: 16px; background: #fff; box-shadow: 0 0 0 .5px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04); }
+.w-card + .w-card { margin-top: 12px; }
+.w-card h2 { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--sub); }
+.w-card dl { margin: 0; }
+.w-card dl div { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 8px; padding: 5px 0; }
+.w-card dl div + div { border-top: .5px solid var(--line); }
+.w-card dt { font-size: 13px; color: var(--sub); }
+.w-card dd { margin: 0 0 0 auto; font-size: 15px; font-variant-numeric: tabular-nums; }
+.w-card dd.w-info-error { color: var(--danger); font-size: 13px; }
+.w-keys { list-style: none; margin: 0; padding: 0; }
+.w-keys li { display: flex; align-items: center; gap: 10px; min-height: 30px; font-size: 14px; }
+.w-keys-k { flex: 0 0 64px; display: flex; gap: 3px; }
+.w-keys kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 6px; background: var(--fill); box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .08), 0 0 0 .5px rgba(0, 0, 0, .08); font: 500 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink); }
+.w-card-note { margin: 8px 0 0; padding-top: 8px; border-top: .5px solid var(--line); font-size: 12px; line-height: 1.6; color: var(--sub); }
