@@ -25,7 +25,7 @@
   var CSS = [
     // 埋め込み先のページの行間などに左右されないよう、動画の中の基本の文字設定を決めておく
     '.ht{position:relative;width:100%;font-family:inherit;color:#14161a;line-height:1.5}',
-    '.ht-viewport{position:relative;width:100%;overflow:hidden;border-radius:22px;background:#f6f4fb}',
+    '.ht-viewport{position:relative;width:100%;aspect-ratio:960/540;overflow:hidden;border-radius:22px;background:#f6f4fb}',
     '.ht-stage{position:absolute;left:0;top:0;width:' + W + 'px;height:' + H + 'px;transform-origin:0 0;overflow:hidden;background:linear-gradient(135deg,#efeaff 0%,#fff4ec 55%,#e6f7ef 100%)}',
     '.ht-stage *{box-sizing:border-box}',
     '.ht-abs{position:absolute}',
@@ -428,7 +428,6 @@
     function fit() {
       var scale = viewport.clientWidth / W;
       stage.style.transform = 'scale(' + scale + ')';
-      viewport.style.height = H * scale + 'px';
     }
     fit();
     if (window.ResizeObserver) new ResizeObserver(fit).observe(viewport);
@@ -441,6 +440,7 @@
     var playing = false;
     var userPaused = false;
     var lastTs = 0;
+    var raf = 0;
     var ICON_PLAY = '<svg viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z" fill="#14161a"/></svg>';
     var ICON_PAUSE = '<svg viewBox="0 0 16 16"><rect x="3" y="2.5" width="3.5" height="11" rx="1" fill="#14161a"/><rect x="9.5" y="2.5" width="3.5" height="11" rx="1" fill="#14161a"/></svg>';
     function setPlaying(p) {
@@ -449,7 +449,8 @@
       el.play.setAttribute('aria-label', p ? '一時停止' : '再生');
       if (p) {
         lastTs = 0;
-        requestAnimationFrame(tick);
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(tick);
       }
     }
     function tick(ts) {
@@ -460,7 +461,7 @@
         render(Math.min(t, DURATION));
       }
       lastTs = ts;
-      requestAnimationFrame(tick);
+      raf = requestAnimationFrame(tick);
     }
     el.play.addEventListener('click', function () {
       userPaused = playing;
@@ -479,7 +480,7 @@
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     setPlaying(false);
     if (reduce) {
-      t = 21;
+      t = 23;
       render(t);
     } else if (window.IntersectionObserver) {
       new IntersectionObserver(function (entries) {
