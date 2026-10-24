@@ -29,14 +29,20 @@ export default defineContentScript({
       onClose: () => loginOverlay.clear(),
     });
 
-    const readLogin = () => {
+    const NO_LOGIN = { found: false, loginId: '', password: '' };
+    /** ID とパスワードを扱うのは、指定したサイトのフレームだけ（埋め込まれた別のサイトのフレームには入れない・読まない） */
+    const otherSite = (origin?: string) => !!origin && location.origin !== origin;
+
+    const readLogin = ({ origin }: { origin?: string } = {}) => {
+      if (otherSite(origin)) return NO_LOGIN;
       const f = findLoginFields(document);
       return { found: !!f, loginId: f?.user?.value.trim() ?? '', password: f?.pass.value ?? '' };
     };
 
-    const fillLogin = ({ loginId, password, company }: { loginId: string; password: string; company: string }) => {
+    const fillLogin = ({ loginId, password, company, origin }: { loginId: string; password: string; company: string; origin?: string }) => {
+      if (otherSite(origin)) return NO_LOGIN;
       const f = findLoginFields(document);
-      if (!f) return { found: false, loginId: '', password: '' };
+      if (!f) return NO_LOGIN;
       const targets: [HTMLInputElement, string][] = [];
       if (f.user && loginId) targets.push([f.user, loginId]);
       if (password) targets.push([f.pass, password]);
@@ -106,6 +112,8 @@ export default defineContentScript({
         if (r.width < 150 || r.height < 100) continue;
         try {
           const url = new URL(frame.src, location.href);
+          // 動画・地図・SNS の埋め込みは応募フォームではないので、許可を求めない
+          if (/(^|\.)(youtube(-nocookie)?\.com|google\.com|vimeo\.com|twitter\.com|x\.com|facebook\.com|instagram\.com)$/.test(url.hostname)) continue;
           if (/^https?:$/.test(url.protocol) && url.origin !== location.origin) origins.add(url.origin);
         } catch {
           // src が壊れている枠は無視する
@@ -128,9 +136,9 @@ export default defineContentScript({
         case 'undo':
           return filler.undo();
         case 'readLogin':
-          return { detected: 0, filled: 0, warn: 0, reviews: [], login: readLogin() };
+          return { detected: 0, filled: 0, warn: 0, reviews: [], login: readLogin((payload ?? {}) as { origin?: string }) };
         case 'fillLogin': {
-          const login = fillLogin(payload as { loginId: string; password: string; company: string });
+          const login = fillLogin(payload as { loginId: string; password: string; company: string; origin?: string });
           return { detected: 0, filled: login.found ? 1 : 0, warn: 0, reviews: [], login };
         }
         case 'diagnose':
