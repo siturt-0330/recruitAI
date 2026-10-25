@@ -92,7 +92,7 @@ export const isNewer = (a: { updatedAt?: string } | null | undefined, b: { updat
 // ---- 応募ページの企業を見分ける ----
 
 /** 複数の企業が同じドメインを使う採用管理サービス。パスの1段目まで一致したときだけ同じ企業とみなす */
-const SHARED_HOSTS = [/(^|\.)i-web\.jpn\.com$/, /(^|\.)axol\.jp$/, /(^|\.)e2r\.jp$/, /(^|\.)snar\.jp$/, /(^|\.)mynavi\.jp$/, /(^|\.)rikunabi\.com$/, /(^|\.)hrmos\.co$/, /(^|\.)herp\.cloud$/, /(^|\.)talentio\.com$/, /(^|\.)n-ext\.jp$/];
+const SHARED_HOSTS = [/(^|\.)i-web\.jpn\.com$/, /(^|\.)i-webs\.jp$/, /(^|\.)axol\.jp$/, /(^|\.)e2r\.jp$/, /(^|\.)snar\.jp$/, /(^|\.)mynavi\.jp$/, /(^|\.)rikunabi\.com$/, /(^|\.)hrmos\.co$/, /(^|\.)herp\.cloud$/, /(^|\.)talentio\.com$/, /(^|\.)n-ext\.jp$/];
 
 export const isSharedHost = (host: string) => SHARED_HOSTS.some((re) => re.test(host));
 

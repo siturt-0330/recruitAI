@@ -7,6 +7,7 @@ import { adjustForForm, classify, computeHints, type Classification } from './ru
 import type { FieldStatus, FrameStatus, Profile, RemoteAnswer, RemoteQuestion, Settings } from './types';
 import { SAYS_NONE, valueVariants } from './values';
 import { norm } from './japanese';
+import { jqDecoy } from './jqtransform';
 
 export type ClassifyRemote = (formText: string, questions: RemoteQuestion[]) => Promise<RemoteAnswer[]>;
 
@@ -105,7 +106,8 @@ function onScreen(field: ScannedField): boolean {
     (el) =>
       el.isConnected &&
       (el.getClientRects().length > 0 ||
-        Array.from((el as HTMLInputElement).labels ?? []).some((l) => l.getClientRects().length > 0)),
+        Array.from((el as HTMLInputElement).labels ?? []).some((l) => l.getClientRects().length > 0) ||
+        (jqDecoy(el)?.getClientRects().length ?? 0) > 0),
   );
 }
 
