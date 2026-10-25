@@ -476,7 +476,9 @@ const ADDRESS_TO_KISEI: Partial<Record<FieldKey, FieldKey>> = {
 export function adjustForForm(fields: ScannedField[], input: Classification[]): Classification[] {
   let classes = input;
   const isPhone = (c: Classification) => !!c.key && c.key in PHONE_TO_LANDLINE;
-  const mentionsMobile = (d: FieldDescriptor) => MOBILE.test(norm(`${d.label} ${d.prefix} ${d.context} ${d.name} ${d.htmlId}`));
+  // 入力例が 090・080・070 で始まる欄も携帯の欄（見出しが「電話番号」だけのことがある）
+  const mentionsMobile = (d: FieldDescriptor) =>
+    MOBILE.test(norm(`${d.label} ${d.prefix} ${d.context} ${d.name} ${d.htmlId}`)) || /(^|\D)0[789]0\D?\d{4}/.test(norm(d.placeholder));
   // 同じ <form> の中だけで比べる（form がなければページ全体）
   const formOf = (f: ScannedField) => (f.elements[0] as HTMLInputElement).form ?? null;
   const forms = new Map<HTMLFormElement | null, { mobile: boolean; plain: boolean }>();
