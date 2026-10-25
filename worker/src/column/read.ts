@@ -33,6 +33,14 @@ export function ago(ms: number): string {
   return a.getUTCFullYear() === b.getUTCFullYear() ? `${a.getUTCMonth() + 1}月${a.getUTCDate()}日` : jaDate(ms);
 }
 
+/** 検索に載せる記事（公開・一覧に出す・非表示でない・書き手も非表示でない）。a = articles、u = users */
+const LISTED = "a.status = 'published' AND a.visibility = 'public' AND a.hidden = 0 AND u.hidden = 0";
+const PUBLISHER = { '@type': 'Organization', name: 'らくらくエントリー', url: `${SITE}/`, logo: { '@type': 'ImageObject', url: `${SITE}/images/icon-128.png` } };
+const crumbs = (items: [string, string][]) => ({
+  '@type': 'BreadcrumbList',
+  itemListElement: items.map(([name, item], i) => ({ '@type': 'ListItem', position: i + 1, name, item })),
+});
+
 const imgUrl = (key: string) => `/column/img/${encodeURIComponent(key)}`;
 const heart = (on: boolean) =>
   `<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>`;
@@ -80,7 +88,7 @@ export async function home(env: Env, url: URL, user: User | null): Promise<Respo
     ...tags.map((t) => tabLink(`#${t}`, `/column?tag=${encodeURIComponent(t)}`, tag === t)),
   ].join('');
   const base = tab ? '/column?tab=following' : tag ? `/column?tag=${encodeURIComponent(tag)}` : q ? `/column?q=${encodeURIComponent(q)}` : '/column';
-  const body = `<h1 class="title">コラム</h1>
+  const body = `<h1 class="title">${tag ? `#${esc(tag)}` : 'コラム'}</h1>
 <form class="search" role="search" action="/column"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input type="search" name="q" value="${esc(q)}" placeholder="検索" aria-label="記事を検索" enterkeyhint="search"></form>
 <nav class="chips" aria-label="テーマ">${chips}</nav>
 ${list(rows, more, base, empty)}`;
@@ -88,10 +96,26 @@ ${list(rows, more, base, empty)}`;
   return htmlResponse(
     page(
       {
-        title: tag ? `#${tag}` : 'コラム',
-        description: '就活生が、エントリーシート・面接・マイページ管理などの体験やコツを書き合うコラム。',
-        canonical: filtered ? undefined : '/column',
-        noindex: !!(tab || q || before),
+        title: tag ? `#${tag}の記事` : 'コラム',
+        description: tag
+          ? `「${tag}」の就活コラム。就活生が、エントリーシート・面接・マイページ管理などの体験やコツを書き合っています。`
+          : '就活生が、エントリーシート・面接・マイページ管理などの体験やコツを書き合うコラム。',
+        canonical: tab || q || before ? undefined : tag ? `/column?tag=${encodeURIComponent(tag)}` : '/column',
+        noindex: !!(tab || q || before) || (!!tag && !rows.length),
+        jsonLd: filtered
+          ? undefined
+          : {
+              '@context': 'https://schema.org',
+              '@type': 'Blog',
+              name: 'らくらくエントリー コラム',
+              url: `${SITE}/column`,
+              description: '就活生が、エントリーシート・面接・マイページ管理などの体験やコツを書き合うコラム。',
+              inLanguage: 'ja',
+              publisher: PUBLISHER,
+              blogPost: rows
+                .slice(0, 10)
+                .map((r) => ({ '@type': 'BlogPosting', headline: r.title || '無題', url: `${SITE}/column/p/${r.id}`, author: { '@type': 'Person', name: r.pen_name } })),
+            },
       },
       body,
       user,
@@ -152,18 +176,39 @@ export async function article(env: Env, url: URL, user: User | null, id: string)
         ? `<p class="comment-login"><a href="/column/welcome?next=${encodeURIComponent(url.pathname)}">登録してコメント</a></p>`
         : '<p class="comment-login">コメントできません</p>';
 
+  const articleUrl = `${SITE}/column/p/${a.id}`;
+  const coverUrl = a.cover_key ? `${SITE}${imgUrl(a.cover_key)}` : undefined;
   const jsonLd = listed
-    ? `<script type="application/ld+json">${JSON.stringify({
+    ? {
         '@context': 'https://schema.org',
-        '@type': 'BlogPosting',
-        headline: a.title,
-        datePublished: new Date(when).toISOString(),
-        dateModified: new Date(a.updated_at).toISOString(),
-        author: { '@type': 'Person', name: a.pen_name, url: `${SITE}/column/u/${a.handle}` },
-        image: a.cover_key ? `${SITE}${imgUrl(a.cover_key)}` : undefined,
-        mainEntityOfPage: `${SITE}/column/p/${a.id}`,
-      }).replace(/</g, '\\u003c')}</script>`
-    : '';
+        '@graph': [
+          {
+            '@type': 'BlogPosting',
+            '@id': `${articleUrl}#article`,
+            headline: (a.title || '無題').slice(0, 110),
+            description: a.excerpt || undefined,
+            datePublished: new Date(when).toISOString(),
+            dateModified: new Date(a.updated_at).toISOString(),
+            author: { '@type': 'Person', name: a.pen_name, url: `${SITE}/column/u/${a.handle}` },
+            publisher: PUBLISHER,
+            image: coverUrl ?? `${SITE}/images/og.png`,
+            mainEntityOfPage: articleUrl,
+            url: articleUrl,
+            inLanguage: 'ja',
+            keywords: tags.length ? tags.join(',') : undefined,
+            wordCount: a.chars,
+            commentCount: a.comment_count,
+            isPartOf: { '@type': 'Blog', name: 'らくらくエントリー コラム', url: `${SITE}/column` },
+          },
+          crumbs([
+            ['らくらくエントリー', `${SITE}/`],
+            ['コラム', `${SITE}/column`],
+            ...(tags[0] ? [[`#${tags[0]}`, `${SITE}/column?tag=${encodeURIComponent(tags[0])}`] as [string, string]] : []),
+            [a.title || '無題', articleUrl],
+          ]),
+        ],
+      }
+    : undefined;
 
   const body = `<article class="article" data-article-id="${esc(a.id)}">
 ${notice}
@@ -171,10 +216,10 @@ ${tags[0] ? `<p class="kicker"><a href="/column?tag=${encodeURIComponent(tags[0]
 <h1 class="article-title">${esc(a.title || '無題')}</h1>
 <div class="byline">
 <a href="/column/u/${esc(a.handle)}">${avatar(a, 36)}</a>
-<span class="byline-main"><a class="byline-name" href="/column/u/${esc(a.handle)}">${esc(a.pen_name)}</a><span class="byline-meta">${jaDate(when)} · ${readMinutes(a.chars)}分</span></span>
+<span class="byline-main"><a class="byline-name" href="/column/u/${esc(a.handle)}">${esc(a.pen_name)}</a><span class="byline-meta"><time datetime="${new Date(when).toISOString()}">${jaDate(when)}</time> · ${readMinutes(a.chars)}分</span></span>
 ${mine ? `<a class="btn btn-sm btn-plain" href="/column/write/${esc(a.id)}">編集</a>` : `<button type="button" class="follow" data-follow="${esc(a.user_id)}" data-login="${esc(loginNext)}" aria-pressed="${following}">${following ? 'フォロー中' : 'フォロー'}</button>`}
 </div>
-${a.cover_key ? `<img class="cover" src="${imgUrl(a.cover_key)}" alt="" decoding="async">` : ''}
+${a.cover_key ? `<img class="cover" src="${imgUrl(a.cover_key)}" alt="${esc(a.title || '')}" decoding="async">` : ''}
 <div class="prose" data-prose>${renderBlocks(blocks)}</div>
 ${tags.length ? `<p class="tags">${tags.map((t) => `<a href="/column?tag=${encodeURIComponent(t)}">#${esc(t)}</a>`).join('')}</p>` : ''}
 <div class="actions">
@@ -187,8 +232,7 @@ ${user && !mine ? `<button type="button" class="icon-btn" data-report="article" 
 <a class="author" href="/column/u/${esc(a.handle)}">${avatar(a, 48)}<span class="author-main"><span class="author-name">${esc(a.pen_name)}</span></span><svg width="9" height="15" viewBox="0 0 9 15" aria-hidden="true"><path d="M1.5 1.5l6 6-6 6" fill="none" stroke="#c7c7cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
 <section id="comments" class="comments" aria-label="コメント"><h2>コメント ${a.comment_count || ''}</h2><ul class="comment-list" data-comment-list>${commentList}</ul>${commentForm}</section>
 ${next.length ? `<section class="next" aria-label="この人の記事"><h2>${esc(a.pen_name)}の記事</h2><div class="posts">${next.map(row).join('')}</div></section>` : ''}
-</article>
-${jsonLd}`;
+</article>`;
 
   return htmlResponse(
     page(
@@ -197,9 +241,11 @@ ${jsonLd}`;
         description: a.excerpt || `${a.pen_name}のコラム`,
         canonical: listed ? `/column/p/${a.id}` : undefined,
         noindex: !listed,
-        ogImage: a.cover_key ? `${SITE}${imgUrl(a.cover_key)}` : undefined,
+        ogImage: coverUrl,
         scripts: ['column.js'],
         reading: true,
+        article: listed ? { published: when, modified: a.updated_at, author: a.pen_name, tags } : undefined,
+        jsonLd,
       },
       body,
       user,
@@ -258,6 +304,15 @@ ${list(rows, more, `/column/u/${p.handle}`, me ? '<a href="/column/write">書い
         canonical: before || p.hidden ? undefined : `/column/u/${p.handle}`,
         noindex: !!before || !!p.hidden || counts.articles === 0,
         scripts: ['column.js'],
+        jsonLd:
+          before || p.hidden
+            ? undefined
+            : {
+                '@context': 'https://schema.org',
+                '@type': 'ProfilePage',
+                url: `${SITE}/column/u/${p.handle}`,
+                mainEntity: { '@type': 'Person', name: p.pen_name, description: p.bio || undefined, url: `${SITE}/column/u/${p.handle}` },
+              },
       },
       body,
       user,
@@ -269,15 +324,58 @@ ${list(rows, more, `/column/u/${p.handle}`, me ? '<a href="/column/write">書い
 
 /** 記事のサイトマップ（robots.txt から案内する） */
 export async function sitemap(env: Env): Promise<Response> {
-  const r = await env.COLUMN_DB.prepare(
-    `SELECT a.id, a.updated_at FROM articles a JOIN users u ON u.id = a.user_id
-     WHERE a.status = 'published' AND a.visibility = 'public' AND a.hidden = 0 AND u.hidden = 0 ORDER BY a.published_at DESC LIMIT 5000`,
-  ).all<{ id: string; updated_at: number }>();
+  const db = env.COLUMN_DB;
+  const [articles, authors, tags] = await Promise.all([
+    db.prepare(`SELECT a.id, a.updated_at FROM articles a JOIN users u ON u.id = a.user_id WHERE ${LISTED} ORDER BY a.published_at DESC LIMIT 5000`).all<{ id: string; updated_at: number }>(),
+    db
+      .prepare(`SELECT u.handle, MAX(a.updated_at) AS updated_at FROM articles a JOIN users u ON u.id = a.user_id WHERE ${LISTED} GROUP BY u.id LIMIT 5000`)
+      .all<{ handle: string; updated_at: number }>(),
+    // 記事が 2 本以上あるタグだけ（1 本だけのタグのページは、記事のページとほぼ同じになるため）
+    db
+      .prepare(
+        `SELECT t.tag, MAX(a.updated_at) AS updated_at FROM article_tags t JOIN articles a ON a.id = t.article_id JOIN users u ON u.id = a.user_id
+         WHERE ${LISTED} GROUP BY t.tag HAVING COUNT(*) >= 2 LIMIT 1000`,
+      )
+      .all<{ tag: string; updated_at: number }>(),
+  ]);
   const day = (ms: number) => new Date(ms + 9 * 3600_000).toISOString().slice(0, 10);
-  const urls = [`  <url><loc>${SITE}/column</loc></url>`, ...r.results.map((a) => `  <url><loc>${SITE}/column/p/${a.id}</loc><lastmod>${day(a.updated_at)}</lastmod></url>`)];
+  const url = (path: string, ms?: number) => `  <url><loc>${esc(SITE + path)}</loc>${ms ? `<lastmod>${day(ms)}</lastmod>` : ''}</url>`;
+  const urls = [
+    url('/column', articles.results[0]?.updated_at),
+    ...articles.results.map((a) => url(`/column/p/${a.id}`, a.updated_at)),
+    ...authors.results.map((u) => url(`/column/u/${u.handle}`, u.updated_at)),
+    ...tags.results.map((t) => url(`/column?tag=${encodeURIComponent(t.tag)}`, t.updated_at)),
+  ];
   return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`, {
     headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' },
   });
+}
+
+/** 新着記事の RSS（フィードリーダーや検索エンジンが新しい記事を見つけやすくなる） */
+export async function feed(env: Env): Promise<Response> {
+  const r = await env.COLUMN_DB.prepare(
+    `SELECT a.id, a.title, a.excerpt, a.published_at, u.pen_name FROM articles a JOIN users u ON u.id = a.user_id
+     WHERE ${LISTED} ORDER BY a.published_at DESC LIMIT 20`,
+  ).all<{ id: string; title: string; excerpt: string; published_at: number; pen_name: string }>();
+  const items = r.results
+    .map((a) => {
+      const link = `${SITE}/column/p/${a.id}`;
+      return `<item><title>${esc(a.title || '無題')}</title><link>${link}</link><guid isPermaLink="true">${link}</guid><pubDate>${new Date(a.published_at).toUTCString()}</pubDate><dc:creator>${esc(a.pen_name)}</dc:creator><description>${esc(a.excerpt)}</description></item>`;
+    })
+    .join('\n');
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+<title>らくらくエントリー コラム</title>
+<link>${SITE}/column</link>
+<atom:link href="${SITE}/column/feed.xml" rel="self" type="application/rss+xml"/>
+<description>就活生が、エントリーシート・面接・マイページ管理などの体験やコツを書き合うコラム。</description>
+<language>ja</language>
+${items}
+</channel>
+</rss>
+`;
+  return new Response(xml, { headers: { 'Content-Type': 'application/rss+xml; charset=utf-8', 'Cache-Control': 'public, max-age=1800' } });
 }
 
 /** 画像（R2）。key はランダムで中身が変わらないので、長くキャッシュしてよい */
