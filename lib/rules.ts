@@ -1,4 +1,4 @@
-import type { FieldDescriptor, ScannedField } from './extract';
+import { isSameAsCurrent, type FieldDescriptor, type ScannedField } from './extract';
 import type { FieldKey } from './fieldKeys';
 import type { Hints } from './types';
 import { hasFullDigit, hasHalfKana, hasHiragana, norm } from './japanese';
@@ -114,7 +114,7 @@ const TEXT_RULES: [Category, RegExp][] = [
   ['birth', /生年月日|誕生日|生年|生まれ|birth|bday|date of birth|dob/],
   ['gender', /性別|gender|^sex/],
   ['postal', /郵便番号|〒|postal|zip/],
-  ['phone', /電話|携帯|^tel|phone|mobile/],
+  ['phone', /電話|携帯|(^|[^a-z])tel([^a-z]|$)|phone|mobile/],
   ['prefecture', /都道府県|prefecture/],
   ['city', /市区町村|市町村|市区郡|市区|^city/],
   ['building', /建物|マンション|アパート|building|apartment/],
@@ -150,16 +150,18 @@ const ATTR_RULES: [Category, RegExp][] = [
   ['hobbies', /hobby|hobbies|shumi/],
   ['github', /github/],
   ['portfolio', /portfolio|website|(^|[^a-z])url/],
-  ['roman', /roma|alpha|eng/],
+  // strength・challenge の eng に当たらないように
+  ['roman', /roma|alpha|(^|[^a-z])eng|english/],
   ['birth', /birth|bday|dob|seinen/],
   ['gender', /gender|\bsex\b|seibetsu/],
   ['postal', /zip|postal|yubin|post_?code|postcode/],
   ['phone', /tel|phone|mobile|keitai/],
-  ['prefecture', /pref|todofuken/],
+  ['prefecture', /pref(?!er)|todofuken/],
   ['city', /city|shiku|municipal/],
   ['building', /build|bldg|apart|mansion|address_?2|addr_?2|address_?line_?2/],
   ['address', /addr|address|banchi|street/],
-  ['graduation', /grad|sotsugyo/],
+  // grade（学年）は卒業ではない
+  ['graduation', /grad(?!e)|sotsugyo/],
   ['department', /dept|department|gakka|major/],
   ['faculty', /faculty|gakubu/],
   ['school', /school|univ|college|gakko|daigaku/],
@@ -168,10 +170,13 @@ const ATTR_RULES: [Category, RegExp][] = [
 
 /** 本人以外の人を指す言葉（紹介者のお名前・保護者の電話番号など） */
 const OTHER_PERSON = /紹介者|推薦者|保護者|担当者|代表者|上司|配偶者|父親|母親|ご両親|家族|保証人|面接官|社員|知人|友人/;
+/** 区切りの見出し（h3「保護者連絡先」など）で本人以外とわかる言葉。「担当者からのお知らせ」のような見出しは含めない */
+const OTHER_PERSON_SECTION = /紹介者|推薦者|保護者|配偶者|父親|母親|ご両親|家族|保証人/;
 const PERSONAL_CATEGORIES = new Set<string>(['name', 'roman', 'phone', 'email', 'emailSub', 'emailConfirm', 'birth', 'address']);
 
 const KANA_TEXT = /フリガナ|ふりがな|よみがな|ひらがな|平仮名|カナ|かな|kana|furigana/g;
 const KANA_ATTR = /kana|furi|yomi/;
+const KANA_WORD = /フリガナ|ふりがな|よみがな|ひらがな|平仮名|カナ|かな|kana|furigana|^セイ(?![ァ-ヶ])|^メイ(?![ァ-ヶ])/;
 const KISEI = /帰省|休暇中|実家|kisei/;
 const EMERGENCY = /緊急|emergency|kinkyu/;
 const PHOTO = /写真|photo|画像|顔/;
@@ -207,9 +212,6 @@ export function classify(d: FieldDescriptor): Classification {
 }
 
 function classifyField(d: FieldDescriptor): Classification {
-  const ac = d.autocomplete.toLowerCase().split(/\s+/).pop() ?? '';
-  if (AUTOCOMPLETE[ac] && d.kind !== 'file') return { key: AUTOCOMPLETE[ac], confidence: CONF.autocomplete, source: 'rule' };
-
   const nearRaw = [d.label, d.prefix, d.placeholder].join(' ');
   const near = norm(nearRaw);
   const ctx = norm(d.context);
@@ -217,10 +219,22 @@ function classifyField(d: FieldDescriptor): Classification {
   const attrs = norm(`${d.name} ${d.htmlId}`);
   const result = (key: FieldKey | null, c: number): Classification => ({ key, confidence: key ? c : 0, source: 'rule' });
 
+  // autocomplete は本人の項目しか表せないので、フリガナ・帰省先・緊急連絡先・本人以外の欄ではラベルで判定する
+  const ac = d.autocomplete.toLowerCase().split(/\s+/).pop() ?? '';
+  if (AUTOCOMPLETE[ac] && d.kind !== 'file') {
+    const scope = `${near} ${ctx} ${section} ${attrs}`;
+    const kanaHere = KANA_WORD.test(near) || KANA_ATTR.test(attrs) || (!firstMatch(TEXT_RULES, stripModifiers(near)) && KANA_WORD.test(ctx));
+    const modified =
+      kanaHere || KISEI.test(scope) || EMERGENCY.test(scope) || OTHER_PERSON.test(`${near} ${ctx}`) || OTHER_PERSON_SECTION.test(section);
+    if (!modified) return { key: AUTOCOMPLETE[ac], confidence: CONF.autocomplete, source: 'rule' };
+  }
+
   if (d.kind === 'checkbox') {
     // 抽出の時点で「現住所と同じ」系のチェックボックスだけに絞っている
     return result('kiseiSameCheck', CONF.near);
   }
+  // 「帰省先は現住所と同じですか ［はい］［いいえ］」もチェックボックスと同じ扱い
+  if (isYesNo(d) && isSameAsCurrent(`${near} ${ctx}`)) return result('kiseiSameCheck', CONF.near);
 
   if (d.kind === 'file') {
     // 履歴書 PDF などのアップロード欄には入れない
@@ -234,6 +248,11 @@ function classifyField(d: FieldDescriptor): Classification {
   // フリガナは、カテゴリが見つかった段階かそれより手前（欄に近い側）で出てきたものだけを採用する
   // プルダウン・ラジオは、選択肢の中身（都道府県が47個並んでいる、など）がいちばん確かな手がかり
   let cat: Category | null = optionCategory(d);
+  if (cat === 'prefecture') {
+    // 都道府県が並んでいても、見出しが希望勤務地なら希望勤務地。出身地・本籍地はプロフィールにないので入れない
+    if (/出身地|出生地|本籍/.test(`${near} ${ctx}`)) return result(null, 0);
+    if ((firstMatch(TEXT_RULES, stripModifiers(near)) ?? firstMatch(TEXT_RULES, stripModifiers(ctx))) === 'desiredLocation') cat = 'desiredLocation';
+  }
   let conf: number = cat ? CONF.context : 0;
   let kana = false;
   for (const [text, c, rules, isAttr] of [
@@ -243,7 +262,7 @@ function classifyField(d: FieldDescriptor): Classification {
     [attrs, CONF.attr, ATTR_RULES, true],
   ] as const) {
     if (cat) break;
-    kana ||= isAttr ? KANA_ATTR.test(text) : /フリガナ|ふりがな|よみがな|ひらがな|平仮名|カナ|かな|kana|furigana|^セイ(?![ァ-ヶ])|^メイ(?![ァ-ヶ])/.test(text);
+    kana ||= isAttr ? KANA_ATTR.test(text) : KANA_WORD.test(text);
     cat = firstMatch(rules, isAttr ? text : stripModifiers(text));
     if (cat) {
       conf = c;
@@ -256,14 +275,17 @@ function classifyField(d: FieldDescriptor): Classification {
   if (!cat) return result(null, 0);
 
   const scopeText = `${near} ${ctx} ${section} ${attrs}`;
-  const kisei = KISEI.test(scopeText) && !/現住所/.test(`${near} ${ctx}`);
+  // 「帰省先住所（現住所と異なる場合のみ記入）」は帰省先なので、「現住所と異なる」のような言い回しは除いて見る
+  const kisei = KISEI.test(scopeText) && !/現住所/.test(`${near} ${ctx}`.replace(/現住所と(異なる|違う|同じ|同一)/g, ''));
   const emergency = EMERGENCY.test(scopeText);
   const byPosition = Math.min(conf, CONF.position);
   const r = (key: FieldKey, c = conf) => result(key, c);
   const has = (re: RegExp) => re.test(near) || re.test(ctx);
 
   // 紹介者・保護者など、本人以外の人の欄には本人の情報を入れない
-  if (!emergency && OTHER_PERSON.test(`${near} ${ctx}`) && PERSONAL_CATEGORIES.has(cat)) return result(null, 0);
+  if (!emergency && (OTHER_PERSON.test(`${near} ${ctx}`) || OTHER_PERSON_SECTION.test(section)) && PERSONAL_CATEGORIES.has(cat)) {
+    return result(null, 0);
+  }
   // 内線・FAX は電話番号ではない
   if (cat === 'phone' && (/内線|\bext\b/i.test(near) || /fax|ファックス|ファクス/i.test(`${near} ${ctx}`))) return result(null, 0);
 
@@ -272,14 +294,23 @@ function classifyField(d: FieldDescriptor): Classification {
   if (atSign && cat !== 'email' && cat !== 'emailConfirm' && cat !== 'emailSub') {
     cat = has(/携帯|モバイル|スマホ|サブ|予備/) ? 'emailSub' : 'email';
   }
+  // 緊急連絡先は氏名・続柄・電話番号しか登録していない。フリガナ・住所・メールなどに本人の情報を入れない
+  if (emergency && !((cat === 'name' && !kana) || cat === 'relation' || (cat === 'phone' && d.groupSize !== 3))) return result(null, 0);
+  // 「卒業学校名」「卒業学部」のように、卒業した学校の名前を聞いている文字の欄
+  if (cat === 'graduation' && d.kind === 'text' && !isDateLike(d, near) && !/年|月|日|時期|date|year/.test(`${near} ${ctx}`)) {
+    const again = firstMatch(TEXT_RULES, stripModifiers(`${near} ${ctx}`.replace(/卒業/g, '')));
+    if (again === 'school' || again === 'faculty' || again === 'department') cat = again;
+  }
 
   switch (cat) {
     case 'name':
     case 'roman': {
       if (emergency && !kana) return r('emergencyName');
-      // 「First name」「Last name」のように見出しが英語だけなら、ローマ字の名前を入れる
+      // 旧姓・通称はプロフィールにないので入れない
+      if (has(/旧姓|旧氏|通称/)) return result(null, 0);
+      // 「First name」「Last name」のように見出しが英語だけなら、ローマ字の名前を入れる（「Last Name (Kanji)」は漢字）
       const shownLabel = (nearRaw.trim() || d.context).trim();
-      const englishOnly = !!shownLabel && /[a-z]/i.test(shownLabel) && !/[぀-ヿ㐀-鿿]/.test(shownLabel);
+      const englishOnly = !!shownLabel && /[a-z]/i.test(shownLabel) && !/[぀-ヿ㐀-鿿]/.test(shownLabel) && !/kanji/i.test(shownLabel);
       const keys = (
         cat === 'roman' || (englishOnly && !kana)
           ? ['fullNameRoman', 'lastNameRoman', 'firstNameRoman']
@@ -332,7 +363,8 @@ function classifyField(d: FieldDescriptor): Classification {
       if (!kana && !kisei && has(/番地|町名|丁目/)) return r('addressLineBuilding');
       return r(kana ? 'buildingKana' : kisei ? 'kiseiBuilding' : 'building');
     case 'address': {
-      const line = /番地|町名|丁目|住所\s*1|address ?(line ?)?1/.test(near || ctx);
+      // 行見出しが「番地」で placeholder が入力例のこともあるので、両方を見る
+      const line = /番地|町名|丁目|住所\s*1|address ?(line ?)?1/.test(`${near} ${ctx}`);
       const second = /住所\s*2|address ?(line ?)?2/.test(near || ctx);
       if (kana) return r(line ? 'addressLineKana' : second ? 'buildingKana' : 'fullAddressKana');
       if (kisei) return r(line ? 'kiseiAddressLine' : second ? 'kiseiBuilding' : 'kiseiFullAddress');
@@ -395,6 +427,12 @@ function classifyField(d: FieldDescriptor): Classification {
       return r('githubUrl');
     case 'portfolio':
       return r('portfolioUrl');
+    case 'school':
+      return r(kana ? 'schoolKana' : 'school');
+    case 'faculty':
+    case 'department':
+      // 学部・学科の読み仮名はプロフィールにないので入れない
+      return kana ? result(null, 0) : r(cat);
     case 'desiredLocation': {
       const m = /第\s*([1-3])/.exec(norm(`${near} ${d.prefix}`)) ?? /([1-3])$/.exec(attrs.trim());
       const n = m ? Number(m[1]) : d.groupSize > 1 ? d.groupIndex + 1 : 1;
@@ -554,9 +592,9 @@ function datePart(d: FieldDescriptor, attrs: string): 'era' | 'year' | 'month' |
     if (/日|day/i.test(t)) return 'day';
     return null;
   };
-  // 「YYYY/MM/DD」「例：1999/04/01」のように年月日すべてを入れる欄
+  // 「YYYY/MM/DD」「例：1999/04/01」「例：2026年3月」「YYYY/MM」のように年月（日）をまとめて入れる欄
   const sample = norm(`${d.placeholder} ${d.label}`);
-  if (/y{2,4}\s*[\/\-.年]?\s*m{1,2}\s*[\/\-.月]?\s*d{1,2}|\d{4}\s*[\/\-.年]\s*\d{1,2}\s*[\/\-.月]\s*\d{1,2}|\d{8}/.test(sample)) return null;
+  if (/y{2,4}\s*[\/\-.年]?\s*m{1,2}|\d{4}\s*[\/\-.年]\s*\d{1,2}|\d{8}/.test(sample)) return null;
 
   // 直前のテキストは前の欄の単位（「年」の後ろに月の欄…）なので見ない
   const fromSuffix = unit(d.suffix);
@@ -582,21 +620,28 @@ function datePart(d: FieldDescriptor, attrs: string): 'era' | 'year' | 'month' |
   return null;
 }
 
+/** 「半角カナ不可」「全角文字は使用できません」「和暦不可」のように、使えない書式を書いた部分 */
+const NEGATED = /(全角|半角|和暦|西暦)(?:(?!全角|半角|和暦|西暦)[^、。,，\s])*?(不可|禁止|ng|は使用できません|は使えません)/gi;
+
 export function computeHints(d: FieldDescriptor): Hints {
-  const text = [d.label, d.prefix, d.suffix, d.context, d.placeholder].join(' ');
+  const text = [d.label, d.prefix, d.suffix, d.context, d.placeholder].join(' ').replace(NEGATED, ' ');
   const options = d.options.join(' ');
+  // 「全角カタカナで入力してください」のような説明の placeholder は入力例ではない
+  const sample = /入力|ください|して/.test(d.placeholder) ? '' : d.placeholder;
 
   let kana: Hints['kana'] = 'kata';
-  if ((/半角/.test(text) && /カナ|ｶﾅ|ﾌﾘｶﾞﾅ/.test(text)) || hasHalfKana(d.placeholder)) kana = 'half';
-  else if (hasHiragana(d.placeholder)) kana = 'hira';
+  if ((/半角/.test(text) && /カナ|ｶﾅ|ﾌﾘｶﾞﾅ/.test(text)) || hasHalfKana(sample)) kana = 'half';
+  // 「カタカナ」「カナ」と書かれていれば、見出しが「ふりがな」でもカタカナ
+  else if (/カタカナ|カナ/.test(text) && !/ひらがな|平仮名/.test(text)) kana = 'kata';
+  else if (hasHiragana(sample)) kana = 'hira';
   // placeholder の例がカタカナなら、見出しが「ふりがな」でもカタカナ
-  else if (/[ァ-ヶ]/.test(d.placeholder)) kana = 'kata';
+  else if (/[ァ-ヶ]/.test(sample)) kana = 'kata';
   else if (/ふりがな|ひらがな|平仮名/.test(text)) kana = 'hira';
 
   let width: Hints['width'] = null;
   if (/全角/.test(text) && !/全角カナ/.test(text)) width = 'full';
   else if (/半角/.test(text)) width = 'half';
-  else if (hasFullDigit(d.placeholder)) width = 'full';
+  else if (hasFullDigit(sample)) width = 'full';
 
   let era: Hints['era'] = null;
   const hasWareki = /平成|昭和|令和/.test(options);
@@ -620,7 +665,7 @@ export function computeHints(d: FieldDescriptor): Hints {
 
   // 「例）山田 太郎」「ヤマダタロウ」のような例から、姓と名の間のスペースを決める
   let nameSpace: Hints['nameSpace'] = null;
-  const example = d.placeholder.replace(/^\s*(例|e\.?g\.?)\s*[:：)）]?\s*/i, '').trim();
+  const example = sample.replace(/^\s*(例|e\.?g\.?)\s*[:：)）]?\s*/i, '').trim();
   if (/[^\s　]　[^\s　]/.test(example)) nameSpace = 'full';
   else if (/[^\s　] [^\s　]/.test(example)) nameSpace = 'half';
   else if (/^[぀-ヿ㐀-鿿]{3,}$/.test(example)) nameSpace = 'none';

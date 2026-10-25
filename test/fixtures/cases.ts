@@ -1380,4 +1380,208 @@ export const CASES: Case[] = [
     </form>`,
     expect: { '[name=dz1]': '150', '[name=dz2]': '0041', '[name=dtel]': '09012345678' },
   },
+
+  // ---- 第6弾：監査で見つかった外れ方 ----
+  {
+    name: 'D1 1行に「姓」「名」の th と欄が交互に並ぶ表',
+    html: `<form><table><tr><th>姓</th><td><input name="d1a"></td><th>名</th><td><input name="d1b"></td></tr></table></form>`,
+    expect: { '[name=d1a]': '山田', '[name=d1b]': '太郎' },
+  },
+  {
+    name: 'D2 「全角カタカナで入力してください」という placeholder はひらがなの例ではない',
+    html: `<form>
+      <p><label>フリガナ <input name="d2a" placeholder="全角カタカナで入力してください"></label></p>
+      <p><label>ふりがな（カナ）<input name="d2b" placeholder="カタカナで入力"></label></p>
+    </form>`,
+    expect: { '[name=d2a]': 'ヤマダ　タロウ', '[name=d2b]': 'ヤマダ　タロウ' },
+  },
+  {
+    name: 'D3 「〜不可」「〜は使用できません」と書かれた書式は使わない',
+    html: `<form>
+      <p><label>フリガナ（全角カナ・半角カナ不可）<input name="d3a"></label></p>
+      <p><label>電話番号（半角数字・全角不可）<input name="d3b"></label></p>
+      <p><label>携帯電話番号（全角文字は使用できません）<input name="d3c"></label></p>
+      <p><label>生年月日（西暦で入力・和暦不可）<input name="d3d"></label></p>
+    </form>`,
+    expect: { '[name=d3a]': 'ヤマダ　タロウ', '[name=d3b]': '03-1234-5678', '[name=d3c]': '090-1234-5678', '[name=d3d]': '1999/04/01' },
+  },
+  {
+    name: 'D4 「番地」の行見出しと入力例の placeholder',
+    html: `<form><table>
+      <tr><th>都道府県</th><td><select name="d4p">${opts(PREFECTURES)}</select></td></tr>
+      <tr><th>市区町村</th><td><input name="d4c"></td></tr>
+      <tr><th>番地</th><td><input name="d4a" placeholder="例：神南1-2-3"></td></tr>
+      <tr><th>建物名</th><td><input name="d4b"></td></tr>
+    </table></form>`,
+    expect: { '[name=d4p]': '東京都', '[name=d4c]': '渋谷区', '[name=d4a]': '神南1-2-3', '[name=d4b]': 'サンプルマンション101' },
+  },
+  {
+    name: 'D5 見出しが「保護者連絡先」の区切りには本人の情報を入れない',
+    html: `<form>
+      <h3>本人情報</h3>
+      <table><tr><th>氏名</th><td><input name="d5x"></td></tr></table>
+      <h3>保護者連絡先</h3>
+      <table>
+        <tr><th>氏名</th><td><input name="d5a"></td></tr>
+        <tr><th>電話番号</th><td><input name="d5b"></td></tr>
+        <tr><th>メールアドレス</th><td><input name="d5c"></td></tr>
+      </table></form>`,
+    expect: { '[name=d5x]': '山田　太郎', '[name=d5a]': '', '[name=d5b]': '', '[name=d5c]': '' },
+  },
+  {
+    name: 'D6 autocomplete があってもフリガナ・帰省先の判定を優先する',
+    html: `<form>
+      <p><label>セイ <input name="d6a" autocomplete="family-name"></label> <label>メイ <input name="d6b" autocomplete="given-name"></label></p>
+      <h3>帰省先</h3>
+      <table><tr><th>電話番号</th><td><input name="d6c" autocomplete="tel"></td></tr></table>
+    </form>`,
+    profile: { kiseiSame: false, kiseiPhone: '011-123-4567' },
+    expect: { '[name=d6a]': 'ヤマダ', '[name=d6b]': 'タロウ', '[name=d6c]': '011-123-4567' },
+  },
+  {
+    name: 'D7 緊急連絡先の区切りでは、氏名・続柄・電話番号以外に本人の情報を入れない',
+    html: `<form><h3>緊急連絡先</h3><table>
+      <tr><th>氏名</th><td><input name="d7a"></td></tr>
+      <tr><th>フリガナ</th><td><input name="d7b"></td></tr>
+      <tr><th>続柄</th><td><input name="d7c"></td></tr>
+      <tr><th>電話番号</th><td><input name="d7d"></td></tr>
+      <tr><th>携帯電話</th><td><input name="d7h"> - <input name="d7i"> - <input name="d7j"></td></tr>
+      <tr><th>郵便番号</th><td><input name="d7e"></td></tr>
+      <tr><th>住所</th><td><input name="d7f"></td></tr>
+      <tr><th>メールアドレス</th><td><input name="d7g"></td></tr>
+    </table></form>`,
+    profile: { emergencyName: '山田花子', emergencyRelation: '母', emergencyPhone: '03-9876-5432' },
+    expect: {
+      '[name=d7a]': '山田花子',
+      '[name=d7b]': '',
+      '[name=d7c]': '母',
+      '[name=d7d]': '03-9876-5432',
+      '[name=d7h]': '',
+      '[name=d7i]': '',
+      '[name=d7j]': '',
+      '[name=d7e]': '',
+      '[name=d7f]': '',
+      '[name=d7g]': '',
+    },
+  },
+  {
+    name: 'D8 都道府県が並ぶプルダウンでも、見出しが希望勤務地・出身地なら現住所の都道府県にしない',
+    html: `<form><table>
+      <tr><th>第1希望勤務地</th><td><select name="d8a">${opts(PREFECTURES)}</select></td></tr>
+      <tr><th>出身地</th><td><select name="d8b">${opts(PREFECTURES)}</select></td></tr>
+    </table></form>`,
+    profile: { desiredLocations: ['大阪府'] },
+    expect: { '[name=d8a]': '大阪府', '[name=d8b]': '' },
+  },
+  {
+    name: 'D9 学校名・学部名のフリガナ欄に漢字を入れない',
+    html: `<form><table>
+      <tr><th>学校名</th><td><input name="d9a"></td></tr>
+      <tr><th>学校名（フリガナ）</th><td><input name="d9b"></td></tr>
+      <tr><th>学部名</th><td><input name="d9d"></td></tr>
+      <tr><th>学部名（フリガナ）</th><td><input name="d9c"></td></tr>
+    </table></form>`,
+    expect: { '[name=d9a]': 'サンプル大学', '[name=d9b]': 'サンプルダイガク', '[name=d9d]': '経済学部', '[name=d9c]': '' },
+  },
+  {
+    name: 'D10 「卒業学校名」「卒業学部」は卒業年月ではない',
+    html: `<form>
+      <p><label>卒業学校名 <input name="d10a"></label></p>
+      <p><label>卒業学部 <input name="d10b"></label></p>
+      <p><label>卒業年月 <input name="d10c"></label></p>
+    </form>`,
+    expect: { '[name=d10a]': 'サンプル大学', '[name=d10b]': '経済学部', '[name=d10c]': '2026年3月' },
+  },
+  {
+    name: 'D11 name 属性の一部だけの一致（grade・work_preference・strength）で判定しない',
+    html: `<form>
+      <input name="grade"> <input name="work_preference"> <input name="strength"> <input name="challenge">
+    </form>`,
+    expect: { '[name=grade]': '', '[name=work_preference]': '', '[name=strength]': '', '[name=challenge]': '' },
+  },
+  {
+    name: 'D12 type="url" の欄',
+    html: `<form><label>ポートフォリオ <input type="url" name="d12"></label></form>`,
+    profile: { portfolioUrl: 'https://example.com/taro' },
+    expect: { '[name=d12]': 'https://example.com/taro' },
+  },
+  {
+    name: 'D13 「帰省先住所（現住所と異なる場合のみ記入）」は帰省先の住所',
+    html: `<form><table><tr><th>帰省先住所（現住所と異なる場合のみ記入）</th><td><input name="d13"></td></tr></table></form>`,
+    profile: { kiseiSame: false, kiseiPrefecture: '北海道', kiseiCity: '札幌市中央区', kiseiAddressLine: '北1条西1-1', kiseiBuilding: '' },
+    expect: { '[name=d13]': '北海道札幌市中央区北1条西1-1' },
+  },
+  {
+    name: 'D15 自宅TEL・連絡先TEL・旧姓・Last Name (Kanji)',
+    html: `<form>
+      <p><label>自宅TEL <input name="d15a"></label></p>
+      <p><label>連絡先TEL <input name="d15b"></label></p>
+      <p><label>旧姓 <input name="d15c"></label></p>
+      <p><label>Last Name (Kanji) <input name="d15d"></label></p>
+    </form>`,
+    expect: { '[name=d15a]': '03-1234-5678', '[name=d15b]': '090-1234-5678', '[name=d15c]': '', '[name=d15d]': '山田' },
+  },
+  {
+    name: 'V2 状態をページ側で持つラジオ（React 風）も「元に戻す」で戻る',
+    html: `<form><table><tr><th>性別</th><td><label><input type="radio" name="v2" value="男性">男性</label><label><input type="radio" name="v2" value="女性" checked>女性</label></td></tr></table></form>`,
+    setup(root) {
+      // React の制御コンポーネントのように、click で状態を変え、change のたびに状態どおりに描き直す
+      const radios = Array.from(root.querySelectorAll<HTMLInputElement>('[name=v2]'));
+      let state = '女性';
+      const render = () => radios.forEach((r) => (r.checked = r.value === state));
+      radios.forEach((r) => {
+        r.addEventListener('click', () => (state = r.value));
+        r.addEventListener('change', () => queueMicrotask(render));
+      });
+    },
+    expect: { 'radio:v2': '男性' },
+  },
+  {
+    name: 'V3 入力後にユーザーが選び直したラジオは「元に戻す」で消さない',
+    html: `<form><table><tr><th>性別</th><td><label><input type="radio" name="v3" value="男性">男性</label><label><input type="radio" name="v3" value="女性">女性</label></td></tr></table></form>`,
+    afterFill(root: HTMLElement) {
+      root.querySelector<HTMLInputElement>('[name=v3][value=女性]')!.click();
+      return { '[name=v3]:checked': '女性' };
+    },
+    expect: { 'radio:v3': '男性' },
+  },
+  {
+    name: 'V4 少し遅れてハイフンを消すサイトの電話番号も「元に戻す」で戻る',
+    html: `<form><label>電話番号 <input name="v4" type="tel"></label></form>`,
+    setup(root) {
+      const el = root.querySelector<HTMLInputElement>('[name=v4]')!;
+      el.addEventListener('input', () => setTimeout(() => (el.value = el.value.replace(/-/g, '')), 30));
+    },
+    expect: { '[name=v4]': '09012345678' },
+  },
+  {
+    name: 'V5 全角指定の行でも、@ で分かれたメールアドレスは全角にしない',
+    html: `<form><table><tr><th>メールアドレス（全角で入力）</th><td><input name="v5a"> @ <input name="v5b"></td></tr></table></form>`,
+    expect: { '[name=v5a]': 'taro', '[name=v5b]': 'example.com' },
+  },
+  {
+    name: 'V6 卒業予定年月の placeholder が年月の例（例：2026年3月・YYYY/MM）',
+    html: `<form>
+      <p><label>卒業予定年月 <input name="v6a" placeholder="例：2026年3月"></label></p>
+      <p><label>卒業予定年月 <input name="v6b" placeholder="YYYY/MM"></label></p>
+    </form>`,
+    expect: { '[name=v6a]': '2026年3月', '[name=v6b]': '2026/03' },
+  },
+  {
+    name: 'V7 「帰省先は現住所と同じですか」のはい／いいえ（同じでない）',
+    html: `<form><table><tr><th>帰省先は現住所と同じですか</th><td><label><input type="radio" name="v7" value="1">はい</label><label><input type="radio" name="v7" value="0">いいえ</label></td></tr></table></form>`,
+    profile: { kiseiSame: false },
+    expect: { 'radio:v7': 'いいえ' },
+  },
+  {
+    name: 'V7b 「帰省先は現住所と同じですか」のはい／いいえ（同じ）',
+    html: `<form><table><tr><th>帰省先は現住所と同じですか</th><td><label><input type="radio" name="v7b" value="1">はい</label><label><input type="radio" name="v7b" value="0">いいえ</label></td></tr></table></form>`,
+    expect: { 'radio:v7b': 'はい' },
+  },
+  {
+    name: 'V8 平成元年と0埋めの選択肢（平成01年）',
+    html: `<form><table><tr><th>生年月日</th><td><select name="v8">${opts(range(1, 31).map((n) => `平成${String(n).padStart(2, '0')}年`))}</select></td></tr></table></form>`,
+    profile: { birthDate: '1989-04-01' },
+    expect: { '[name=v8]': '平成01年' },
+  },
 ];

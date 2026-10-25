@@ -2,7 +2,7 @@ import type { Profile } from '@/lib/types';
 
 /** 顔写真（なければ姓の1文字目）を、プロフィール完成度のリングで囲んだアイコン */
 export function ProfileAvatar({ profile, size, progress }: { profile?: Profile; size: number; progress: number }) {
-  const initial = (profile?.lastName || profile?.label || '?').slice(0, 1);
+  const initial = [...(profile?.lastName || profile?.label || '?')][0];
   return (
     <span
       className="ring"

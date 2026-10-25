@@ -528,7 +528,10 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
   }
 }
 
-const NO_WIDTH_KEYS = new Set<FieldKey>(['email', 'emailConfirm', 'emailSub', 'portfolioUrl', 'githubUrl', 'photo']);
+const NO_WIDTH_KEYS = new Set<FieldKey>([
+  'email', 'emailConfirm', 'emailSub', 'emailSubConfirm', 'emailLocal', 'emailDomain', 'emailSubLocal', 'emailSubDomain',
+  'portfolioUrl', 'githubUrl', 'photo',
+]);
 
 const YES_WORDS = ['はい', 'あり', '有', '有り', 'ある', 'yes'];
 const NO_WORDS = ['いいえ', 'なし', '無', '無し', 'ない', 'no'];
@@ -556,6 +559,8 @@ export function valueVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKi
   const values = uniq(rawVariants(key, p, h, kind).map((v) => v.trim()));
   // 「留学経験 ［あり］［なし］」のように、項目の中身ではなく有無を聞いている欄
   const yesNo = kind === 'radio' || kind === 'select' ? yesNoOptions(options) : null;
+  // 「帰省先は現住所と同じですか」は、同じなら「はい」、違うなら「いいえ」
+  if (yesNo && key === 'kiseiSameCheck') return p.kiseiSame ? [yesNo.yes, ...YES_WORDS] : [yesNo.no, ...NO_WORDS];
   if (yesNo && values.length && !YES_WORDS.includes(values[0]!)) {
     return SAYS_NONE.test(values[0]!.normalize('NFKC')) ? [yesNo.no, ...NO_WORDS] : [yesNo.yes, ...YES_WORDS];
   }
