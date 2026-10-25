@@ -1,4 +1,5 @@
 import { COMBO_SELECTOR, isCombo } from './combo';
+import { jqDecoy } from './jqtransform';
 
 export type FieldKind =
   | 'text' | 'email' | 'tel' | 'url' | 'number' | 'date' | 'month' | 'select' | 'radio' | 'textarea' | 'file' | 'checkbox';
@@ -64,8 +65,8 @@ export function textOf(node: Node | null, limit = 120): string {
   while (walker.nextNode() && out.length <= limit) {
     const t = walker.currentNode;
     if (t.parentElement && SKIP_TEXT_PARENTS.has(t.parentElement.tagName)) continue;
-    // 独自プルダウンに表示中の値・「選択してください」は見出しではない
-    if (t.parentElement?.closest(`${COMBO_SELECTOR}, [class*="placeholder" i]`)) continue;
+    // 独自プルダウンに表示中の値・「選択してください」・jqTransform の飾りの選択肢は見出しではない
+    if (t.parentElement?.closest(`${COMBO_SELECTOR}, [class*="placeholder" i], .jqTransformSelectWrapper`)) continue;
     const v = (t.nodeValue ?? '').replace(/\s+/g, ' ').trim();
     if (v) out += (out ? ' ' : '') + v;
   }
@@ -111,6 +112,9 @@ function isSelect2Source(el: HTMLSelectElement): boolean {
 
 function isCandidate(el: Element): el is HTMLElement {
   if (el instanceof HTMLSelectElement && isSelect2Source(el)) return true;
+  // jqTransform で隠された欄は、飾りが見えていれば入力してよい（入れたあとに飾りも書きかえる）
+  const decoy = jqDecoy(el);
+  if (decoy && (el instanceof HTMLSelectElement || el instanceof HTMLInputElement)) return !el.disabled && isVisible(decoy);
   if (isCombo(el)) return !el.closest('[aria-hidden="true"]') && isVisible(el as HTMLElement) && !(el instanceof HTMLInputElement && el.disabled);
   if (el instanceof HTMLElement && isHoneypot(el)) return false;
   if (el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) {
@@ -309,10 +313,13 @@ function isHeadingLike(el: Element): boolean {
 
 /** 前方にある見出し（h3「帰省先」など）。帰省先・緊急連絡先のような区切りの判定に使う */
 function sectionText(el: HTMLElement): string {
+  // 欄の入った dd の手前の dt は、その欄の見出し（「郵便番号」）で、区切りの見出しではない
+  const ownDd = el.closest('dd');
   let node: Element | null = el;
   for (let depth = 0; node && depth < 8; depth++, node = node.parentElement) {
     let sib = node.previousElementSibling;
     for (let i = 0; sib && i < 15; i++, sib = sib.previousElementSibling) {
+      if (node === ownDd && sib.tagName === 'DT') continue;
       if (!isHeadingLike(sib)) continue;
       const t = textOf(sib, 40);
       // 「例（111-0000）」や「※〜」の注意書きは見出しではない

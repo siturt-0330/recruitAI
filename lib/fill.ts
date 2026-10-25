@@ -1,6 +1,7 @@
 import type { ScannedField } from './extract';
 import { comboRoot, comboText } from './combo';
 import { norm } from './japanese';
+import { jqDecoy, syncJqTransform } from './jqtransform';
 
 export type Snapshot =
   | { kind: 'value'; value: string }
@@ -34,6 +35,7 @@ export function restoreSnapshot(field: ScannedField, snap: Snapshot) {
       boxes.forEach((b, i) => (b.checked = snap.checked[i] ?? false));
       rest.forEach(dispatch);
     }
+    boxes.forEach(syncJqTransform);
     return;
   }
   if (snap.kind === 'files') (el as HTMLInputElement).files = toFileList(snap.files);
@@ -82,6 +84,7 @@ function dispatch(el: HTMLElement) {
   el.dispatchEvent(new Event('change', { bubbles: true }));
   el.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
   el.dispatchEvent(new FocusEvent('blur'));
+  syncJqTransform(el);
 }
 
 export const normOption = (s: string) => {
@@ -120,6 +123,7 @@ export function applyValue(field: ScannedField, variants: string[]): string | nu
       box.checked = want;
       dispatch(box);
     }
+    syncJqTransform(box);
     return want ? 'チェックあり' : 'チェックなし';
   }
 
@@ -132,6 +136,7 @@ export function applyValue(field: ScannedField, variants: string[]): string | nu
       radio.checked = true;
       dispatch(radio);
     }
+    syncJqTransform(radio);
     return field.desc.options[i] ?? null;
   }
 
@@ -198,9 +203,9 @@ export function markTarget(field: ScannedField): HTMLElement {
     if (input.getClientRects().length) return input;
     return Array.from(input.labels ?? []).find((l) => l.getClientRects().length) ?? input;
   }
-  if (field.desc.kind !== 'radio' && field.desc.kind !== 'checkbox') return field.elements[0]!;
+  if (field.desc.kind !== 'radio' && field.desc.kind !== 'checkbox') return jqDecoy(field.elements[0]!) ?? field.elements[0]!;
   const radios = field.elements as HTMLInputElement[];
   const chosen = radios.find((r) => r.checked) ?? radios[0]!;
   if (chosen.getClientRects().length) return chosen;
-  return Array.from(chosen.labels ?? []).find((l) => l.getClientRects().length) ?? chosen;
+  return Array.from(chosen.labels ?? []).find((l) => l.getClientRects().length) ?? jqDecoy(chosen) ?? chosen;
 }

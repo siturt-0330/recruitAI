@@ -1584,4 +1584,45 @@ export const CASES: Case[] = [
     profile: { birthDate: '1989-04-01' },
     expect: { '[name=v8]': '平成01年' },
   },
+  (() => {
+    // i-webs（オムロン）：jqTransform で本物のプルダウン・ラジオ・チェックボックスを隠し、飾りを描いている
+    const jqSelect = (name: string, items: [string, string][]) => {
+      const all: [string, string][] = [['', '-▼-'], ...items];
+      return `<div class="jqTransformSelectWrapper jq-${name}"><div><span>-▼-</span><a href="#" class="jqTransformSelectOpen"></a></div><ul style="display:none">${all.map(([, t], i) => `<li><a href="#" index="${i}"${i ? '' : ' class="selected"'}>${t}</a></li>`).join('')}</ul><select name="${name}" class="jqTransformHidden">${all.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>`;
+    };
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const row = (head: string, body: string) => `<div class="formbox clearfix"><dt class="formbox01"><span class="inportant">◆</span>${head}</dt><dd class="formbox02"><span class="hosoku clearfix">${body}</span></dd></div>`;
+    const address = (p: string) =>
+      row('郵便番号 <span>（半角数字７桁のみ）</span>', `<input type="text" name="${p}yubin1"> - <input type="text" name="${p}yubin2"><input type="button" value="郵便番号から住所を検索">`) +
+      row('都道府県', jqSelect(`${p}ken`, [['01', '北海道'], ['07', '福島県'], ['13', '東京都']])) +
+      row('市区郡・地名・番地 <span>（全角入力のみ）</span>', `<input type="text" name="${p}adrs1">`);
+    return {
+      name: 'i-webs（オムロン）：jqTransform で隠したプルダウン・ラジオと、「現住所と同じ」チェックで帰省先を入れない',
+      html: `<style>.jqTransformHidden{display:none}</style><form><dl>
+        ${row('生年月日', `${jqSelect('ybirth', range(1988, 2010).map((y) => [String(y), String(y)]))}<label for="text">年</label>${jqSelect('mbirth', range(1, 12).map((m) => [pad(m), pad(m)]))}<label for="text">月</label>${jqSelect('dbirth', range(1, 31).map((d) => [pad(d), pad(d)]))}<label for="text">日</label>`)}
+        <div class="formbox clearfix"><dt class="formbox01">性別</dt><dd class="formbox02"><ul class="hosoku clearfix">${[['1', '男', 'male'], ['2', '女', 'female']].map(([v, t, c]) => `<li class="sexcd"><span class="jqTransformRadioWrapper"><a href="#" class="jqTransformRadio" rel="sexcd"></a><input type="radio" name="sexcd" value="${v}" class="jqTransformHidden"></span><label for="text" class="${c}">${t}</label></li>`).join('')}</ul></dd></div>
+        <div class="heading_l2">現住所情報</div>
+        ${address('g')}
+        <div class="heading_l2">帰省先情報</div>
+        <div class="formbox clearfix"><span class="heading_l2l hosoku clearfix"><span class="jqTransformCheckboxWrapper"><a href="#" class="jqTransformCheckbox"></a><input type="checkbox" name="adch" class="jqTransformHidden" value="1"></span><label for="text">現住所と同じ場合はこちらにチェックしてください<br><span>※チェックを入れる場合は休暇中住所は入力しないでください。</span></label></span></div>
+        ${address('k')}
+      </dl></form>`,
+      expect: {
+        '[name=ybirth]': '1999',
+        '[name=mbirth]': '04',
+        '[name=dbirth]': '01',
+        'text:.jq-ybirth > div > span': '1999',
+        '[name=sexcd][value="1"]': true,
+        '[name=sexcd][value="2"]': false,
+        '[name=gyubin1]': '150',
+        '[name=gyubin2]': '0041',
+        '[name=gken]': '東京都',
+        'text:.jq-gken > div > span': '東京都',
+        '[name=adch]': true,
+        '[name=kyubin1]': '',
+        '[name=kken]': '',
+        '[name=kadrs1]': '',
+      },
+    } satisfies Case;
+  })(),
 ];
