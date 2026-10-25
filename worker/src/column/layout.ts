@@ -22,6 +22,10 @@ export interface PageOptions {
   grouped?: boolean;
   /** 記事のページ（ヘッダーに文字の大きさの切りかえを出す） */
   reading?: boolean;
+  /** 記事のページのメタ情報（og:type を article にし、公開日・書き手・タグを書く） */
+  article?: { published: number; modified: number; author: string; tags: string[] };
+  /** 構造化データ（schema.org）。<script type="application/ld+json"> にして head に入れる */
+  jsonLd?: object;
 }
 
 /** 丸いアイコン（画像がなければ色の丸） */
@@ -56,6 +60,8 @@ export function page(opts: PageOptions, body: string, user: User | null, env: En
   const desc = opts.description ?? '就活生が、就活の体験やコツを書き合うコラム。';
   const canonical = opts.canonical ? `${SITE}${opts.canonical}` : '';
   const og = opts.ogImage ?? `${SITE}/images/og.png`;
+  const a = opts.article;
+  const iso = (ms: number) => new Date(ms).toISOString();
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -63,16 +69,30 @@ export function page(opts: PageOptions, body: string, user: User | null, env: En
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(opts.title)}｜らくらくエントリー コラム</title>
 <meta name="description" content="${esc(desc)}">
-${opts.noindex ? '<meta name="robots" content="noindex">' : ''}
+<meta name="robots" content="${opts.noindex ? 'noindex' : 'max-image-preview:large'}">
 ${canonical ? `<link rel="canonical" href="${esc(canonical)}">` : ''}
 <link rel="icon" href="/favicon.png" type="image/png">
-<meta property="og:type" content="article">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="alternate" type="application/rss+xml" title="らくらくエントリー コラム" href="${SITE}/column/feed.xml">
+<meta property="og:site_name" content="らくらくエントリー コラム">
+<meta property="og:type" content="${a ? 'article' : 'website'}">
 <meta property="og:title" content="${esc(opts.title)}">
 <meta property="og:description" content="${esc(desc)}">
 ${canonical ? `<meta property="og:url" content="${esc(canonical)}">` : ''}
 <meta property="og:image" content="${esc(og)}">
 <meta property="og:locale" content="ja_JP">
+${
+  a
+    ? [
+        `<meta property="article:published_time" content="${iso(a.published)}">`,
+        `<meta property="article:modified_time" content="${iso(a.modified)}">`,
+        `<meta property="article:author" content="${esc(a.author)}">`,
+        ...a.tags.map((t) => `<meta property="article:tag" content="${esc(t)}">`),
+      ].join('\n')
+    : ''
+}
 <meta name="twitter:card" content="summary_large_image">
+${opts.jsonLd ? `<script type="application/ld+json">${JSON.stringify(opts.jsonLd).replace(/</g, '\\u003c')}</script>` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">

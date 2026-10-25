@@ -4,7 +4,7 @@ import { admin } from './admin';
 import { handleApi } from './api';
 import { currentUser, devLogin, googleCallback, logout, startGoogle, type User } from './auth';
 import { page } from './layout';
-import { article, home, image, profile, sitemap } from './read';
+import { article, feed, home, image, profile, sitemap } from './read';
 import { terms } from './terms';
 import { htmlResponse, jsonResponse, sameOrigin } from './util';
 import { handleWriteApi, uploadImage, writeShell } from './write';
@@ -28,6 +28,7 @@ export async function handleColumn(request: Request, env: Env, _ctx: ExecutionCo
   // 画像とサイトマップは、だれが見ても同じなのでログインを調べない
   if (path.startsWith('/column/img/')) return (await image(env, decodeURIComponent(path.slice('/column/img/'.length)))) ?? new Response('not found', { status: 404 });
   if (path === '/column/sitemap.xml') return sitemap(env);
+  if (path === '/column/feed.xml') return feed(env);
 
   const user = await currentUser(request, env);
   if (path === '/column') return home(env, url, user);
