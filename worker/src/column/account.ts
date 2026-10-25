@@ -127,7 +127,7 @@ ${iconField(v)}
   return htmlResponse(page({ title: 'ようこそ', noindex: true, width: 'narrow', scripts: ['onboard.js'] }, body, user, env, url.pathname), error ? 400 : 200);
 }
 
-/** プロフィールの設定（ひと言と URL の名前もここで変える） */
+/** プロフィールの設定（ペンネーム・ひと言・アイコン。URL の名前は出さない） */
 export async function settings(request: Request, env: Env, url: URL, user: User | null): Promise<Response> {
   if (!user) return redirect(loginUrl('/column/settings'));
   if (!hasProfile(user)) return redirect(`/column/welcome?next=${encodeURIComponent('/column/settings')}`);
@@ -144,7 +144,8 @@ export async function settings(request: Request, env: Env, url: URL, user: User 
     if (!sameOrigin(request, url)) return htmlResponse('', 403);
     const f = await readForm(request);
     if (!f) return htmlResponse('', 413);
-    v = readProfile(f);
+    // URL の名前は最初の登録で自動で決めたものを使い続ける（画面では変えない）
+    v = { ...readProfile(f), handle: user.handle ?? '' };
     error = await checkProfile(env, user, v);
     if (!error) {
       await env.COLUMN_DB.prepare('UPDATE users SET pen_name = ?, handle = ?, bio = ?, icon_color = ?, icon_key = ? WHERE id = ?')
@@ -170,11 +171,6 @@ ${errorBox(error)}
 <textarea id="bio" name="bio" maxlength="160" rows="3" placeholder="金融と IT を中心にエントリー中">${esc(v.bio)}</textarea>
 </div>
 ${iconField(v)}
-<div class="field">
-<label for="handle">URL の名前</label>
-<div class="prefixed"><span>rakuraku-entry.com/column/u/</span><input type="text" id="handle" name="handle" value="${esc(v.handle)}" maxlength="20" required pattern="[a-z0-9_]{3,20}" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
-<p class="field-hint">半角英小文字・数字・_（3〜20 文字）</p>
-</div>
 <button class="btn btn-block" type="submit">保存</button>
 </form>
 
