@@ -1339,4 +1339,45 @@ export const CASES: Case[] = [
       '[name=sn_zip2]': '0041',
     },
   },
+  {
+    name: 'マイナビ（My CareerID）：自宅・携帯の3分割の区切りが、欄ごとの div の中の「–」（en ダッシュ）',
+    html: `<form><div class="c-formSection__group__inner">
+      <div class="c-formSection__group__col1"><div class="c-formSection__group__ttl__wrap"><p class="c-required-tag">必須</p><div class="c-formSection__group__ttl"><p>電話番号</p><ul class="c-markList c-notes"><li><i>※</i><span>「自宅電話番号」「携帯電話番号」のいずれかは必ず入力してください。</span></li></ul></div></div></div>
+      <div class="c-formSection__group__col2">
+        ${(
+          [
+            ['自宅電話番号（050で始まるものも含む）', 'local.phone'],
+            ['携帯電話番号', 'local.mobilePhone'],
+          ] as const
+        )
+          .map(
+            ([label, name], k) =>
+              `${k ? '<ul class="c-form-unit"><li><p class="c-form-unit__txt">内線番号/呼び出しの方</p><input type="tel" name="data.extentionNumber" class="c-form-input-text" placeholder="半角数字"></li></ul>' : ''}
+              <ul class="c-form-unit"><li><p class="c-form-unit__txt">${label}</p><div class="c-form-input-require-wrap"><div class="c-form-unit-tel__wrap">
+                <div class="c-form-unit-tel__unit"><input type="tel" name="${name}1" size="8" class="c-form-input-text" placeholder="半角数字"> <span class="__txt">–</span></div>
+                <div class="c-form-unit-tel__unit"><input type="tel" name="${name}2" size="8" class="c-form-input-text" placeholder="半角数字"> <span class="__txt">–</span></div>
+                <div class="c-form-unit-tel__unit"><input type="tel" name="${name}3" size="8" class="c-form-input-text" placeholder="半角数字"></div>
+              </div></div><input type="hidden" name="${name}Search"><span class="error field-error-msg"></span></li></ul>`,
+          )
+          .join('')}
+      </div>
+    </div></form>`,
+    expect: {
+      '[name="local.phone1"]': '03',
+      '[name="local.phone2"]': '1234',
+      '[name="local.phone3"]': '5678',
+      '[name="data.extentionNumber"]': '',
+      '[name="local.mobilePhone1"]': '090',
+      '[name="local.mobilePhone2"]': '1234',
+      '[name="local.mobilePhone3"]': '5678',
+    },
+  },
+  {
+    name: '区切りがいろいろなダッシュ：郵便番号の「−」（マイナス）、「（－なし）」の全角ハイフン',
+    html: `<form>
+      <div class="item"><p>郵便番号</p><div class="wrap"><div class="unit"><input name="dz1"><span>−</span></div><div class="unit"><input name="dz2"></div></div></div>
+      <div class="item"><p>携帯電話（－なし）</p><div class="unit"><input name="dtel"></div></div>
+    </form>`,
+    expect: { '[name=dz1]': '150', '[name=dz2]': '0041', '[name=dtel]': '09012345678' },
+  },
 ];

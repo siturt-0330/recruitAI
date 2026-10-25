@@ -201,7 +201,7 @@ function structuralHeader(el: HTMLElement): string {
         (c) => c !== cell && !c.contains(el) && !c.querySelector(VISIBLE_CONTROLS),
       );
       const t = textOf(header ?? null, 60);
-      if (t && !/^[\s\-‐ー－~〜()（）]*$/.test(t)) return t;
+      if (t && !/^[\s\-‐‑‒–—―−ー－ｰ~〜～()（）]*$/.test(t)) return t;
       // 行見出しがない表（「年｜月｜学歴・職歴」のような表）は、列の見出しを使う
       const column = columnHeader(cell);
       if (column) return column;
@@ -221,7 +221,11 @@ function structuralHeader(el: HTMLElement): string {
 }
 
 /** 「例（111-0000）」「-」のような入力例・区切り記号は見出しにしない */
-const NOT_A_HEADING = /^(例|e\.?g\.?|ex\.?)\s*[:：(（]|^[\s\-‐ー－~〜～/／:：()（）]*$/i;
+/**
+ * 入力例と、区切りの記号だけの文字。ダッシュは見た目が同じで文字が違うものが多い（マイナビの電話番号は「–」）ので、
+ * 区切りの記号を書くときは、この並び（\-‐‑‒–—―−ー－ｰ）をそろえて使う
+ */
+const NOT_A_HEADING = /^(例|e\.?g\.?|ex\.?)\s*[:：(（]|^[\s\-‐‑‒–—―−ー－ｰ~〜～/／:：()（）]*$/i;
 
 /**
  * node の中に、el 以外の入力欄に紐づいた <label> があるか。
