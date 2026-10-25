@@ -1,3 +1,16 @@
 # マイページ（app.rakuraku-entry.com）のホームで「今日の SPI 語」を出すため、言葉のリストだけは別のサイトからも読めるようにする
 /game/*/words.json
   Access-Control-Allow-Origin: *
+
+# 中継 API（api.rakuraku-entry.com）も同じ Worker なので、公式サイトのページが api のドメインでも開けてしまう。
+# 検索結果に同じページが 2 つ出ないように、api のドメインで開いたページは検索に載せない
+https://api.rakuraku-entry.com/*
+  X-Robots-Tag: noindex
+
+# 画像は 1 日キャッシュする（差し替えたら、HTML 側で ?v= を変える）
+/images/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# ゲームの共通の部品は、HTML 側で ?v=<中身のハッシュ> を付けて読むので、長めにキャッシュしてよい
+/game/engine/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400

@@ -21,8 +21,19 @@ export function takeSnapshot(field: ScannedField): Snapshot {
 export function restoreSnapshot(field: ScannedField, snap: Snapshot) {
   const el = field.elements[0]!;
   if (snap.kind === 'checked') {
-    field.elements.forEach((r, i) => ((r as HTMLInputElement).checked = snap.checked[i] ?? false));
-    field.elements.forEach(dispatch);
+    // React などページ側で状態を持つ欄は、checked を書き換えても描き直しで元に戻されるので、まず click() で戻す。
+    // ラジオは click() で外せないので、選び直すときだけ
+    const boxes = field.elements as HTMLInputElement[];
+    boxes.forEach((b, i) => {
+      const want = snap.checked[i] ?? false;
+      if (b.checked !== want && (want || b.type === 'checkbox')) b.click();
+    });
+    // click() で戻らなかった欄（何も選ばれていなかったラジオなど）は、これまでどおり直接書き換える
+    const rest = boxes.filter((b, i) => b.checked !== (snap.checked[i] ?? false));
+    if (rest.length) {
+      boxes.forEach((b, i) => (b.checked = snap.checked[i] ?? false));
+      rest.forEach(dispatch);
+    }
     return;
   }
   if (snap.kind === 'files') (el as HTMLInputElement).files = toFileList(snap.files);
@@ -74,7 +85,8 @@ function dispatch(el: HTMLElement) {
 }
 
 export const normOption = (s: string) => {
-  const t = norm(s).replace(/\s/g, '').replace(/[年月日]$/, '');
+  // 「平成01年」と「平成1」を同じにするため、文字の中の数字の先頭の 0 も除く
+  const t = norm(s).replace(/\s/g, '').replace(/[年月日]$/, '').replace(/(^|\D)0+(\d)/g, '$1$2');
   return /^\d+$/.test(t) ? String(parseInt(t, 10)) : t;
 };
 

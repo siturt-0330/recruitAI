@@ -41,8 +41,9 @@ export default function ProfilePageView() {
           )
         }
       />
-      <div className="grid grid-cols-[176px_minmax(0,1fr)] gap-5 px-6 py-5">
-        <nav className="flex flex-col gap-1">
+      {/* スマホでは左の一覧を上に並べ、横にスクロールできるようにする */}
+      <div className="grid gap-5 px-4 py-5 md:grid-cols-[176px_minmax(0,1fr)] md:px-6">
+        <nav className="-mx-4 flex min-w-0 gap-1 overflow-x-auto px-4 md:mx-0 md:flex-col md:overflow-visible md:px-0">
           {PROFILE_PAGES.map((p) => {
             const { filled, total } = pageProgress(p, profile);
             const on = p.id === pageId;
@@ -50,7 +51,7 @@ export default function ProfilePageView() {
               <button
                 key={p.id}
                 onClick={() => setPageId(p.id)}
-                className={`flex items-center justify-between rounded-full px-4 py-2.5 text-left text-sm ${on ? 'bg-indbg font-bold text-indtext' : 'hover:bg-fill'}`}
+                className={`flex shrink-0 items-center justify-between gap-2 whitespace-nowrap rounded-full px-4 py-2.5 text-left text-sm ${on ? 'bg-indbg font-bold text-indtext' : 'hover:bg-fill'}`}
               >
                 {p.label}
                 <span className="text-xs font-normal text-mute">{filled === total ? '✓' : `${filled}/${total}`}</span>

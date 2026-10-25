@@ -65,13 +65,15 @@ export function BlockEditor({ blocks, onChange }: { blocks: Block[]; onChange(bl
       }
     }
     if (text.startsWith('/') && !b.text.startsWith('/')) setMenu({ id: b.id, index: 0 });
+    // 絞り込みの文字が変わったら、先頭の候補を選び直す（前の位置が候補の数を超えないように）
+    else if (text.startsWith('/') && menu?.id === b.id) setMenu({ id: b.id, index: 0 });
     if (!text.startsWith('/') && menu?.id === b.id) setMenu(null);
     update(b.id, { text });
   };
 
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>, b: Block, i: number) => {
-    // 日本語入力の変換中の Enter などは、そのまま変換に使う
-    if (e.nativeEvent.isComposing) return;
+    // 日本語入力の変換中の Enter などは、そのまま変換に使う（Safari は確定の Enter で isComposing が false になるので keyCode 229 も見る）
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     const el = e.currentTarget;
     const atStart = el.selectionStart === 0 && el.selectionEnd === 0;
 

@@ -21,6 +21,14 @@ const host = (url: string) => {
   }
 };
 
+const origin = (url: string) => {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return '';
+  }
+};
+
 /**
  * マイページのログイン情報。ログイン画面を開いているときに出して、保存・入力する。
  * パスワードはこの PC の拡張機能の storage にだけ置く。
@@ -40,6 +48,8 @@ export function MypageCard({ tabId, tabUrl, companies }: Props) {
   const [granted, setGranted] = useState<boolean | null>(null);
 
   const saved = list ? findMypage(list, tabUrl) : undefined;
+  /** パスワードを入れてよいのは、保存したのと同じサイト（スキーム・ホスト・ポート）だけ。同じ共有ドメインの別のサイトには入れない */
+  const sameOrigin = !!saved && origin(saved.url) !== '' && origin(saved.url) === origin(tabUrl);
 
   useEffect(() => {
     (async () => {
@@ -48,7 +58,7 @@ export function MypageCard({ tabId, tabUrl, companies }: Props) {
       let login = { found: false, loginId: '', password: '' };
       if (tabId != null) {
         try {
-          const res = await runInTab(tabId, 'readLogin');
+          const res = await runInTab(tabId, 'readLogin', { origin: origin(tabUrl) });
           login = res.map((f) => f.result.login).find((l) => l?.found) ?? login;
         } catch {
           // 入力できないページ
@@ -73,9 +83,9 @@ export function MypageCard({ tabId, tabUrl, companies }: Props) {
   if (!list || (!saved && !found)) return null;
 
   const fillHere = async () => {
-    if (tabId == null || !saved) return;
+    if (tabId == null || !saved || !sameOrigin) return;
     try {
-      const res = await runInTab(tabId, 'fillLogin', { loginId: saved.loginId, password: saved.password, company: saved.companyName });
+      const res = await runInTab(tabId, 'fillLogin', { loginId: saved.loginId, password: saved.password, company: saved.companyName, origin: origin(saved.url) });
       setDone(res.some((f) => f.result.login?.found) ? 'filled' : 'failed');
     } catch {
       setDone('failed');
@@ -87,6 +97,7 @@ export function MypageCard({ tabId, tabUrl, companies }: Props) {
     const name = form.name.trim();
     const url = form.url.trim();
     if (!name || !url) return setMessage('会社名と URL を入れてください');
+    if (!originPattern(url)) return setMessage('URL は https:// から入れてください');
     const sophon = companies.find((c) => c.name === name);
     const sameName = list.find((m) => m.companyName === name);
     const companyId = sophon?.id ?? saved?.companyId ?? sameName?.companyId ?? crypto.randomUUID();
@@ -152,7 +163,8 @@ export function MypageCard({ tabId, tabUrl, companies }: Props) {
               保存内容を更新
             </button>
           ) : (
-            found && (
+            found &&
+            sameOrigin && (
               <button className="mypage-save" onClick={fillHere} disabled={done === 'failed'}>
                 <KeyRound size={15} />
                 {done === 'failed' ? '入力できませんでした' : 'ログイン情報を入力'}

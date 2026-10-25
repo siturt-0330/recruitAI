@@ -76,7 +76,8 @@ export default function App() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const profile = profiles.find((p) => p.id === activeId);
+  // ほかの画面で使っているプロフィールが消されたら、残っているものを出す
+  const profile = profiles.find((p) => p.id === activeId) ?? profiles[0];
 
   /** 入力のたびに少し待ってから自動保存する */
   const persist = (next: Profile[], immediate = false) => {
@@ -519,7 +520,7 @@ function PhotoEditor({ profile, update }: EditorProps) {
   const [error, setError] = useState('');
   return (
     <div className="photo">
-      <span className="avatar photo-thumb">{profile.photo ? <img src={profile.photo} alt="顔写真" /> : (profile.lastName || '?').slice(0, 1)}</span>
+      <span className="avatar photo-thumb">{profile.photo ? <img src={profile.photo} alt="顔写真" /> : [...(profile.lastName || '?')][0]}</span>
       <div className="photo-text">
         <strong>顔写真</strong>
         <div className="photo-actions">
@@ -531,6 +532,8 @@ function PhotoEditor({ profile, update }: EditorProps) {
               hidden
               onChange={async (e) => {
                 const file = e.target.files?.[0];
+                // 同じ写真を選び直しても change が届くように、選んだファイルを空にしておく
+                e.target.value = '';
                 if (!file) return;
                 try {
                   update({ photo: await resizePhoto(file) });

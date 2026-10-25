@@ -23,6 +23,19 @@ interface ClassifyBody {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 
+/**
+ * 回数を数える単位の IP。IPv6 は 1 台で /64 をまるごと使えるので、/64 ごとにまとめて数える
+ * （アドレスを変えながら全体の上限を使い切られないように）
+ */
+function ipBucket(ip: string): string {
+  if (!ip.includes(':')) return ip;
+  const [head = '', tail = ''] = ip.toLowerCase().split('::');
+  const h = head ? head.split(':') : [];
+  const t = tail ? tail.split(':') : [];
+  const full = [...h, ...Array<string>(Math.max(0, 8 - h.length - t.length)).fill('0'), ...t];
+  return full.slice(0, 4).map((x) => x.padStart(4, '0')).join(':') + '::/64';
+}
+
 /** 日本時間の日付（上限は日本時間の0時にリセット） */
 const dayJst = () => new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
 
@@ -30,7 +43,8 @@ function parseBody(raw: unknown): ClassifyBody | string {
   if (!raw || typeof raw !== 'object') return 'invalid body';
   const b = raw as Record<string, unknown>;
   if (typeof b.installId !== 'string' || !/^[0-9a-f-]{36}$/.test(b.installId)) return 'invalid installId';
-  if (typeof b.formText !== 'string' || b.formText.length > MAX_FORM_CHARS) return 'invalid formText';
+  // 大きいフォームは全体の説明が長くなるので、断らずに先頭だけ使う
+  if (typeof b.formText !== 'string') return 'invalid formText';
   if (!Array.isArray(b.questions) || b.questions.length === 0 || b.questions.length > MAX_QUESTIONS) return 'invalid questions';
   const questions: RemoteQuestion[] = [];
   for (const q of b.questions as unknown[]) {
@@ -38,7 +52,7 @@ function parseBody(raw: unknown): ClassifyBody | string {
     if (typeof x?.name !== 'string' || x.name.length > 80 || typeof x.instructions !== 'string') return 'invalid question';
     questions.push({ name: x.name, instructions: x.instructions.slice(0, MAX_INSTRUCTIONS) });
   }
-  return { installId: b.installId, formText: b.formText, questions };
+  return { installId: b.installId, formText: b.formText.slice(0, MAX_FORM_CHARS), questions };
 }
 
 /** 管理用トークンを、比較時間から推測されないように比べる */
@@ -98,7 +112,7 @@ async function logo(request: Request, env: Env, ctx: ExecutionContext, url: URL)
   const hit = await cache.match(key);
   if (hit) return new Response(hit.body, { status: hit.status, headers: { ...Object.fromEntries(hit.headers), ...cors } });
 
-  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+  const ip = ipBucket(request.headers.get('CF-Connecting-IP') ?? 'unknown');
   const verdict = await env.QUOTA.getByName('global').takeLogo(dayJst(), ip, Number(env.LOGO_LIMIT_PER_IP), Number(env.LOGO_LIMIT_GLOBAL));
   if (!verdict.ok) return new Response(JSON.stringify({ error: 'quota' }), { status: 429, headers: { 'Content-Type': 'application/json; charset=utf-8', ...cors } });
 
@@ -140,7 +154,14 @@ export default {
       return json({ day: dayJst(), ...(await env.QUOTA.getByName('global').today(dayJst())) });
     }
     if (url.pathname === '/v1/logo') return logo(request, env, ctx, url);
-    if (url.pathname !== '/v1/classify') return json({ error: 'not found' }, 404);
+    if (url.pathname !== '/v1/classify') {
+      // 公式サイトのないページは、404 のページ（site/404.html）をステータス 404 で返す
+      if (request.method === 'GET' && !url.pathname.startsWith('/v1/')) {
+        const page = await env.ASSETS.fetch(new URL('/404', url));
+        return new Response(page.body, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+      }
+      return json({ error: 'not found' }, 404);
+    }
     if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
 
     // 公開後は拡張機能の ID（chrome-extension://...）だけを許可する。空なら開発用にすべて許可
@@ -159,7 +180,7 @@ export default {
     const body = parseBody(parsed);
     if (typeof body === 'string') return json({ error: body }, 400);
 
-    const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+    const ip = ipBucket(request.headers.get('CF-Connecting-IP') ?? 'unknown');
     const quota = env.QUOTA.getByName('global');
     const verdict = await quota.take(dayJst(), body.installId, ip, {
       perInstall: Number(env.LIMIT_PER_INSTALL),

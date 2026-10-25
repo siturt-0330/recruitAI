@@ -6,8 +6,8 @@ import { nowIso } from './dates';
 import { emptyProfile, normalizeProfile } from '@ext/profile';
 import type { LinkMypage, LinkRecord } from '@ext/sophon-link';
 import { emptyCompany, emptyData, sampleData } from './seed';
-import { stageOrder } from './stages';
-import type { AppData, Company, Profile } from './types';
+import { STAGES, stageOrder } from './stages';
+import type { AppData, Block, Company, CustomProp, Profile } from './types';
 
 /**
  * アプリのデータ。今はこのブラウザの localStorage にだけ保存する。
@@ -38,6 +38,60 @@ const upsert = <T extends { id: string; updatedAt: string }>(list: T[], item: T)
   list.some((x) => x.id === item.id) ? list.map((x) => (x.id === item.id ? touch(item) : x)) : [...list, touch(item)];
 const patch = <T extends { id: string; updatedAt: string }>(list: T[], id: string, p: Partial<T>) =>
   list.map((x) => (x.id === id ? touch({ ...x, ...p }) : x));
+
+const isObj = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
+const str = (x: unknown) => (typeof x === 'string' ? x : '');
+const BLOCK_TYPES: Block['type'][] = ['text', 'heading', 'bullet', 'todo'];
+
+/**
+ * 保存されていた会社を、画面で使える形にそろえる。
+ * 手で書き換えられた・古い版で壊れたデータでも、画面が落ちないように足りない項目を補う。
+ */
+function normalizeCompany(raw: unknown): Company | null {
+  if (!isObj(raw)) return null;
+  const base = emptyCompany(str(raw.name));
+  const c = { ...base } as Record<string, unknown>;
+  // 項目ごとに、空の会社と同じ型のときだけ保存された値を使う
+  for (const k of Object.keys(base) as (keyof Company)[]) {
+    if (k in raw && typeof raw[k] === typeof base[k] && Array.isArray(raw[k]) === Array.isArray(base[k])) c[k] = raw[k];
+  }
+  const out = c as unknown as Company;
+  if (!out.id) out.id = base.id;
+  if (!STAGES.some((x) => x.id === out.stage)) out.stage = 'entry';
+  out.blocks = out.blocks.filter(isObj).map(
+    (b): Block => ({
+      id: str(b.id) || crypto.randomUUID(),
+      type: BLOCK_TYPES.includes(b.type as Block['type']) ? (b.type as Block['type']) : 'text',
+      text: str(b.text),
+      ...(typeof b.checked === 'boolean' ? { checked: b.checked } : {}),
+    }),
+  );
+  out.props = out.props
+    .filter(isObj)
+    .map((p): CustomProp => ({ id: str(p.id) || crypto.randomUUID(), name: str(p.name), value: str(p.value) }));
+  return out;
+}
+
+/** 保存されていたデータを読み込むときに、今のデータ（初期値）に重ね、形の崩れたところを直す */
+function mergeStored(stored: unknown, current: Store): Store {
+  if (!isObj(stored)) return current;
+  // 保存されたデータの項目だけを取り込む（操作の関数などを上書きしない）
+  const s = { ...current };
+  s.companies = Array.isArray(stored.companies)
+    ? stored.companies.map(normalizeCompany).filter((c): c is Company => c !== null)
+    : current.companies;
+  s.profile = isObj(stored.profile)
+    ? normalizeProfile({ ...(stored.profile as Partial<Profile>), id: str(stored.profile.id) || crypto.randomUUID() })
+    : null;
+  s.industries = Array.isArray(stored.industries) ? stored.industries.filter((x): x is string => typeof x === 'string') : [];
+  s.removedIds = Array.isArray(stored.removedIds) ? stored.removedIds.filter((x): x is string => typeof x === 'string') : [];
+  s.doneTasks = isObj(stored.doneTasks)
+    ? Object.fromEntries(Object.entries(stored.doneTasks).filter((e): e is [string, string[]] => Array.isArray(e[1])))
+    : {};
+  s.sample = typeof stored.sample === 'boolean' ? stored.sample : current.sample;
+  s.boardView = stored.boardView === 'table' ? 'table' : 'board';
+  return s;
+}
 
 export const useStore = create<Store>()(
   persist(
@@ -121,7 +175,9 @@ export const useStore = create<Store>()(
       version: 7,
       // v2: 「気になる」をなくし、業界の選択肢を持つようにした
       migrate: (state, version) => {
-        const s = state as AppData;
+        const s = (isObj(state) ? state : {}) as unknown as AppData;
+        // 形の崩れた会社があっても、移行の途中で落ちないようにする（残りの直しは merge で行う）
+        s.companies = Array.isArray(s.companies) ? s.companies.filter(isObj) : [];
         if (version < 2) {
           s.companies = (s.companies ?? []).map((c) => ((c.stage as string) === 'interested' ? { ...c, stage: 'entry' } : c));
           s.industries = s.industries ?? [];
@@ -158,6 +214,7 @@ export const useStore = create<Store>()(
         if (version < 7) s.removedIds = s.removedIds ?? [];
         return s as Store;
       },
+      merge: (stored, current) => mergeStored(stored, current),
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
     },
