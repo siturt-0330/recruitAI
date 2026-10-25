@@ -31,9 +31,15 @@ import { STAGES, stageInfo } from '@/lib/stages';
 import { useStore } from '@/lib/store';
 import type { Block, Company, CustomProp } from '@/lib/types';
 
+/** いま保存したばかりのパスワード（会社の ID → 時刻）。拡張機能から「保存済み」が返ってくる前に「開く」を押したとき用 */
+const justSaved = new Map<string, number>();
+
 /** マイページを開く。拡張機能にパスワードがあれば、ID とパスワードを入れた状態で開く */
 export function openCompanyMypage(c: Company, connected: boolean) {
+  const fresh = Date.now() - (justSaved.get(c.id) ?? 0) < 5000;
   if (connected && c.hasPassword) openMypage(c.id);
+  // 打ったパスワードを保存した直後（欄から離れたときに保存する）。拡張機能が保存し終えるのを少し待ってから開く
+  else if (connected && fresh) setTimeout(() => openMypage(c.id), 400);
   else if (c.mypageUrl) window.open(c.mypageUrl, '_blank', 'noopener');
 }
 
@@ -236,6 +242,7 @@ function PasswordInput({ company, connected }: { company: Company; connected: bo
   const save = () => {
     if (!ready || !value) return;
     setPassword(company, value);
+    justSaved.set(company.id, Date.now());
     setValue('');
     setEditing(false);
   };
@@ -251,6 +258,8 @@ function PasswordInput({ company, connected }: { company: Company; connected: bo
         }
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => !e.nativeEvent.isComposing && e.keyCode !== 229 && e.key === 'Enter' && save()}
+        // 「保存」を押さずにほかを押しても（「開く」など）、打ったパスワードが消えないように、欄から離れたら保存する
+        onBlur={save}
         className="h-9 min-w-0 flex-1 bg-transparent outline-none placeholder:text-mute disabled:cursor-not-allowed"
       />
       {value && (

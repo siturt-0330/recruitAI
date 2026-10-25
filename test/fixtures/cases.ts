@@ -1953,4 +1953,24 @@ export const CASES: Case[] = [
       '[name=tbx_tel13]': '5678',
     },
   },
+  {
+    name: 'snar.jp（Speee）：サブメールの「再入力」の行のすぐ下にある携帯番号の 3 分割',
+    html: `<form><table class="entryTb"><tbody>
+      <tr><td id="th_mail" class="td01">メインメールアドレス<span class="required">*</span><input type="hidden" name="hdn_mail_T" value="メインメールアドレス"><input type="hidden" name="hdn_mail" value="1"></td><td><input name="tbx_mail" type="text" class="inputL"><p>最も連絡の取りやすいメールアドレス</p></td></tr>
+      <tr><td>再入力<span class="required">*</span></td><td><input name="tbx_mail_R" type="text" class="inputL"></td></tr>
+      <tr><td id="th_smail" class="td01">サブメールアドレス<input type="hidden" name="hdn_smail_T" value="サブメールアドレス"><input type="hidden" name="hdn_smail" value="0"></td><td><input name="tbx_smail" type="text" class="inputL"><p>その他のメールアドレス</p></td></tr>
+      <tr><td>再入力</td><td><input name="tbx_smail_R" type="text" class="inputL"></td></tr>
+      <tr><td id="th_keitai" class="td01">携帯番号<span class="required">*</span><input type="hidden" name="hdn_keitai_T" value="携帯番号"><input type="hidden" name="hdn_keitai" value="1"></td><td><input name="tbx_keitai1" type="text" class="inputSText"> - <input name="tbx_keitai2" type="text" class="inputSText"> - <input name="tbx_keitai3" type="text" class="inputSText"><p></p></td></tr>
+      <tr><td id="th_sex" class="td01">性別<span class="required">*</span><input type="hidden" name="hdn_sex_T" value="性別"><input type="hidden" name="hdn_sex" value="1"></td><td><input id="rbt_sex1" type="radio" name="rbt_sex" value="rbt_sex1"><label for="rbt_sex1"> 男性 </label><input id="rbt_sex2" type="radio" name="rbt_sex" value="rbt_sex2"><label for="rbt_sex2"> 女性 </label><p></p></td></tr>
+    </tbody></table></form>`,
+    profile: { emailSub: 'sub@example.com' },
+    expect: {
+      '[name=tbx_smail]': 'sub@example.com',
+      '[name=tbx_smail_R]': 'sub@example.com',
+      '[name=tbx_keitai1]': '090',
+      '[name=tbx_keitai2]': '1234',
+      '[name=tbx_keitai3]': '5678',
+      '#rbt_sex1': true,
+    },
+  },
 ];
