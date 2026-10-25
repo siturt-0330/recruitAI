@@ -412,7 +412,7 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
     case 'graduationMonth':
       return ymPart(p.graduation, 'month', h);
     case 'graduationStatus':
-      if (p.graduationStatus === 'expected') return ['卒業見込み', '卒業見込', '見込み', '見込', '新卒'];
+      if (p.graduationStatus === 'expected') return ['卒業見込み', '卒業見込', '見込み', '見込', '卒業予定', '新卒', '予定'];
       if (p.graduationStatus === 'graduated') return ['卒業', '既卒', '卒業済み'];
       return [];
     case 'lab':
