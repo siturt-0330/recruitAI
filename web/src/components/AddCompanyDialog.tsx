@@ -41,10 +41,17 @@ export function AddCompanyDialog({ onClose, defaultStage = 'entry' }: { onClose(
 
   // URL を入れ終わったら、少し待ってからロゴを取りに行く
   useEffect(() => {
-    if (!hostOf(url).includes('.')) return;
+    // URL として読めない間は、読み込み中の表示を残さない
+    if (!hostOf(url).includes('.')) {
+      setLogoState('idle');
+      return;
+    }
     setLogoState('loading');
+    // URL を打ち直したあとに、前の URL の結果が遅れて届いても使わない
+    let stale = false;
     const timer = setTimeout(async () => {
       const r = await fetchLogo(url);
+      if (stale) return;
       if (r.logo) {
         setLogo(r.logo);
         setLogoState('idle');
@@ -52,8 +59,18 @@ export function AddCompanyDialog({ onClose, defaultStage = 'entry' }: { onClose(
         setLogoState('error');
       }
     }, 600);
-    return () => clearTimeout(timer);
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
   }, [url]);
+
+  // Esc で閉じる
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   const submit = () => {
     if (!name.trim()) {
@@ -67,9 +84,15 @@ export function AddCompanyDialog({ onClose, defaultStage = 'entry' }: { onClose(
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-ink/40 p-6 pt-[12vh]" onClick={() => onClose()}>
-      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-company-title"
+        className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-extrabold">企業を追加</h2>
+          <h2 id="add-company-title" className="text-lg font-extrabold">企業を追加</h2>
           <button className="rounded-full p-1.5 hover:bg-fill" onClick={() => onClose()} aria-label="閉じる">
             <X size={18} />
           </button>
@@ -84,7 +107,8 @@ export function AddCompanyDialog({ onClose, defaultStage = 'entry' }: { onClose(
               setName(e.target.value);
               setError('');
             }}
-            onKeyDown={(e) => e.key === 'Enter' && submit()}
+            // 日本語入力の変換を確定する Enter では追加しない
+            onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229 && submit()}
           />
           {error && <p className="-mt-1 text-xs text-danger">{error}</p>}
           <Field label="URL" value={url} placeholder="https://" onChange={(e) => setUrl(e.target.value)} />

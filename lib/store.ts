@@ -32,7 +32,15 @@ export const sophonOutboxItem = storage.defineItem<LinkRecord[]>('local:sophonOu
 /** インストールごとのランダムな ID。中継 API の回数制限に使う（個人を特定する情報は含まない） */
 export const installIdItem = storage.defineItem<string>('local:installId', { fallback: '' });
 
-export async function getInstallId(): Promise<string> {
+let installId: Promise<string> | undefined;
+
+/** 初めて使うときに複数のフレームから同時に呼ばれても、ID を 1 つだけ作る */
+export function getInstallId(): Promise<string> {
+  installId ??= readOrCreateInstallId();
+  return installId;
+}
+
+async function readOrCreateInstallId(): Promise<string> {
   let id = await installIdItem.getValue();
   if (!id) {
     id = crypto.randomUUID();

@@ -7,8 +7,12 @@
     <title>SPI 用語集｜タイピングで覚える SPI の言葉｜らくらくエントリー</title>
     <meta name="description" content="SPI に出る言葉を、タイピングで覚える無料の用語集。例文と意味を見ながら打つので、使い方ごと覚えられます。" />
     <link rel="canonical" href="https://rakuraku-entry.com/game" />
-    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
+    <link rel="icon" href="/images/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#f6f4fb" />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="らくらくエントリー" />
     <meta property="og:url" content="https://rakuraku-entry.com/game" />
     <meta property="og:title" content="SPI 用語集｜タイピングで覚える SPI の言葉" />
     <meta property="og:description" content="SPI に出る言葉を、タイピングで覚える無料の用語集。" />
@@ -28,7 +32,11 @@
       .gcard b { display: block; font-family: var(--head); font-size: 21px; margin: 6px 0 6px; }
       .gcard p { margin: 0; color: var(--sub); font-size: 14px; line-height: 1.7; }
       .gcard .n { margin-top: 12px; font-size: 12px; color: var(--mute); }
+      .hub .lead { max-width: 36em; margin: -14px auto 26px; color: var(--sub); font-size: 15px; line-height: 1.9; }
+      .lists { margin: 22px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; font-size: 14px; }
+      .lists a { color: var(--accent); }
     </style>
+    <script type="application/ld+json">{{jsonLd}}</script>
     {{adHead}}
   </head>
   <body>
@@ -41,12 +49,16 @@
       <section class="hub start">
         <div class="kick">SPI WORDS</div>
         <h1>打って覚える、<br /><em>用語集。</em></h1>
+        <p class="lead">SPI の言語分野に出る言葉を、例文と意味を見ながらタイピングで覚える無料の用語集です。スマホでは意味を 4 択で選んで覚えられます。</p>
         <div class="games">
 {{games}}
         </div>
+        <ul class="lists">
+{{lists}}
+        </ul>
         {{adHub}}
       </section>
     </main>
-    <footer>© らくらくエントリー ・ <a href="/privacy">プライバシーポリシー</a></footer>
+    <footer>© らくらくエントリー ・ <a href="/">就活の応募フォーム自動入力（Chrome 拡張機能）</a> ・ <a href="/privacy">プライバシーポリシー</a></footer>
   </body>
 </html>

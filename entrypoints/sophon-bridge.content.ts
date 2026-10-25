@@ -5,6 +5,14 @@ import { SOPHON_MATCHES, isNewer, type AppMessage, type ExtMessage, type LinkCom
 import { activeProfileIdItem, getActiveProfile, getProfiles, mypagesItem, profilesItem, sophonDataItem, sophonOutboxItem } from '@/lib/store';
 import type { Profile } from '@/lib/types';
 
+const sameOrigin = (a: string, b: string) => {
+  try {
+    return new URL(a).origin === new URL(b).origin;
+  } catch {
+    return false;
+  }
+};
+
 /**
  * Sophon（Web アプリ）のページでだけ動く中継役。
  * ページとは window.postMessage で、拡張機能とは storage でやり取りする。データは外部に送らない。
@@ -105,8 +113,10 @@ export default defineContentScript({
         const patch = { companyName: c.name, url: c.mypageUrl || m.url, loginId: c.loginId ?? m.loginId };
         if (patch.companyName === m.companyName && patch.url === m.url && patch.loginId === m.loginId) return m;
         changed = true;
+        // URL が別のサイトに変わったら、パスワードは引き継がない（ページ側から URL を書きかえて、パスワードを別のサイトに入れさせないため）
+        const password = sameOrigin(patch.url, m.url) ? m.password : '';
         // 更新日時は Sophon で直した時刻のままにする（今の時刻にすると、打っている途中の古い値で Sophon 側を上書きしてしまう）
-        return { ...m, ...patch, updatedAt: c.updatedAt ?? m.updatedAt };
+        return { ...m, ...patch, password, updatedAt: c.updatedAt ?? m.updatedAt };
       });
       if (changed) await mypagesItem.setValue(next);
     };

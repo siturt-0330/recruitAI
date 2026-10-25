@@ -3,16 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>らくらくエントリー プライバシーポリシー</title>
+    <title>プライバシーポリシー｜らくらくエントリー</title>
+    <meta name="description" content="就活の応募フォーム自動入力の Chrome 拡張機能「らくらくエントリー」と、マイページ管理（Web 版）・SPI 用語集のプライバシーポリシー。プロフィールやパスワードはあなたのブラウザの中にだけ保存し、運営者のサーバーには送りません。" />
     <link rel="canonical" href="https://rakuraku-entry.com/privacy" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="らくらくエントリー" />
+    <meta property="og:url" content="https://rakuraku-entry.com/privacy" />
+    <meta property="og:title" content="プライバシーポリシー｜らくらくエントリー" />
+    <meta property="og:image" content="https://rakuraku-entry.com/images/og.png" />
+    <meta property="og:locale" content="ja_JP" />
     <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
     <link rel="icon" href="/favicon-96.png" type="image/png" sizes="96x96" />
     <link rel="icon" href="/images/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <style>
       body { max-width: 720px; margin: 40px auto; padding: 0 20px; color: #0f1419; background: #fff;
         font: 15px/1.8 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif; }
       h1 { font-size: 24px; }
       h2 { font-size: 17px; margin-top: 32px; }
+      h3 { font-size: 15px; }
       table { border-collapse: collapse; width: 100%; font-size: 14px; }
       th, td { border: 1px solid #cfd9de; padding: 8px 10px; text-align: left; vertical-align: top; }
       th { background: #f7f9f9; width: 30%; }
@@ -22,7 +31,7 @@
   <body>
     <p><a href="/">← らくらくエントリー トップへ</a></p>
     <h1>らくらくエントリー プライバシーポリシー</h1>
-    <p class="muted">最終更新日：2026年10月23日</p>
+    <p class="muted">最終更新日：2026年10月24日</p>
 
     <p>
       らくらくエントリー（以下「本拡張機能」）は、就職活動の応募フォームに、利用者が登録したプロフィールを自動で入力する Chrome 拡張機能です。
@@ -45,9 +54,9 @@
       その際、次の情報を運営者のサーバー（Cloudflare Workers）に送信します。
     </p>
     <table>
-      <tr><th>入力欄の構造</th><td>入力欄の見出し・ラベル・プレースホルダー・name 属性・選択肢など。入力されている値やプロフィールの内容は含みません。ページの URL も送りません。</td></tr>
-      <tr><th>インストール ID</th><td>本拡張機能をインストールしたときに作るランダムな ID。1日の利用回数の制限に使います。個人を特定する情報は含みません。</td></tr>
-      <tr><th>IP アドレス</th><td>通信の性質上サーバーに届きます。不正な大量利用を防ぐための1日ごとの回数の集計にだけ使い、日付が変わると集計から消去します。</td></tr>
+      <tr><th scope="row">入力欄の構造</th><td>入力欄の見出し・ラベル・プレースホルダー・name 属性・選択肢など。入力されている値やプロフィールの内容は含みません。ページの URL も送りません。</td></tr>
+      <tr><th scope="row">インストール ID</th><td>本拡張機能をインストールしたときに作るランダムな ID。1日の利用回数の制限に使います。個人を特定する情報は含みません。</td></tr>
+      <tr><th scope="row">IP アドレス</th><td>通信の性質上サーバーに届きます。不正な大量利用を防ぐための1日ごとの回数の集計にだけ使い、日付が変わると集計から消去します。</td></tr>
     </table>
     <p>
       入力欄の構造は、判定のために OpenAI の API に送信されます。OpenAI での取り扱いは
@@ -82,9 +91,9 @@
       広告を表示するページを開くと、利用者のブラウザから Google に次の情報が送信されます。
     </p>
     <table>
-      <tr><th>送信先</th><td>Google LLC</td></tr>
-      <tr><th>送信される情報</th><td>Cookie などの識別子、IP アドレス、ブラウザや端末の種類、閲覧しているページの URL、広告の表示やクリックの記録</td></tr>
-      <tr><th>利用目的</th><td>広告の配信、利用者の興味に合わせた広告の表示、広告の効果の測定、不正なクリックの防止</td></tr>
+      <tr><th scope="row">送信先</th><td>Google LLC</td></tr>
+      <tr><th scope="row">送信される情報</th><td>Cookie などの識別子、IP アドレス、ブラウザや端末の種類、閲覧しているページの URL、広告の表示やクリックの記録</td></tr>
+      <tr><th scope="row">利用目的</th><td>広告の配信、利用者の興味に合わせた広告の表示、広告の効果の測定、不正なクリックの防止</td></tr>
     </table>
     <p>
       Google は、Cookie を使って、利用者が本サイトやほかのサイトを訪れた記録にもとづいて広告を表示することがあります。
@@ -103,7 +112,7 @@
     </p>
 
     <h2>5. 情報の削除</h2>
-    <p>本拡張機能をアンインストールすると、ブラウザ内に保存したプロフィールなどの情報はすべて削除されます。</p>
+    <p>本拡張機能をアンインストールすると、拡張機能の中に保存したプロフィール・パスワードなどの情報はすべて削除されます。Web 版（app.rakuraku-entry.com）のデータは、ブラウザでこのサイトのデータを消すと削除されます。</p>
 
     <h2>6. お問い合わせ</h2>
     <p>運営者：齋藤稜太<br />連絡先：<a href="mailto:contact@geek-app.com">contact@geek-app.com</a></p>
