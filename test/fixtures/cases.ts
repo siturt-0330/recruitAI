@@ -1692,4 +1692,170 @@ export const CASES: Case[] = [
       },
     } satisfies Case;
   })(),
+
+  // ---- 第7弾：2026-10-25 に直した形の、似た形 ----
+  ...(['—', '−', 'ー', '－', '‐'] as const).map(
+    (sep): Case => ({
+      name: `似た形：欄ごとの div の中に区切りの「${sep}」（携帯 3 分割・郵便 2 分割）`,
+      html: `<form>
+        <div class="item"><p class="label">携帯電話番号</p><div class="wrap">${[1, 2, 3].map((i) => `<div class="unit"><input type="tel" name="dt${i}">${i < 3 ? sep : ''}</div>`).join('')}</div></div>
+        <div class="item"><p class="label">郵便番号</p><div class="wrap"><div class="unit"><input name="dz1"><span>${sep}</span></div><div class="unit"><input name="dz2"></div></div></div>
+      </form>`,
+      expect: { '[name=dt1]': '090', '[name=dt2]': '1234', '[name=dt3]': '5678', '[name=dz1]': '150', '[name=dz2]': '0041' },
+    }),
+  ),
+  {
+    name: '似た形：ハイフンの指定（「-なし」・「ハイフン不要」・入力例の「–」・入力例が数字だけ）',
+    html: `<form><table>
+      <tr><th>携帯電話（-なし）</th><td><input name="h1"></td></tr>
+      <tr><th>郵便番号（ハイフン不要）</th><td><input name="h2"></td></tr>
+      <tr><th>電話番号</th><td><input name="h3" placeholder="例：090–1234–5678"></td></tr>
+      <tr><th>連絡先電話番号</th><td><input name="h4" placeholder="09012345678"></td></tr>
+    </table></form>`,
+    expect: { '[name=h1]': '09012345678', '[name=h2]': '1500041', '[name=h3]': '090-1234-5678', '[name=h4]': '09012345678' },
+  },
+  (() => {
+    const jqSelect = (name: string, items: string[]) =>
+      `<div class="jqTransformSelectWrapper jq-${name}"><div><span>選択</span><a href="#" class="jqTransformSelectOpen"></a></div><ul style="display:none">${['選択', ...items].map((t, i) => `<li><a href="#" index="${i}">${t}</a></li>`).join('')}</ul><select name="${name}" class="jqTransformHidden">${opts(items, '選択')}</select></div>`;
+    const jqRadio = (name: string, items: string[]) =>
+      items.map((t, i) => `<span class="jqTransformRadioWrapper"><a href="#" class="jqTransformRadio jq-${name}${i}" rel="${name}"></a><input type="radio" name="${name}" value="${t}" class="jqTransformHidden"></span><label for="text">${t}</label>`).join('');
+    return {
+      name: '似た形：jqTransform の卒業年月・文理（ラジオ）と、帰省先が別の住所（チェックしない・帰省先を入れる）',
+      html: `<style>.jqTransformHidden{display:none}</style><form><dl>
+        <div><dt>卒業予定年月</dt><dd>${jqSelect('gy', ['2025', '2026', '2027'])}年${jqSelect('gm', ['1', '2', '3', '4'])}月</dd></div>
+        <div><dt>文理区分</dt><dd>${jqRadio('bunri', ['文系', '理系'])}</dd></div>
+        <div class="heading_l2">現住所</div>
+        <div><dt>都道府県</dt><dd>${jqSelect('gken', ['東京都', '福島県'])}</dd></div>
+        <div><dt>市区郡・番地</dt><dd><input name="gaddr"></dd></div>
+        <div class="heading_l2">帰省先</div>
+        <div><span class="jqTransformCheckboxWrapper"><a href="#" class="jqTransformCheckbox jq-same"></a><input type="checkbox" name="same" class="jqTransformHidden"></span><label for="text">現住所と同じ場合はチェック</label></div>
+        <div><dt>都道府県</dt><dd>${jqSelect('kken', ['東京都', '福島県'])}</dd></div>
+        <div><dt>市区郡・番地</dt><dd><input name="kaddr"></dd></div>
+      </dl></form>`,
+      profile: { kiseiSame: false, kiseiPostalCode: '530-0001', kiseiPrefecture: '福島県', kiseiCity: '大阪市北区', kiseiAddressLine: '梅田1-2-3' },
+      expect: {
+        '[name=gy]': '2026',
+        '[name=gm]': '3',
+        '[name=bunri][value="文系"]': true,
+        'text:.jq-gy > div > span': '2026',
+        '[name=gken]': '東京都',
+        '[name=gaddr]': '渋谷区神南1-2-3',
+        '[name=same]': false,
+        '[name=kken]': '福島県',
+        'text:.jq-kken > div > span': '福島県',
+        '[name=kaddr]': '大阪市北区梅田1-2-3',
+      },
+    } satisfies Case;
+  })(),
+  {
+    name: '似た形：dl の欄ごとの dt と、h3 の「帰省先」見出し（帰省先が別の住所）',
+    html: `<form>
+      <h3>現住所</h3>
+      <dl><dt>郵便番号</dt><dd><input name="z1"> - <input name="z2"></dd><dt>都道府県</dt><dd><select name="p">${opts(['東京都', '福島県'])}</select></dd><dt>住所</dt><dd><input name="a"></dd></dl>
+      <h3>帰省先</h3>
+      <dl><dt>郵便番号</dt><dd><input name="kz1"> - <input name="kz2"></dd><dt>都道府県</dt><dd><select name="kp">${opts(['東京都', '福島県'])}</select></dd><dt>住所</dt><dd><input name="ka"></dd></dl>
+    </form>`,
+    profile: { kiseiSame: false, kiseiPostalCode: '530-0001', kiseiPrefecture: '福島県', kiseiCity: '大阪市北区', kiseiAddressLine: '梅田1-2-3' },
+    expect: { '[name=z1]': '150', '[name=z2]': '0041', '[name=p]': '東京都', '[name=kz1]': '976', '[name=kz2]': '0053', '[name=kp]': '福島県', '[name=ka]': '大阪市北区梅田1-2-3' },
+  },
+  {
+    // チェックボックスがなく、帰省先が現住所と同じなら、帰省先の欄にも現住所を入れる（「帰省先の見出しのある住所」と同じ）
+    name: '似た形：外側の dt が「帰省先」、内側の dl に欄ごとの dt（現住所と同じなら帰省先にも現住所）',
+    html: `<form><dl>
+      <dt>現住所</dt><dd><dl><dt>郵便番号</dt><dd><input name="z"></dd><dt>住所</dt><dd><input name="a"></dd></dl></dd>
+      <dt>帰省先</dt><dd><dl><dt>郵便番号</dt><dd><input name="kz"></dd><dt>住所</dt><dd><input name="ka"></dd></dl></dd>
+    </dl></form>`,
+    expect: {
+      '[name=z]': '150-0041',
+      '[name=a]': '東京都渋谷区神南1-2-3　サンプルマンション101',
+      '[name=kz]': '150-0041',
+      '[name=ka]': '東京都渋谷区神南1-2-3　サンプルマンション101',
+    },
+  },
+  ...(
+    [
+      ['帰省先住所がある場合は入力して下さい。ない場合はチェックして下さい。', true],
+      ['休暇中の連絡先が現住所と異なる場合のみ入力してください。同じ場合はチェック', true],
+    ] as const
+  ).flatMap(([text, isSameCheck]) =>
+    [true, false].map(
+      (same): Case => ({
+        name: `似た形：「${text.slice(0, 18)}…」のチェック（帰省先が${same ? '同じ' : '別'}）`,
+        html: `<form><table>
+          <tr><th>郵便番号</th><td><input name="z1" maxlength="3"> - <input name="z2" maxlength="4"></td></tr>
+          <tr><th>都道府県</th><td><select name="p">${opts(['東京都', '福島県'])}</select></td></tr>
+          <tr><th>市区町村・番地</th><td><input name="a"></td></tr>
+          <tr><td colspan="2">${text}<input type="checkbox" id="c" name="c"><label for="c">チェックしてください。</label></td></tr>
+          <tr><th>郵便番号</th><td><input name="kz1" maxlength="3"> - <input name="kz2" maxlength="4"></td></tr>
+          <tr><th>都道府県</th><td><select name="kp">${opts(['東京都', '福島県'])}</select></td></tr>
+          <tr><th>市区町村・番地</th><td><input name="ka"></td></tr>
+          <tr><th>電話番号</th><td><input name="t"></td></tr>
+        </table></form>`,
+        profile: same ? {} : { kiseiSame: false, kiseiPostalCode: '530-0001', kiseiPrefecture: '福島県', kiseiCity: '大阪市北区', kiseiAddressLine: '梅田1-2-3' },
+        expect: {
+          '[name=z1]': '150',
+          '[name=p]': '東京都',
+          '#c': isSameCheck && same,
+          '[name=kz1]': same ? '' : '976',
+          '[name=kz2]': same ? '' : '0053',
+          '[name=kp]': same ? '' : '福島県',
+          '[name=ka]': same ? '' : '大阪市北区梅田1-2-3',
+          '[name=t]': '090-1234-5678',
+        },
+      }),
+    ),
+  ),
+  {
+    name: '似た形：「帰省先がある場合はチェック」（意味が逆）と「海外在住の場合はチェック」には触らない',
+    html: `<form><table>
+      <tr><th>住所</th><td><input name="a"></td></tr>
+      <tr><td colspan="2"><input type="checkbox" id="c1" name="c1"><label for="c1">帰省先住所がある場合はチェックしてください</label></td></tr>
+      <tr><td colspan="2"><input type="checkbox" id="c2" name="c2"><label for="c2">海外在住の場合はチェックしてください</label></td></tr>
+    </table></form>`,
+    expect: { '[name=a]': '東京都渋谷区神南1-2-3　サンプルマンション101', '#c1': false, '#c2': false },
+  },
+  {
+    name: '似た形：メールの確認用の行（「（確認）」「確認用」「再入力」）と、予備のアドレスが未登録',
+    html: `<form><table>
+      <tr><th>メールアドレス</th><td><input name="m"></td></tr>
+      <tr><th>メールアドレス（確認）</th><td><input name="mc"></td></tr>
+      <tr><th>携帯メール</th><td><input name="s"></td></tr>
+      <tr><th>確認用</th><td><input name="sc"></td></tr>
+      <tr><th>氏名</th><td><input name="n"></td></tr>
+      <tr><th>再入力</th><td><input name="nr"></td></tr>
+    </table></form>`,
+    expect: { '[name=m]': 'taro@example.com', '[name=mc]': 'taro@example.com', '[name=s]': '', '[name=sc]': '', '[name=n]': '山田　太郎', '[name=nr]': '' },
+  },
+  {
+    name: '似た形：予備のアドレスと「再入力」の行（行見出しだけ）',
+    html: `<form><table>
+      <tr><td>メインメールアドレス</td><td><input name="m"></td></tr>
+      <tr><td>再入力</td><td><input name="mr"></td></tr>
+      <tr><td>サブメールアドレス</td><td><input name="s"></td></tr>
+      <tr><td>再入力</td><td><input name="sr"></td></tr>
+      <tr><td>パスワード</td><td><input type="password" name="pw"></td></tr>
+      <tr><td>再入力</td><td><input type="password" name="pwr"></td></tr>
+    </table></form>`,
+    profile: { emailSub: 'sub@example.com' },
+    expect: { '[name=m]': 'taro@example.com', '[name=mr]': 'taro@example.com', '[name=s]': 'sub@example.com', '[name=sr]': 'sub@example.com', '[name=pw]': '', '[name=pwr]': '' },
+  },
+  ...(
+    [
+      ['卒業予定・既卒のラジオ', 'radio', ['卒業予定', '既卒'], 'expected', '卒業予定'],
+      ['「卒業予定（2026年3月）」のプルダウン', 'select', ['卒業予定（2026年3月）', '既卒'], 'expected', '卒業予定（2026年3月）'],
+      ['既卒のとき', 'select', ['卒業予定', '既卒'], 'graduated', '既卒'],
+      ['「卒業見込」「卒業」のプルダウン', 'select', ['卒業見込', '卒業'], 'expected', '卒業見込'],
+    ] as const
+  ).map(
+    ([label, kind, items, status, want]): Case => ({
+      name: `似た形：卒業区分（${label}）`,
+      html: `<form><table><tr><th>卒業区分</th><td>${
+        kind === 'radio'
+          ? items.map((t) => `<label><input type="radio" name="g" value="${t}">${t}</label>`).join('')
+          : `<select name="g">${opts([...items])}</select>`
+      }</td></tr></table></form>`,
+      profile: { graduationStatus: status },
+      expect: kind === 'radio' ? { 'radio:g': want } : { '[name=g]': want },
+    }),
+  ),
 ];
