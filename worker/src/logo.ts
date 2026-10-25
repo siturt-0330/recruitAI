@@ -12,13 +12,21 @@ const MAX_CANDIDATES = 6;
 
 function isPublicHttpUrl(u: URL): boolean {
   if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
-  const host = u.hostname;
-  // 手元やネットワーク内部のアドレスには取りに行かない
-  return (
-    !/^(localhost|127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|192\.0\.[02]\.|198\.1[89]\.|22[4-9]\.|2[3-5]\d\.|0\.|\[?::1\]?$)/.test(host) &&
-    host.includes('.')
-  );
+  // ユーザー名・パスワード付きの URL や、ふつうでないポートには行かない
+  if (u.username || u.password || (u.port && u.port !== '80' && u.port !== '443')) return false;
+  const host = u.hostname.toLowerCase();
+  // IP アドレスを直接書いた URL（IPv6 の [..] を含む）は使わない。企業のサイトはドメイン名で書かれている
+  if (host.startsWith('[') || /^[\d.]+$/.test(host)) return false;
+  // 手元やネットワーク内部の名前には取りに行かない
+  return host.includes('.') && !/^localhost\.?$|\.(localhost|local|internal|lan|home|corp|intranet)\.?$/.test(host);
 }
+
+/** data URL に入れてよい画像の種類（サイトが返す Content-Type をそのまま使わない） */
+const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/avif']);
+const imageType = (res: Response) => {
+  const t = (res.headers.get('content-type') ?? '').split(';')[0]!.trim().toLowerCase();
+  return IMAGE_TYPES.has(t) ? t : null;
+};
 
 /**
  * 独自の User-Agent だとボットとして断る企業サイトが多いので、ふつうのブラウザと同じにする。
@@ -202,9 +210,9 @@ export async function findLogo(name: string, url: string): Promise<LogoResult> {
       const u = new URL(candidate);
       if (!isPublicHttpUrl(u)) continue;
       const { res, body: buf } = await fetchWithTimeout(candidate);
-      const type = res.headers.get('content-type') ?? '';
-      if (!res.ok || !/^image\//.test(type) || !buf?.length) continue;
-      return { logo: `data:${type.split(';')[0]};base64,${toBase64(buf)}`, source: candidate };
+      const type = imageType(res);
+      if (!res.ok || !type || !buf?.length) continue;
+      return { logo: `data:${type};base64,${toBase64(buf)}`, source: candidate };
     } catch {
       // 次の候補へ
     }
@@ -213,10 +221,8 @@ export async function findLogo(name: string, url: string): Promise<LogoResult> {
   // 送るのは会社のサイトのドメインだけ。知らないドメインには 404 が返るので、そのときは頭文字のまま
   try {
     const { res, body: buf } = await fetchWithTimeout(`https://www.google.com/s2/favicons?domain=${encodeURIComponent(site.hostname)}&sz=128`);
-    const type = res.headers.get('content-type') ?? '';
-    if (res.ok && /^image\//.test(type)) {
-      if (buf?.length) return { logo: `data:${type.split(';')[0]};base64,${toBase64(buf)}`, source: 'google-favicon' };
-    }
+    const type = imageType(res);
+    if (res.ok && type && buf?.length) return { logo: `data:${type};base64,${toBase64(buf)}`, source: 'google-favicon' };
   } catch {
     // 取れなければ頭文字のまま
   }

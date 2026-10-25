@@ -31,7 +31,7 @@ const ARTICLE_COLS = `a.id, a.user_id, a.title, a.excerpt, a.body, a.cover_key, 
   a.like_count, a.comment_count, a.created_at, a.updated_at, a.published_at,
   u.handle, u.pen_name, u.status_line, u.bio, u.icon_color, u.icon_key, u.hidden AS user_hidden`;
 /** みんなに見せてよい記事（公開・一覧に出す・非表示でない・書き手も非表示でない） */
-const LISTED = `a.status = 'published' AND a.visibility = 'public' AND a.hidden = 0 AND u.hidden = 0`;
+export const LISTED = `a.status = 'published' AND a.visibility = 'public' AND a.hidden = 0 AND u.hidden = 0`;
 export const PAGE_SIZE = 20;
 
 export interface ListQuery {

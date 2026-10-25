@@ -39,8 +39,8 @@
     "MOCK_AI": "0",
     // ポップアップのスポンサー枠。空なら出さない。例：{"title":"〇〇","body":"一言","url":"https://...","cta":"見てみる"}
     "SPONSOR": "",
-    // Web 版からロゴを取りに来てよい Origin（カンマ区切り）と、1日の上限
-    "APP_ORIGINS": "https://app.rakuraku-entry.com,http://localhost:3100",
+    // Web 版からロゴを取りに来てよい Origin（カンマ区切り）と、1日の上限。手元の Web 版（localhost:3100）は .dev.vars で足す
+    "APP_ORIGINS": "https://app.rakuraku-entry.com",
     "LOGO_LIMIT_PER_IP": "300",
     "LOGO_LIMIT_GLOBAL": "20000"
   }

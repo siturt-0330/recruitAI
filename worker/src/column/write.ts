@@ -2,7 +2,7 @@
 import { canWrite, hasProfile, type User } from './auth';
 import { countChars, excerptOf, imageKeys, LIMITS, sanitizeBlocks, type Block } from './blocks';
 import { countToday, tagsOf } from './data';
-import { esc, htmlResponse, jsonResponse, now, randomId, redirect, sameOrigin } from './util';
+import { esc, htmlResponse, jsonResponse, now, randomId, readBytes, readJson, redirect, sameOrigin } from './util';
 import { WRITE_VERSION } from './write-version';
 
 const DAILY = { articles: 20, images: 40 } as const;
@@ -86,17 +86,8 @@ function personalInfoHint(title: string, blocks: Block[]): string {
   return '';
 }
 
-async function readJson(request: Request, max = 256 * 1024): Promise<Record<string, unknown> | null> {
-  if (Number(request.headers.get('Content-Length') ?? '0') > max) return null;
-  const text = await request.text();
-  if (text.length > max) return null;
-  try {
-    const v = JSON.parse(text);
-    return v && typeof v === 'object' ? (v as Record<string, unknown>) : null;
-  } catch {
-    return null;
-  }
-}
+/** 記事の保存の本文の上限（本文 4 万字と、ブロックの形の分） */
+const MAX_ARTICLE_JSON = 256 * 1024;
 
 /** 記事と画像の API（/column/api/articles…、/column/api/images）。null ならここの API ではない */
 export async function handleWriteApi(request: Request, env: Env, url: URL, user: User | null): Promise<Response | null> {
@@ -141,7 +132,7 @@ export async function handleWriteApi(request: Request, env: Env, url: URL, user:
 
   // 新しい下書き
   if (p === '/column/api/articles') {
-    const b = (await readJson(request)) ?? {};
+    const b = (await readJson(request, MAX_ARTICLE_JSON)) ?? {};
     if ((await countToday(db, 'articles', user.id)) >= DAILY.articles) return jsonResponse({ error: 'quota' }, 429);
     const id = randomId(9);
     const template = TEMPLATES.includes(String(b.template)) ? String(b.template) : 'free';
@@ -170,7 +161,7 @@ export async function handleWriteApi(request: Request, env: Env, url: URL, user:
   }
 
   // 保存・公開
-  const b = await readJson(request);
+  const b = await readJson(request, MAX_ARTICLE_JSON);
   if (!b) return jsonResponse({ error: 'bad request' }, 400);
   const title = String(b.title ?? '').replace(/\s+/g, ' ').trim().slice(0, LIMITS.title);
   const blocks = sanitizeBlocks(b.body);
@@ -209,8 +200,8 @@ export async function uploadImage(request: Request, env: Env, user: User): Promi
   const db = env.COLUMN_DB;
   if (Number(request.headers.get('Content-Length') ?? '0') > MAX_IMAGE) return jsonResponse({ error: 'too large' }, 413);
   if ((await countToday(db, 'images', user.id)) >= DAILY.images) return jsonResponse({ error: 'quota' }, 429);
-  const buf = new Uint8Array(await request.arrayBuffer());
-  if (buf.byteLength > MAX_IMAGE) return jsonResponse({ error: 'too large' }, 413);
+  const buf = await readBytes(request, MAX_IMAGE);
+  if (!buf) return jsonResponse({ error: 'too large' }, 413);
   if (buf.byteLength < 16) return jsonResponse({ error: 'invalid' }, 400);
   const ascii = (from: number, to: number) => String.fromCharCode(...buf.slice(from, to));
   const kind =

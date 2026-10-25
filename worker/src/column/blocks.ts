@@ -1,6 +1,6 @@
 // 記事の本文の形（書く画面と表示で同じものを使う）と、HTML への変換。
 // 本文は 1 行ずつのブロックの配列。利用者の HTML はそのまま出さず、文字はすべてエスケープする。URL だけ自動でリンクにする。
-import { esc } from './util';
+import { esc, randomId } from './util';
 
 export type BlockType = 'text' | 'heading' | 'bullet' | 'quote' | 'image' | 'divider';
 
@@ -27,7 +27,7 @@ export function sanitizeBlocks(raw: unknown): Block[] | string {
   for (const r of raw) {
     const b = r as Partial<Block>;
     if (!b || typeof b !== 'object' || !TYPES.includes(b.type as BlockType)) continue;
-    const id = typeof b.id === 'string' && /^[A-Za-z0-9_-]{1,32}$/.test(b.id) ? b.id : Math.random().toString(36).slice(2, 10);
+    const id = typeof b.id === 'string' && /^[A-Za-z0-9_-]{1,32}$/.test(b.id) ? b.id : randomId(6);
     if (b.type === 'divider') {
       out.push({ id, type: 'divider' });
     } else if (b.type === 'image') {

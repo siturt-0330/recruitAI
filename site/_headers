@@ -1,3 +1,11 @@
+# すべてのページ：HTTPS だけで開く・ファイルの種類を推測させない・ほかのサイトの枠の中に表示させない・使わない機能を止める
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
 # マイページ（app.rakuraku-entry.com）のホームで「今日の SPI 語」を出すため、言葉のリストだけは別のサイトからも読めるようにする
 /game/*/words.json
   Access-Control-Allow-Origin: *

@@ -131,83 +131,97 @@ async function logo(request: Request, env: Env, ctx: ExecutionContext, url: URL)
 
 export default {
   async fetch(request, env, ctx): Promise<Response> {
-    const url = new URL(request.url);
-    if (url.pathname === '/health') return json({ ok: true });
-    // コラム（記事を書き合うページ）。wrangler.jsonc の run_worker_first で、静的なファイルより先にここへ来る
-    if (url.pathname === '/column' || url.pathname.startsWith('/column/')) return handleColumn(request, env, ctx, url);
-    // Google Search Console の所有確認。.html のままリダイレクトせずに返す必要がある
-    if (url.pathname === '/googleb3c282b9a4c4b17b.html') {
-      return new Response('google-site-verification: googleb3c282b9a4c4b17b.html', { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
-    }
-    if (url.pathname === '/v1/sponsor') {
-      // ポップアップのスポンサー枠。vars の SPONSOR（JSON）を変えて deploy すれば、拡張機能を出し直さずに差し替えられる
-      let sponsor: unknown = null;
-      try {
-        sponsor = env.SPONSOR ? JSON.parse(env.SPONSOR) : null;
-      } catch {
-        console.error(JSON.stringify({ message: 'invalid SPONSOR json' }));
-      }
-      return new Response(JSON.stringify({ sponsor }), {
-        headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=3600', 'Access-Control-Allow-Origin': '*' },
-      });
-    }
-    if (url.pathname === '/v1/stats') {
-      // 運用者だけが見られる今日の利用状況（Authorization: Bearer <ADMIN_TOKEN>）
-      if (!(await isAdmin(request, env))) return json({ error: 'unauthorized' }, 401);
-      return json({ day: dayJst(), ...(await env.QUOTA.getByName('global').today(dayJst())) });
-    }
-    if (url.pathname === '/v1/logo') return logo(request, env, ctx, url);
-    if (url.pathname !== '/v1/classify') {
-      // 公式サイトのないページは、404 のページ（site/404.html）をステータス 404 で返す
-      if (request.method === 'GET' && !url.pathname.startsWith('/v1/')) {
-        const page = await env.ASSETS.fetch(new URL('/404', url));
-        return new Response(page.body, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
-      }
-      return json({ error: 'not found' }, 404);
-    }
-    if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
-
-    // 公開後は拡張機能の ID（chrome-extension://...）だけを許可する。空なら開発用にすべて許可
-    const allowed = env.ALLOWED_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
-    const origin = request.headers.get('Origin') ?? '';
-    if (allowed.length && !allowed.includes(origin)) return json({ error: 'forbidden' }, 403);
-
-    const text = await readLimited(request);
-    if (text === null) return json({ error: 'too large' }, 413);
-    let parsed: unknown;
     try {
-      parsed = JSON.parse(text);
-    } catch {
-      return json({ error: 'invalid json' }, 400);
-    }
-    const body = parseBody(parsed);
-    if (typeof body === 'string') return json({ error: body }, 400);
-
-    const ip = ipBucket(request.headers.get('CF-Connecting-IP') ?? 'unknown');
-    const quota = env.QUOTA.getByName('global');
-    const verdict = await quota.take(dayJst(), body.installId, ip, {
-      perInstall: Number(env.LIMIT_PER_INSTALL),
-      perIp: Number(env.LIMIT_PER_IP),
-      global: Number(env.LIMIT_GLOBAL),
-    });
-    if (!verdict.ok) {
-      console.log(JSON.stringify({ message: 'quota exceeded', reason: verdict.reason }));
-      return json({ error: 'quota', reason: verdict.reason }, 429);
-    }
-
-    try {
-      const answers =
-        env.MOCK_AI === '1'
-          ? body.questions.map((q) => ({ name: q.name, choice: 'none', confidence: 0.5 }))
-          : await classifyWithOpenAI(env.OPENAI_API_KEY, body.formText, body.questions);
-      console.log(JSON.stringify({ message: 'classified', questions: body.questions.length, formChars: body.formText.length }));
-      return json({ answers });
+      return await route(request, env, ctx);
     } catch (e) {
-      console.error(JSON.stringify({ message: 'openai failed', error: e instanceof Error ? e.message : String(e) }));
-      return json({ error: 'upstream' }, 502);
+      // 思わぬ例外は、中身を外に見せずに 500 を返し、ログにだけ残す
+      console.error(JSON.stringify({ message: 'unhandled error', path: new URL(request.url).pathname, error: e instanceof Error ? e.message : String(e) }));
+      return json({ error: 'internal error' }, 500);
     }
   },
 } satisfies ExportedHandler<Env>;
+
+async function route(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  const url = new URL(request.url);
+  if (url.pathname === '/health') return json({ ok: true });
+  // コラム（記事を書き合うページ）。wrangler.jsonc の run_worker_first で、静的なファイルより先にここへ来る。
+  // api のドメインで開かれたら公式サイトのドメインへ移す（ログインの Cookie と Google の戻り先は公式サイトのドメインのもの）
+  if (url.pathname === '/column' || url.pathname.startsWith('/column/')) {
+    if (url.hostname.startsWith('api.')) return Response.redirect(`https://${url.hostname.slice(4)}${url.pathname}${url.search}`, 301);
+    return handleColumn(request, env, ctx, url);
+  }
+  // Google Search Console の所有確認。.html のままリダイレクトせずに返す必要がある
+  if (url.pathname === '/googleb3c282b9a4c4b17b.html') {
+    return new Response('google-site-verification: googleb3c282b9a4c4b17b.html', { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  }
+  if (url.pathname === '/v1/sponsor') {
+    // ポップアップのスポンサー枠。vars の SPONSOR（JSON）を変えて deploy すれば、拡張機能を出し直さずに差し替えられる
+    let sponsor: unknown = null;
+    try {
+      sponsor = env.SPONSOR ? JSON.parse(env.SPONSOR) : null;
+    } catch {
+      console.error(JSON.stringify({ message: 'invalid SPONSOR json' }));
+    }
+    return new Response(JSON.stringify({ sponsor }), {
+      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=3600', 'Access-Control-Allow-Origin': '*' },
+    });
+  }
+  if (url.pathname === '/v1/stats') {
+    // 運用者だけが見られる今日の利用状況（Authorization: Bearer <ADMIN_TOKEN>）
+    if (!(await isAdmin(request, env))) return json({ error: 'unauthorized' }, 401);
+    return json({ day: dayJst(), ...(await env.QUOTA.getByName('global').today(dayJst())) });
+  }
+  if (url.pathname === '/v1/logo') return logo(request, env, ctx, url);
+  if (url.pathname !== '/v1/classify') {
+    // 公式サイトのないページは、404 のページ（site/404.html）をステータス 404 で返す
+    if (request.method === 'GET' && !url.pathname.startsWith('/v1/')) {
+      const page = await env.ASSETS.fetch(new URL('/404', url));
+      return new Response(page.body, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    }
+    return json({ error: 'not found' }, 404);
+  }
+  if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
+
+  // 公開後は拡張機能の ID（chrome-extension://...）だけを許可する。空なら開発用にすべて許可
+  const allowed = env.ALLOWED_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
+  const origin = request.headers.get('Origin') ?? '';
+  if (allowed.length && !allowed.includes(origin)) return json({ error: 'forbidden' }, 403);
+
+  const text = await readLimited(request);
+  if (text === null) return json({ error: 'too large' }, 413);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return json({ error: 'invalid json' }, 400);
+  }
+  const body = parseBody(parsed);
+  if (typeof body === 'string') return json({ error: body }, 400);
+
+  const ip = ipBucket(request.headers.get('CF-Connecting-IP') ?? 'unknown');
+  const quota = env.QUOTA.getByName('global');
+  const verdict = await quota.take(dayJst(), body.installId, ip, {
+    perInstall: Number(env.LIMIT_PER_INSTALL),
+    perIp: Number(env.LIMIT_PER_IP),
+    global: Number(env.LIMIT_GLOBAL),
+  });
+  if (!verdict.ok) {
+    console.log(JSON.stringify({ message: 'quota exceeded', reason: verdict.reason }));
+    return json({ error: 'quota', reason: verdict.reason }, 429);
+  }
+
+  try {
+    const answers =
+      env.MOCK_AI === '1'
+        ? body.questions.map((q) => ({ name: q.name, choice: 'none', confidence: 0.5 }))
+        : await classifyWithOpenAI(env.OPENAI_API_KEY, body.formText, body.questions);
+    console.log(JSON.stringify({ message: 'classified', questions: body.questions.length, formChars: body.formText.length }));
+    return json({ answers });
+  } catch (e) {
+    console.error(JSON.stringify({ message: 'openai failed', error: e instanceof Error ? e.message : String(e) }));
+    return json({ error: 'upstream' }, 502);
+  }
+}
 
 interface Limits {
   perInstall: number;

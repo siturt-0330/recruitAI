@@ -4,3 +4,6 @@ ADMIN_TOKEN=
 MOCK_AI=1
 # 手元で読み込んだ拡張機能は ID が公開版と違うので、空にしてどこからでも受け付ける
 ALLOWED_ORIGINS=
+
+# 手元の Web 版（next dev）からもロゴを取れるようにする
+APP_ORIGINS=https://app.rakuraku-entry.com,http://localhost:3100

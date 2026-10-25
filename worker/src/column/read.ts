@@ -8,6 +8,7 @@ import {
   getArticle,
   isFollowing,
   isLiked,
+  LISTED,
   listArticles,
   popularTags,
   tagsOf,
@@ -33,8 +34,6 @@ export function ago(ms: number): string {
   return a.getUTCFullYear() === b.getUTCFullYear() ? `${a.getUTCMonth() + 1}月${a.getUTCDate()}日` : jaDate(ms);
 }
 
-/** 検索に載せる記事（公開・一覧に出す・非表示でない・書き手も非表示でない）。a = articles、u = users */
-const LISTED = "a.status = 'published' AND a.visibility = 'public' AND a.hidden = 0 AND u.hidden = 0";
 const PUBLISHER = { '@type': 'Organization', name: 'らくらくエントリー', url: `${SITE}/`, logo: { '@type': 'ImageObject', url: `${SITE}/images/icon-128.png` } };
 const crumbs = (items: [string, string][]) => ({
   '@type': 'BreadcrumbList',
