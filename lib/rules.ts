@@ -300,7 +300,8 @@ function classifyField(d: FieldDescriptor): Classification {
   // 中学校はプロフィールにないので入れない。高校は高校の欄として扱う
   const schoolSection = /高校|高等学校/.test(section) ? 'high' : /中学/.test(section) ? 'junior' : null;
   if (schoolSection && ['school', 'graduation', 'admission', 'faculty', 'department', 'educationHistory'].includes(cat) && !/大学/.test(`${near} ${ctx}`)) {
-    if (schoolSection === 'junior') return result(null, 0);
+    // 高校の学科・コースもプロフィールにないので入れない（大学の学部・学科を入れない）
+    if (schoolSection === 'junior' || cat === 'faculty' || cat === 'department') return result(null, 0);
     cat = 'highSchool';
   }
   // 「入学／卒業年月」のように 1 つのセルに入学と卒業の欄が並ぶときは、欄のすぐ手前の見出し（lead）で見分ける
