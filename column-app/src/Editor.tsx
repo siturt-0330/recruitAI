@@ -92,6 +92,13 @@ export function Editor({ id, me, toast }: { id?: string; me: Me; toast(text: str
     await run;
   }, [toast]);
 
+  /** 保存が終わってからページを移る（保存の前に移ると、最後に書いた分が消えることがある） */
+  const leave = (href: string) => async (e: { preventDefault(): void }) => {
+    e.preventDefault();
+    await saveNow();
+    location.href = href;
+  };
+
   const change = (patch: Partial<Article>) => {
     edits.current += 1;
     setArticle((a) => (a ? { ...a, ...patch } : a));
@@ -155,7 +162,7 @@ export function Editor({ id, me, toast }: { id?: string; me: Me; toast(text: str
     <>
       <div className="w-bar">
         <div className="w-bar-in">
-          <a className="w-back" href={mine} onClick={() => void saveNow()}>
+          <a className="w-back" href={mine} onClick={(e) => void leave(mine)(e)}>
             <svg width="11" height="18" viewBox="0 0 11 18" aria-hidden="true">
               <path d="M9 2L2 9l7 7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -174,7 +181,7 @@ export function Editor({ id, me, toast }: { id?: string; me: Me; toast(text: str
               ))}
           </span>
           {published && (
-            <a className="w-view" href={`/column/p/${article.id}`} onClick={() => void saveNow()}>
+            <a className="w-view" href={`/column/p/${article.id}`} onClick={(e) => void leave(`/column/p/${article.id}`)(e)}>
               見る
             </a>
           )}
@@ -283,7 +290,7 @@ export function Editor({ id, me, toast }: { id?: string; me: Me; toast(text: str
               ))}
             </ul>
             <p className="w-card-note">
-              記号は行の頭で打ちます。# - &gt; はあとに空白を入れます。画像は貼りつけ・ドラッグでも入ります。
+              記号は行の頭で打ち、# - &gt; のあとに空白を入れます（日本語入力のままでも使えます）。何行かまとめて貼りつけると、行ごとに分かれます。画像は貼りつけ・ドラッグでも入ります。
             </p>
           </section>
         </aside>

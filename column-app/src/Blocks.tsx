@@ -11,12 +11,26 @@ const MENU: { type: BlockType; label: string; keys: string; icon: string }[] = [
   { type: 'divider', label: '区切り線', keys: 'divider line kugiri くぎり', icon: 'M4 12h16' },
 ];
 
-/** 行頭に打つと、その種類のブロックに変わる */
+/**
+ * 行頭に打つと、その種類のブロックに変わる。
+ * 日本語入力のままだと「＃」「ー」「＞」と全角の空白になるので、全角でも同じに扱う（記号のあとの空白はまとめて消す）
+ */
 const SHORTCUTS: [RegExp, BlockType][] = [
-  [/^(-|\*|・) /, 'bullet'],
-  [/^#{1,3} /, 'heading'],
-  [/^(>|＞) /, 'quote'],
+  [/^[-*・ー－＊‐][ 　]+/, 'bullet'],
+  [/^[#＃]{1,3}[ 　]+/, 'heading'],
+  [/^[>＞][ 　]+/, 'quote'],
 ];
+/** 同じ記号を 3 つ以上（---・ーーー・－－－・———・___）だけの行は区切り線 */
+const DIVIDER = /^([-ー－—―_＿*＊])\1{2,}$/;
+/** メニューを開く記号（日本語入力のままだと「／」になる） */
+const isSlash = (text: string) => text.startsWith('/') || text.startsWith('／');
+
+/** 貼りつけた文字の 1 行をブロックにする（行頭の記号も見る） */
+function lineToBlock(line: string): Block {
+  if (DIVIDER.test(line.trim())) return { id: uid(), type: 'divider' };
+  const hit = SHORTCUTS.find(([re]) => re.test(line));
+  return hit ? { id: uid(), type: hit[1], text: line.replace(hit[0], '') } : { id: uid(), type: 'text', text: line };
+}
 
 const TEXTUAL: BlockType[] = ['text', 'heading', 'bullet', 'quote'];
 const isTextual = (b: Block) => TEXTUAL.includes(b.type);
@@ -122,21 +136,44 @@ export function Blocks({ blocks, onChange, onImage, onPickImage, onError, focusF
     setFocus({ id: b.id, caret: 0 });
   };
 
-  const onText = (b: Block, text: string) => {
-    if (b.type === 'text') {
+  /**
+   * 文字が変わったとき。日本語入力の変換中（composing）は、記号の置きかえやメニューを動かさない
+   * （変換中に欄の中身を変えると、変換中の文字が消えたり二重になったりする）。変換が決まったときに、もう一度ここへ来る
+   */
+  const onText = (b: Block, text: string, composing = false) => {
+    if (b.type === 'text' && !composing) {
       const hit = SHORTCUTS.find(([re]) => re.test(text));
       if (hit) {
+        if (menu?.id === b.id) setMenu(null);
         update(b.id, { type: hit[1], text: text.replace(hit[0], '') });
         return;
       }
-      if (text === '---' || text === 'ーーー') {
+      if (DIVIDER.test(text)) {
         void applyMenu(b, 'divider');
         return;
       }
     }
-    if (text.startsWith('/') && !(b.text ?? '').startsWith('/') && b.type === 'text') setMenu({ id: b.id, index: 0, slash: true });
-    if (!text.startsWith('/') && menu?.slash && menu.id === b.id) setMenu(null);
+    if (!composing && b.type === 'text' && isSlash(text) && !(menu?.slash && menu.id === b.id)) setMenu({ id: b.id, index: 0, slash: true });
+    if (!isSlash(text) && menu?.slash && menu.id === b.id) setMenu(null);
     update(b.id, { text });
+  };
+
+  /** 複数行の文字を貼りつけたら、行ごとにブロックに分ける（空いた行は段落の区切りなので捨てる） */
+  const pasteLines = (b: Block, i: number, el: HTMLTextAreaElement, pasted: string) => {
+    const text = b.text ?? '';
+    const before = text.slice(0, el.selectionStart);
+    const after = text.slice(el.selectionEnd);
+    const [first = '', ...rest] = pasted.replace(/\r\n?/g, '\n').split('\n');
+    // 1 行目は、いまの行のカーソルの前につなげる（ふつうの行なら、行頭の記号も見る）
+    const head: Block = b.type === 'text' ? { ...lineToBlock(before + first), id: b.id } : { ...b, text: before + first };
+    const made = [head, ...rest.filter((l) => l.trim()).map(lineToBlock)];
+    // いまの行の続き（カーソルより後ろ）は、貼りつけた最後の行のうしろにつける
+    const last = made[made.length - 1]!;
+    if (last.type === 'divider') made.push({ id: uid(), type: 'text', text: after });
+    else made[made.length - 1] = { ...last, text: (last.text ?? '') + after };
+    replace([...list.slice(0, i), ...made, ...list.slice(i + 1)]);
+    const end = made[made.length - 1]!;
+    setFocus({ id: end.id, caret: (end.text ?? '').length - after.length });
   };
 
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>, b: Block, i: number) => {
@@ -235,12 +272,18 @@ export function Blocks({ blocks, onChange, onImage, onPickImage, onError, focusF
     }
   };
 
-  /** 画像を貼りつけたら、そのまま入れる */
-  const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>, b: Block) => {
+  /** 画像を貼りつけたら、そのまま入れる。複数行の文字は、行ごとのブロックにする */
+  const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>, b: Block, i: number) => {
     const file = [...e.clipboardData.files].find((f) => f.type.startsWith('image/'));
-    if (!file) return;
+    if (file) {
+      e.preventDefault();
+      void insertImage(file, b);
+      return;
+    }
+    const pasted = e.clipboardData.getData('text/plain');
+    if (!/\n/.test(pasted)) return;
     e.preventDefault();
-    void insertImage(file, b);
+    pasteLines(b, i, e.currentTarget, pasted);
   };
 
   /** 最後の行より下を押したら、そこに書けるようにする */
@@ -344,9 +387,9 @@ export function Blocks({ blocks, onChange, onImage, onPickImage, onError, focusF
                 setFocused((f) => (f === b.id ? '' : f));
                 if (menu?.id === b.id) setTimeout(() => setMenu((m) => (m?.id === b.id ? null : m)), 150);
               }}
-              onChange={(t) => onText(b, t)}
+              onChange={(t, composing) => onText(b, t, composing)}
               onKeyDown={(e) => onKey(e, b, i)}
-              onPaste={(e) => onPaste(e, b)}
+              onPaste={(e) => onPaste(e, b, i)}
             />
             {menu?.id === b.id && (
               <div className="menu" role="menu" aria-label="足す">
@@ -383,13 +426,15 @@ function AutoText(props: {
   value: string;
   placeholder: string;
   refCb(el: HTMLTextAreaElement | null): void;
-  onChange(v: string): void;
+  /** composing は日本語入力の変換中。変換が決まると、決まった文字でもう一度呼ぶ */
+  onChange(v: string, composing: boolean): void;
   onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>): void;
   onPaste(e: ClipboardEvent<HTMLTextAreaElement>): void;
   onFocus(): void;
   onBlur(): void;
 }) {
   const ref = useRef<HTMLTextAreaElement | null>(null);
+  const composing = useRef(false);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -405,7 +450,12 @@ function AutoText(props: {
       rows={1}
       value={props.value}
       placeholder={props.placeholder}
-      onChange={(e) => props.onChange(e.target.value)}
+      onChange={(e) => props.onChange(e.target.value, composing.current || (e.nativeEvent as InputEvent).isComposing === true)}
+      onCompositionStart={() => (composing.current = true)}
+      onCompositionEnd={(e) => {
+        composing.current = false;
+        props.onChange(e.currentTarget.value, false);
+      }}
       onKeyDown={props.onKeyDown}
       onPaste={props.onPaste}
       onFocus={props.onFocus}
