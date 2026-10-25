@@ -1938,19 +1938,19 @@ export const CASES: Case[] = [
       ${[
         ['addr1', '市区郡番地', '<input name="tbx_addr1" type="text" class="inputL"><p>例）千代田区千代田1-2-3</p>'],
         ['addr2', 'マンション・アパート名', '<input name="tbx_addr2" type="text" class="inputL"><p>例）日本アパート201号</p>'],
-        ['tel1', '携帯番号', [1, 2, 3].map((i) => `<input name="tbx_tel1${i}" type="text" class="inputSText">`).join(' - ')],
-        ['tel2', '電話番号', [1, 2, 3].map((i) => `<input name="tbx_tel2${i}" type="text" class="inputSText">`).join(' - ')],
+        ['keitai', '携帯番号', [1, 2, 3].map((i) => `<input name="tbx_keitai${i}" type="text" class="inputSText">`).join(' - ')],
+        ['tel1', '電話番号', [1, 2, 3].map((i) => `<input name="tbx_tel1${i}" type="text" class="inputSText">`).join(' - ')],
       ]
         .map(([k, label, body]) => `<tr><td id="th_${k}" class="td01">${label}<input type="hidden" name="hdn_${k}_T" value="${label}"><input type="hidden" name="hdn_${k}" value="1"></td><td>${body}<p></p></td></tr>`)
         .join('')}
     </tbody></table></form>`,
     expect: {
       '[name=tbx_addr1]': '渋谷区神南1-2-3',
-      '[name=tbx_tel11]': '090',
-      '[name=tbx_tel12]': '1234',
+      '[name=tbx_keitai1]': '090',
+      '[name=tbx_keitai2]': '1234',
+      '[name=tbx_keitai3]': '5678',
+      '[name=tbx_tel11]': '03',
       '[name=tbx_tel13]': '5678',
-      '[name=tbx_tel21]': '03',
-      '[name=tbx_tel23]': '5678',
     },
   },
 ];
