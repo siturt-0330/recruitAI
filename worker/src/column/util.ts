@@ -34,7 +34,13 @@ export function parseCookies(request: Request): Record<string, string> {
   const out: Record<string, string> = {};
   for (const part of (request.headers.get('Cookie') ?? '').split(';')) {
     const i = part.indexOf('=');
-    if (i > 0) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+    if (i <= 0) continue;
+    // 壊れた %xx の Cookie（ほかのサブドメインが置いたものなど）で、ページ全体が 500 にならないように
+    try {
+      out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+    } catch {
+      // 読めない Cookie は無視する
+    }
   }
   return out;
 }
@@ -65,9 +71,11 @@ export function htmlResponse(body: string, status = 200, headers: Record<string,
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",
+        "object-src 'none'",
       ].join('; '),
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
       'Cache-Control': 'private, no-store',
       ...headers,
     },
@@ -92,12 +100,51 @@ export function safeNext(next: string | null | undefined): string {
   return next && /^\/column(\/[^\s\\]*)?(\?[^\s\\]*)?$/.test(next) && !next.startsWith('//') ? next : '/column';
 }
 
+/**
+ * 本文を上限まで読む。上限を超えたら null。
+ * Content-Length のない（chunked の）リクエストもあるので、宣言された長さだけでなく、読みながら数える（大きな本文でメモリを使い切らないように）
+ */
+export async function readBytes(request: Request, maxBytes: number): Promise<Uint8Array | null> {
+  if (Number(request.headers.get('Content-Length') ?? '0') > maxBytes) return null;
+  const reader = request.body?.getReader();
+  if (!reader) return new Uint8Array();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const all = new Uint8Array(size);
+  let at = 0;
+  for (const c of chunks) {
+    all.set(c, at);
+    at += c.byteLength;
+  }
+  return all;
+}
+
 /** フォームの本文を読む（大きすぎるものは読まない） */
 export async function readForm(request: Request, maxBytes = 32 * 1024): Promise<URLSearchParams | null> {
-  if (Number(request.headers.get('Content-Length') ?? '0') > maxBytes) return null;
-  const text = await request.text();
-  if (text.length > maxBytes) return null;
-  return new URLSearchParams(text);
+  const bytes = await readBytes(request, maxBytes);
+  return bytes ? new URLSearchParams(new TextDecoder().decode(bytes)) : null;
+}
+
+/** JSON の本文を読む（大きすぎるもの・オブジェクトでないものは null） */
+export async function readJson(request: Request, maxBytes = 16 * 1024): Promise<Record<string, unknown> | null> {
+  const bytes = await readBytes(request, maxBytes);
+  if (!bytes) return null;
+  try {
+    const v = JSON.parse(new TextDecoder().decode(bytes));
+    return v && typeof v === 'object' ? (v as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
 }
 
 /** 日本語の日付（2026年10月20日） */

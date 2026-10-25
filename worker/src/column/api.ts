@@ -1,7 +1,7 @@
 // 読むページの小さな JS が使う API（スキ・フォロー・コメント・通報）。書き込みはすべて POST で、このサイトのページからだけ受ける
 import { hasProfile, isAdmin, type User } from './auth';
 import { countToday } from './data';
-import { jsonResponse, now, randomId, sameOrigin } from './util';
+import { jsonResponse, now, randomId, readJson, sameOrigin } from './util';
 
 /** 1 日（日本時間）の上限。連打や荒らしで表が膨らまないように */
 export const DAILY = { likes: 300, follows: 200, comments: 50, reports: 20 } as const;
@@ -9,18 +9,6 @@ export const DAILY = { likes: 300, follows: 200, comments: 50, reports: 20 } as 
 /** コメントを書けるか（最初の登録を済ませた人ならだれでも） */
 export function canComment(user: User | null): boolean {
   return !!user && !user.hidden && hasProfile(user);
-}
-
-async function readJson(request: Request, max = 16 * 1024): Promise<Record<string, unknown> | null> {
-  if (Number(request.headers.get('Content-Length') ?? '0') > max) return null;
-  const text = await request.text();
-  if (text.length > max) return null;
-  try {
-    const v = JSON.parse(text);
-    return v && typeof v === 'object' ? (v as Record<string, unknown>) : null;
-  } catch {
-    return null;
-  }
 }
 
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
@@ -46,11 +34,18 @@ export async function handleApi(request: Request, env: Env, url: URL, user: User
   return fn(body, user);
 }
 
+/** スキ・コメントを付けてよい記事か（公開中で、記事も書き手も運営が非表示にしていない） */
+async function visibleArticle(db: D1Database, articleId: string): Promise<boolean> {
+  return !!(await db
+    .prepare("SELECT 1 FROM articles a JOIN users u ON u.id = a.user_id WHERE a.id = ? AND a.status = 'published' AND a.hidden = 0 AND u.hidden = 0")
+    .bind(articleId)
+    .first());
+}
+
 /** スキを付ける・外す（数は記録から数え直す。ずれないように） */
 async function like(env: Env, user: User, articleId: string): Promise<Response> {
   const db = env.COLUMN_DB;
-  const a = await db.prepare("SELECT id FROM articles WHERE id = ? AND status = 'published' AND hidden = 0").bind(articleId).first();
-  if (!a) return jsonResponse({ error: 'not found' }, 404);
+  if (!(await visibleArticle(db, articleId))) return jsonResponse({ error: 'not found' }, 404);
   const had = await db.prepare('SELECT 1 FROM likes WHERE user_id = ? AND article_id = ?').bind(user.id, articleId).first();
   if (!had && (await countToday(db, 'likes', user.id)) >= DAILY.likes) return jsonResponse({ error: 'quota' }, 429);
   const recount = db.prepare('UPDATE articles SET like_count = (SELECT COUNT(*) FROM likes WHERE article_id = ?1) WHERE id = ?1').bind(articleId);
@@ -83,8 +78,7 @@ async function addComment(env: Env, user: User, articleId: string, body: string)
   const db = env.COLUMN_DB;
   if (!canComment(user)) return jsonResponse({ error: 'forbidden' }, 403);
   if (!body) return jsonResponse({ error: 'empty' }, 400);
-  const a = await db.prepare("SELECT id FROM articles WHERE id = ? AND status = 'published' AND hidden = 0").bind(articleId).first();
-  if (!a) return jsonResponse({ error: 'not found' }, 404);
+  if (!(await visibleArticle(db, articleId))) return jsonResponse({ error: 'not found' }, 404);
   if ((await countToday(db, 'comments', user.id)) >= DAILY.comments) return jsonResponse({ error: 'quota' }, 429);
   const id = randomId(9);
   const t = now();

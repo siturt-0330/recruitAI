@@ -26,7 +26,10 @@ export async function handleColumn(request: Request, env: Env, _ctx: ExecutionCo
   if (path === '/column/auth/dev') return (await devLogin(env, url)) ?? notFound(null, env, path);
 
   // 画像とサイトマップは、だれが見ても同じなのでログインを調べない
-  if (path.startsWith('/column/img/')) return (await image(env, decodeURIComponent(path.slice('/column/img/'.length)))) ?? new Response('not found', { status: 404 });
+  if (path.startsWith('/column/img/')) {
+    // 画像の key は英数字だけなので、%xx をほどく必要はない（壊れた %xx で例外にならないように、そのまま渡す）
+    return (await image(env, path.slice('/column/img/'.length))) ?? new Response('not found', { status: 404 });
+  }
   if (path === '/column/sitemap.xml') return sitemap(env);
   if (path === '/column/feed.xml') return feed(env);
 

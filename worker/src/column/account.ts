@@ -1,5 +1,6 @@
 // プロフィール：最初の登録（/column/welcome）・設定（/column/settings）・退会
 import { hasProfile, type User } from './auth';
+import { IMAGE_KEY } from './blocks';
 import { page } from './layout';
 import { esc, hostCookie, htmlResponse, now, readForm, redirect, safeNext, sameOrigin } from './util';
 
@@ -54,11 +55,15 @@ async function freeHandle(env: Env): Promise<string> {
   throw new Error('no free handle');
 }
 
-/** 自分がどう表示されるかの見本（打つとすぐ変わる。onboard.js） */
+/**
+ * 自分がどう表示されるかの見本（打つとすぐ変わる。onboard.js）。
+ * 入力が正しくなかったときは送られてきた値のまま表示し直すので、style に入れる色と写真は決まった形のものだけにする
+ */
 function preview(v: ProfileInput): string {
-  const photo = v.icon_key ? `;background-image:url(/column/img/${encodeURIComponent(v.icon_key)})` : '';
+  const color = ICON_COLORS.includes(v.icon_color) ? v.icon_color : ICON_COLORS[0];
+  const photo = IMAGE_KEY.test(v.icon_key) ? `;background-image:url(/column/img/${v.icon_key})` : '';
   return `<div class="pv" aria-hidden="true" data-preview>
-<span class="av pv-av" data-pv-av style="width:56px;height:56px;background-color:${esc(v.icon_color)}${photo}"></span>
+<span class="av pv-av" data-pv-av style="width:56px;height:56px;background-color:${color}${photo}"></span>
 <span class="pv-main"><b data-pv-name data-empty="ペンネーム">${esc(v.pen_name || 'ペンネーム')}</b></span>
 </div>`;
 }
