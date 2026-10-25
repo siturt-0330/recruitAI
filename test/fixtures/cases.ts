@@ -1988,4 +1988,19 @@ export const CASES: Case[] = [
     ai: 'phone',
     expect: { '[name=tbx_keitai1]': '090', '[name=tbx_keitai2]': '1234', '[name=tbx_keitai3]': '5678', '[name=tbx_zip1]': '150', '[name=tbx_zip2]': '0041' },
   },
+  {
+    name: 'snar.jp（SCREEN）のアンケート：「出身高校の学科・コース」には大学の学科も高校名も入れない。卒業区分の「卒業予定」',
+    html: `<form>
+      ${[
+        ['出身高校名を入力してください。', '出身高校名', '<input name="q1" type="text">'],
+        ['出身高校の学科・コースを入力してください。', '学科・コース', '<input name="q2" type="text">'],
+        ['大学の学部・学科を入力してください。', '学部・学科', '<input name="q3" type="text">'],
+      ]
+        .map(([q, label, input]) => `<table class="entryTb"><tbody><tr><th colspan="2"><span class="required">*</span>${q}</th></tr><tr><td class="td01">${label}</td><td>${input}</td></tr></tbody></table>`)
+        .join('')}
+      <table class="entryTb"><tbody><tr><td class="td01">卒業区分<span class="required">*</span></td><td><select name="g"><option value=""></option><option value="1">卒業予定</option><option value="2">既卒</option></select></td></tr></tbody></table>
+    </form>`,
+    profile: { highSchool: 'サンプル高校' },
+    expect: { '[name=q1]': 'サンプル高校', '[name=q2]': '', '[name=q3]': '経済学科', '[name=g]': '卒業予定' },
+  },
 ];

@@ -329,9 +329,10 @@ function sectionText(el: HTMLElement): string {
     for (let i = 0; sib && i < 15; i++, sib = sib.previousElementSibling) {
       if (node === ownDd && sib.tagName === 'DT') continue;
       if (!isHeadingLike(sib)) continue;
-      const t = textOf(sib, 40);
+      // 先頭の「*」は必須の印（「*出身高校名を入力してください。」）なので外して見る
+      const t = textOf(sib, 40).replace(/^[*＊]\s*/, '');
       // 「例（111-0000）」や「※〜」の注意書きは見出しではない
-      if (!t || t.length > 40 || NOT_A_HEADING.test(t) || /^[※*＊]/.test(t)) continue;
+      if (!t || t.length > 40 || NOT_A_HEADING.test(t) || /^※/.test(t)) continue;
       return t;
     }
   }
