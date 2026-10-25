@@ -181,7 +181,7 @@ export function comboText(el: HTMLElement): string {
   const shown = (clone.hasAttribute('data-placeholder') ? '' : clone.textContent ?? '').replace(/[​\s]+/g, ' ').trim();
   const typed = el instanceof HTMLInputElement ? el.value.trim() : '';
   const text = typed || shown;
-  if (/^[\s×✕xX▼▾▿⌄∨\-–—]*$/.test(text)) return '';
+  if (/^[\s×✕xX▼▾▿⌄∨\-‐‑‒–—―−ー－ｰ]*$/.test(text)) return '';
   return /^(選択してください|選択|未選択|select\.*|choose\.*|please select\.*)$/i.test(text) ? '' : text;
 }
 

@@ -513,7 +513,7 @@ const NO = /^(いいえ|なし|無し?|no|ない|いない|していない)$/i;
 /** 「はい／いいえ」「あり／なし」で答える欄か */
 export function isYesNo(d: FieldDescriptor): boolean {
   if (d.kind !== 'radio' && d.kind !== 'select') return false;
-  const opts = d.options.map((o) => o.normalize('NFKC').replace(/\s/g, '')).filter((o) => o && !/^[-▼―ー\s]*$|選択/.test(o));
+  const opts = d.options.map((o) => o.normalize('NFKC').replace(/\s/g, '')).filter((o) => o && !/^[\-‐‑‒–—―−ー▼\s]*$|選択/.test(o));
   if (opts.length < 2 || opts.length > 3) return false;
   return (opts.some((o) => YES.test(o)) && opts.some((o) => NO.test(o))) || !!yesNoOptions(opts);
 }
@@ -605,9 +605,9 @@ export function computeHints(d: FieldDescriptor): Hints {
   else if ((hasSeireki && !hasWareki) || /西暦/.test(text)) era = 'seireki';
 
   let hyphen: Hints['hyphen'] = null;
-  if (/ハイフン(なし|無し|不要|を除|は不要|抜き|を入れず)|ハイフンを?入れないで|[-ー]なし|数字のみ|\d+桁/.test(text)) hyphen = false;
+  if (/ハイフン(なし|無し|不要|を除|は不要|抜き|を入れず)|ハイフンを?入れないで|[\-‐‑‒–—―−ー－ｰ]なし|数字のみ|\d+桁/.test(text)) hyphen = false;
   else if (/ハイフン(あり|有り|を含|付き|を入れて)/.test(text)) hyphen = true;
-  else if (/\d[-‐ー－]\d/.test(d.placeholder)) hyphen = true;
+  else if (/\d[\-‐‑‒–—―−ー－ｰ]\d/.test(d.placeholder)) hyphen = true;
   else if (/^\d{7,11}$/.test(norm(d.placeholder).replace(/^例[:：)）]?\s*/, ''))) hyphen = false;
   else if (d.maxLength === 7 || d.maxLength === 10 || d.maxLength === 11) hyphen = false;
 

@@ -41,7 +41,7 @@ function kanaForms(s: string, hint: Hints['kana']): string[] {
 
 export function splitPhone(phone: string): string[] {
   const t = phone.normalize('NFKC').trim();
-  const parts = t.split(/[-‐−ー―\s]+/).filter(Boolean);
+  const parts = t.split(/[\-‐‑‒–—―−ー\s]+/).filter(Boolean);
   if (parts.length === 3 && parts.every((p) => /^\d+$/.test(p))) return parts;
   const digits = t.replace(/\D/g, '');
   const cut = (...lens: number[]) => {
