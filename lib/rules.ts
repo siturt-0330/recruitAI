@@ -454,6 +454,21 @@ const PHONE_TO_LANDLINE: Partial<Record<FieldKey, FieldKey>> = {
   phone3: 'landline3',
 };
 
+/** 現住所の欄と、それに当たる帰省先の欄 */
+const ADDRESS_TO_KISEI: Partial<Record<FieldKey, FieldKey>> = {
+  postalCode: 'kiseiPostalCode',
+  postalCode1: 'kiseiPostalCode1',
+  postalCode2: 'kiseiPostalCode2',
+  prefecture: 'kiseiPrefecture',
+  city: 'kiseiCity',
+  addressLine: 'kiseiAddressLine',
+  addressLineBuilding: 'kiseiAddressLine',
+  building: 'kiseiBuilding',
+  fullAddress: 'kiseiFullAddress',
+  cityAddressLine: 'kiseiCityAddressLine',
+  cityAddressLineBuilding: 'kiseiCityAddressLine',
+};
+
 /**
  * フォーム全体を見て判定を調整する。
  * 「電話番号」と「携帯電話番号」が両方あるときは、ただの「電話番号」を自宅の電話として扱う。
@@ -497,6 +512,24 @@ export function adjustForForm(fields: ScannedField[], input: Classification[]): 
   };
   classes = classes.map((c, i) => (c.key ? { ...c, key: narrowAddress(c.key, fields[i]!) } : c));
 
+  // 「現住所と同じ／帰省先がない場合はチェック」のすぐ後ろに、現住所と同じ並びの住所の欄がもう一度あれば、それは帰省先の欄
+  // （snar.jp は帰省先の見出しがチェックボックスの行にしかなく、欄ごとの見出しは「郵便番号」「都道府県」だけ）
+  const seen = new Map<HTMLFormElement | null, Set<FieldKey>>();
+  let kiseiBlock: HTMLFormElement | null | undefined;
+  classes = classes.map((c, i) => {
+    const form = formOf(fields[i]!);
+    if (c.key === 'kiseiSameCheck') {
+      kiseiBlock = form;
+      return c;
+    }
+    const kiseiKey = c.key ? ADDRESS_TO_KISEI[c.key] : undefined;
+    if (kiseiBlock !== undefined && kiseiBlock === form && kiseiKey && seen.get(form)?.has(c.key!)) return { ...c, key: kiseiKey };
+    // 住所の欄でないものが出てきたら、帰省先の並びは終わり
+    if (c.key) kiseiBlock = undefined;
+    if (kiseiKey) seen.set(form, (seen.get(form) ?? new Set<FieldKey>()).add(c.key!));
+    return c;
+  });
+
   // 学校区分・頭文字と同じフォームにあり、住所の欄がない都道府県は「学校の所在地」
   const schoolForms = new Set<HTMLFormElement | null>();
   const addressForms = new Set<HTMLFormElement | null>();
@@ -510,7 +543,9 @@ export function adjustForForm(fields: ScannedField[], input: Classification[]): 
     const f = fields[i]!;
     // 「確認用」「再入力」とラベルに書かれた欄は、見出しが何であっても直前のメール欄の確認用。
     // 「メールアドレス2」の確認用なら予備のアドレスを入れる
-    const ownLabel = `${f.desc.label} ${f.desc.prefix}`;
+    // 行見出しが「再入力」だけの行（snar.jp）も、その欄専用のラベルとみなす
+    const shortContext = f.desc.context.length <= 10 ? f.desc.context : '';
+    const ownLabel = `${f.desc.label} ${f.desc.prefix} ${shortContext}`;
     const confirmLike = c.key === 'emailConfirm' || (/確認|再入力|もう一度|confirm/i.test(ownLabel) && f.desc.kind !== 'select');
     if (confirmLike && (!c.key || EMAIL_KEYS.has(c.key))) {
       for (let j = i - 1; j >= Math.max(0, i - 2); j--) {

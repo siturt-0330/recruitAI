@@ -1625,4 +1625,71 @@ export const CASES: Case[] = [
       },
     } satisfies Case;
   })(),
+  (() => {
+    // snar.jp（マクニカ）の応募フォーム。見出しの td に隠しデータの欄があり、サイトの script が現住所を帰省先に写す
+    const row = (key: string, label: string, body: string, required = true) =>
+      `<tr><td id="th_${key}" class="td01">${label}${required ? '<span class="required">*</span>' : ''}<input type="hidden" name="hdn_${key}_T" value="${label}"><input type="hidden" name="hdn_${key}" value="${required ? 1 : 0}"></td><td>${body}<p></p></td></tr>`;
+    const sel = (name: string, items: (string | [string, string])[]) => `<select name="${name}" id="${name}">${opts(items, '')}</select>`;
+    const ken = (name: string) => sel(name, [['1', '北海道'], ['7', '福島県'], ['13', '東京都'], ['14', '神奈川県']]);
+    const tel = (n: string) => [1, 2, 3].map((i) => `<input name="tbx_tel${n}${i}" type="text" class="inputSText">`).join(' - ');
+    return {
+      name: 'snar.jp（マクニカ）：氏名・フリガナの分割、サブメールと再入力、郵便番号、「帰省先がない場合はチェック」、携帯と緊急連絡先',
+      html: `<form>
+      <table class="entryTb"><tbody><tr><th colspan="2">プロフィール情報</th></tr>
+      ${row('name', '氏名', '<input name="tbx_name1" type="text" class="inputMText"> <input name="tbx_name2" type="text" class="inputMText">')}
+      ${row('kana', 'フリガナ', '<input name="tbx_kana1" type="text" class="inputMText"> <input name="tbx_kana2" type="text" class="inputMText">')}
+      ${row('birth', '生年月日', `${sel('ddl_birthY', range(1990, 2010).reverse().map(String))} 年 ${sel('ddl_birthM', range(1, 12).map(String))} 月 ${sel('ddl_birthD', range(1, 31).map(String))} 日`)}
+      ${row('sex', '性別', ['男性', '女性', '無回答'].map((t, i) => `<input id="rbt_sex${i + 1}" type="radio" name="rbt_sex" value="rbt_sex${i + 1}"><label for="rbt_sex${i + 1}"> ${t} </label>`).join(''))}
+      ${row('mail', 'メインメールアドレス', '<input name="tbx_mail" type="text" class="inputL"><p>最も連絡の取りやすいメールアドレス</p>')}
+      <tr><td>再入力<span class="required">*</span></td><td><input name="tbx_mail_R" type="text" class="inputL"></td></tr>
+      ${row('smail', 'サブメールアドレス', '<input name="tbx_smail" type="text" class="inputL"><p>その他のメールアドレス</p>', false)}
+      <tr><td>再入力</td><td><input name="tbx_smail_R" type="text" class="inputL"></td></tr>
+      ${row('sotsuy', '卒業年月', `${sel('ddl_sotsuyY', range(2015, 2030).map(String))} 年 ${sel('ddl_sotsuyM', range(1, 12).map(String))} 月`)}
+      ${row('sotsuk', '卒業区分', sel('ddl_sotsuk', [['1', '卒業予定'], ['2', '既卒']]))}
+      </tbody></table>
+      <table class="entryTb"><tbody><tr><th colspan="2">住所情報</th></tr>
+      ${row('zip', '郵便番号', '<input name="tbx_zip1" type="text" maxlength="3" class="inputSText"> - <input name="tbx_zip2" type="text" maxlength="4" class="inputSText"> <a href="#">住所検索</a><p>例：海外在住の場合、「000-0000」と入力してください。</p>')}
+      ${row('ken', '都道府県', `${ken('ddl_ken')}<select name="ddl_kenList" style="visibility:hidden;"><option value=""></option><option value="北海道">1</option></select>`)}
+      ${row('addr1', '市区郡番地', '<input name="tbx_addr1" type="text" class="inputL"><p>例）千代田区千代田1-2-3</p>')}
+      ${row('addr2', 'マンション・アパート名', '<input name="tbx_addr2" type="text" class="inputL"><p>例）日本アパート201号室</p>', false)}
+      <tr><td colspan="2">帰省先住所がある場合は入力して下さい。ない場合はチェックして下さい。<input type="hidden" name="hdn_kflg" value="帰省先住所がある場合は入力して下さい。ない場合はチェックして下さい。"><input id="cbx_kflg" type="checkbox" name="cbx_kflg"><label for="cbx_kflg">チェックしてください。</label></td></tr>
+      ${row('kzip', '郵便番号', '<input name="tbx_kzip1" type="text" maxlength="3" class="inputSText"> - <input name="tbx_kzip2" type="text" maxlength="4" class="inputSText"> <a href="#">住所検索</a>', false)}
+      ${row('kken', '都道府県', ken('ddl_kken'), false)}
+      ${row('kaddr1', '市区郡番地', '<input name="tbx_kaddr1" type="text" class="inputL"><p>例）千代田区千代田1-2-3</p>', false)}
+      ${row('kaddr2', 'マンション・アパート名', '<input name="tbx_kaddr2" type="text" class="inputL"><p>例）日本アパート201号室</p>', false)}
+      ${row('tel1', '携帯電話番号', tel('1'))}
+      ${row('tel2', '緊急連絡先', `${tel('2')}<p>ご実家または保護者様の電話番号をご入力ください</p>`)}
+      </tbody></table></form>`,
+      profile: { emailSub: 'sub@example.com' },
+      expect: {
+        '[name=tbx_name1]': '山田',
+        '[name=tbx_name2]': '太郎',
+        '[name=tbx_kana1]': 'ヤマダ',
+        '[name=tbx_kana2]': 'タロウ',
+        '[name=ddl_birthY]': '1999',
+        '[name=ddl_birthM]': '4',
+        '[name=ddl_birthD]': '1',
+        '#rbt_sex1': true,
+        '[name=tbx_mail]': 'taro@example.com',
+        '[name=tbx_mail_R]': 'taro@example.com',
+        '[name=tbx_smail]': 'sub@example.com',
+        '[name=tbx_smail_R]': 'sub@example.com',
+        '[name=ddl_sotsuyY]': '2026',
+        '[name=ddl_sotsuyM]': '3',
+        '[name=ddl_sotsuk]': '卒業予定',
+        '[name=tbx_zip1]': '150',
+        '[name=tbx_zip2]': '0041',
+        '[name=ddl_ken]': '東京都',
+        '[name=tbx_addr1]': '渋谷区神南1-2-3',
+        '#cbx_kflg': true,
+        '[name=tbx_kzip1]': '',
+        '[name=ddl_kken]': '',
+        '[name=tbx_kaddr1]': '',
+        '[name=tbx_tel11]': '090',
+        '[name=tbx_tel12]': '1234',
+        '[name=tbx_tel13]': '5678',
+        '[name=tbx_tel21]': '',
+      },
+    } satisfies Case;
+  })(),
 ];
