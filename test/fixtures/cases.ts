@@ -1923,4 +1923,34 @@ export const CASES: Case[] = [
       },
     } satisfies Case;
   })(),
+  {
+    name: 'i-webs（アビーム）：「編入前大学名（大学編入歴のある方のみ）」と在籍期間には入れない',
+    html: `<form><table>
+      <tr><th>大学名</th><td><input name="u"></td></tr>
+      <tr><th>編入前大学名<br>（大学編入歴のある方のみ）</th><td><p>※学部・学科までご入力ください。</p><input name="t"></td></tr>
+      <tr><th>編入前大学在籍期間<br>（大学編入歴のある方のみ）</th><td>開始年月：<select name="ty">${opts(range(2015, 2026).map(String))}</select>年<br>終了年月：<select name="ey">${opts(range(2015, 2026).map(String))}</select>年</td></tr>
+    </table></form>`,
+    expect: { '[name=u]': 'サンプル大学', '[name=t]': '', '[name=ty]': '', '[name=ey]': '' },
+  },
+  {
+    name: 'snar.jp（野村不動産）：住所のすぐ下の「携帯番号」「電話番号」の 3 分割に住所を入れない',
+    html: `<form><table class="entryTb"><tbody>
+      ${[
+        ['addr1', '市区郡番地', '<input name="tbx_addr1" type="text" class="inputL"><p>例）千代田区千代田1-2-3</p>'],
+        ['addr2', 'マンション・アパート名', '<input name="tbx_addr2" type="text" class="inputL"><p>例）日本アパート201号</p>'],
+        ['tel1', '携帯番号', [1, 2, 3].map((i) => `<input name="tbx_tel1${i}" type="text" class="inputSText">`).join(' - ')],
+        ['tel2', '電話番号', [1, 2, 3].map((i) => `<input name="tbx_tel2${i}" type="text" class="inputSText">`).join(' - ')],
+      ]
+        .map(([k, label, body]) => `<tr><td id="th_${k}" class="td01">${label}<input type="hidden" name="hdn_${k}_T" value="${label}"><input type="hidden" name="hdn_${k}" value="1"></td><td>${body}<p></p></td></tr>`)
+        .join('')}
+    </tbody></table></form>`,
+    expect: {
+      '[name=tbx_addr1]': '渋谷区神南1-2-3',
+      '[name=tbx_tel11]': '090',
+      '[name=tbx_tel12]': '1234',
+      '[name=tbx_tel13]': '5678',
+      '[name=tbx_tel21]': '03',
+      '[name=tbx_tel23]': '5678',
+    },
+  },
 ];
