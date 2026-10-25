@@ -359,9 +359,12 @@ export class FormFiller {
     threshold: number,
     classifyRemote: ClassifyRemote,
   ) {
+    // 「090」「1234」「5678」のように分かれた欄の何番目かは、並びから決めたもので確か。
+    // AI に聞くと「電話番号（まとめて）」と答えることがあり、3 つ目にだけ全部が入ってしまう（Speee）ので聞かない
+    const splitPart = (i: number) => fields[i]!.desc.groupSize > 1 && /\d$/.test(classes[i]!.key ?? '');
     const targets = fields
       .map((f, i) => ({ f, i }))
-      .filter(({ i }) => !classes[i]!.key || classes[i]!.confidence < threshold)
+      .filter(({ i }) => (!classes[i]!.key || classes[i]!.confidence < threshold) && !splitPart(i))
       .slice(0, MAX_REMOTE_QUESTIONS);
     if (!targets.length) return;
 

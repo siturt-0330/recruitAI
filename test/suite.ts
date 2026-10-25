@@ -1,5 +1,5 @@
 // 入力エンジンの回帰テスト。`npm run harness` で起動し、/test/suite.html を開く
-import { FormFiller } from '../lib/engine';
+import { FormFiller, type ClassifyRemote } from '../lib/engine';
 import { DEFAULT_SETTINGS } from '../lib/types';
 import { CASES, type Case } from './fixtures/cases';
 import { removeComboPopups } from './fixtures/combos';
@@ -65,7 +65,9 @@ async function runCase(c: Case, stage: HTMLElement): Promise<CaseResult> {
   const filler = new FormFiller(document);
   const result: CaseResult = { name: c.name, failures: [], undoFailures: [] };
   try {
-    await filler.fill(testProfile(c.profile), DEFAULT_SETTINGS);
+    // AI の答えを決めたケースでは、聞かれたすべての欄にその答えを返す
+    const ai: ClassifyRemote | undefined = c.ai ? async (_text, questions) => questions.map((q) => ({ name: q.name, choice: c.ai!, confidence: 0.99 })) : undefined;
+    await filler.fill(testProfile(c.profile), { ...DEFAULT_SETTINGS, ...(c.threshold ? { threshold: c.threshold } : {}) }, ai);
     for (const [selector, expected] of Object.entries(c.expect)) {
       const actual = actualValue(stage, selector, expected);
       if (actual !== expected) result.failures.push({ selector, expected, actual });

@@ -15,6 +15,10 @@ export interface Case {
   html: string;
   expect: Record<string, string | boolean>;
   profile?: Partial<Profile>;
+  /** 確認なしで入力する確信度（ポップアップのスライダー）。省くと初期設定 */
+  threshold?: number;
+  /** AI（Sophon）の答え。渡すと、AI に聞かれたすべての欄にこの項目を返す */
+  ai?: string;
   setup?(root: HTMLElement): void;
   /** 入力のあとにユーザーが書き直す操作。書き直した欄のセレクタと値を返し、「元に戻す」で消えないことを確かめる */
   afterFill?(root: HTMLElement): Record<string, string>;
@@ -1972,5 +1976,16 @@ export const CASES: Case[] = [
       '[name=tbx_keitai3]': '5678',
       '#rbt_sex1': true,
     },
+  },
+  {
+    // 確信度のスライダーを上げると、分かれた欄も AI に聞く対象になる。AI が「電話番号（まとめて）」と答えても、分けて入れる
+    name: 'snar.jp（Speee）：確信度を 95% にして AI が「電話番号」と答えても、携帯番号の 3 分割に分けて入れる',
+    html: `<form><table class="entryTb"><tbody>
+      <tr><td id="th_keitai" class="td01">携帯番号<span class="required">*</span><input type="hidden" name="hdn_keitai_T" value="携帯番号"><input type="hidden" name="hdn_keitai" value="1"></td><td><input name="tbx_keitai1" type="text" class="inputSText"> - <input name="tbx_keitai2" type="text" class="inputSText"> - <input name="tbx_keitai3" type="text" class="inputSText"><p></p></td></tr>
+      <tr><td id="th_zip" class="td01">郵便番号<input type="hidden" name="hdn_zip_T" value="郵便番号"><input type="hidden" name="hdn_zip" value="0"></td><td><input name="tbx_zip1" type="text" maxlength="3" class="inputSText"> - <input name="tbx_zip2" type="text" maxlength="4" class="inputSText"><p></p></td></tr>
+    </tbody></table></form>`,
+    threshold: 0.95,
+    ai: 'phone',
+    expect: { '[name=tbx_keitai1]': '090', '[name=tbx_keitai2]': '1234', '[name=tbx_keitai3]': '5678', '[name=tbx_zip1]': '150', '[name=tbx_zip2]': '0041' },
   },
 ];
