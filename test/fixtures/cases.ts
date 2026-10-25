@@ -1858,4 +1858,69 @@ export const CASES: Case[] = [
       expect: kind === 'radio' ? { 'radio:g': want } : { '[name=g]': want },
     }),
   ),
+  (() => {
+    // i-webs の「休暇中の連絡先」。帰省先に現住所と同じ住所（全角の数字・ハイフンの違いだけ）を入れたプロフィール
+    const jqSelect = (name: string) =>
+      `<div class="jqTransformSelectWrapper"><div><span>-▼-</span><a href="#" class="jqTransformSelectOpen"></a></div><ul style="display:none"></ul><select name="${name}" class="jqTransformHidden">${opts(['東京都', '福島県'], '-▼-')}</select></div>`;
+    const row = (head: string, body: string) => `<div class="formbox clearfix"><dt class="formbox01">${head}</dt><dd class="formbox02"><span class="hosoku clearfix">${body}</span></dd></div>`;
+    const block = (p: string) =>
+      row('郵便番号', `<input type="text" name="${p}yubin1"> - <input type="text" name="${p}yubin2">`) +
+      row('都道府県', jqSelect(`${p}ken`)) +
+      row('市区郡・地名・番地', `<input type="text" name="${p}adrs1">`) +
+      row('電話番号', `<input type="text" name="${p}tel1"> - <input type="text" name="${p}tel2"> - <input type="text" name="${p}tel3">`);
+    return {
+      name: 'i-webs：帰省先に現住所と同じ住所を入れていたら「現住所と同じ」にチェックし、休暇中の連絡先には入れない',
+      html: `<style>.jqTransformHidden{display:none}</style><form><dl>
+        <div class="heading_l2">現住所情報</div>${block('g')}
+        <div class="heading_l2">休暇中の連絡先</div>
+        <div class="formbox clearfix"><span class="heading_l2l hosoku clearfix"><span class="jqTransformCheckboxWrapper"><a href="#" class="jqTransformCheckbox"></a><input type="checkbox" name="adch" class="jqTransformHidden" value="1"></span><label for="text">現住所と同じ場合はこちらにチェックしてください<br><span>※チェックを入れる場合は休暇中住所は入力しないでください。</span></label></span></div>
+        ${block('k')}
+      </dl></form>`,
+      profile: {
+        kiseiSame: false,
+        kiseiPostalCode: '１５０－００４１',
+        kiseiPrefecture: '東京都',
+        kiseiCity: '渋谷区',
+        kiseiAddressLine: '神南１－２－３',
+        kiseiBuilding: 'サンプルマンション１０１',
+        kiseiPhone: '03-1234-5678',
+      },
+      expect: { '[name=gken]': '東京都', '[name=adch]': true, '[name=kyubin1]': '', '[name=kken]': '', '[name=kadrs1]': '', '[name=ktel1]': '' },
+    } satisfies Case;
+  })(),
+  (() => {
+    // i-webs（富士フイルム）の学歴。「中学校」「高等学校」「出身大学（学士）」「在籍大学」の見出しの下に、同じ「学校名」の欄が並ぶ
+    const jqSelect = (name: string, items: string[]) =>
+      `<div class="jqTransformSelectWrapper"><div><span>-▼-</span><a href="#" class="jqTransformSelectOpen"></a></div><ul style="display:none"></ul><select name="${name}" class="jqTransformHidden">${opts(items, '-▼-')}</select></div>`;
+    const years = range(2010, 2028).map(String);
+    const months = range(1, 12).map((m) => String(m).padStart(2, '0'));
+    const row = (head: string, body: string) => `<div class="formbox clearfix"><dt class="formbox01"><span class="inportant">◆</span>${head}</dt><dd class="formbox02">${body}</dd></div>`;
+    const school = (p: string, heading: string, note = '') =>
+      `<div class="heading_l2">${heading}</div>
+      ${row('学校名<br>（全半角50文字以内）', `${note}<input type="text" name="${p}name">`)}
+      ${row('入学／卒業年月', `<span>入学年月 ${jqSelect(`${p}ny`, years)}年${jqSelect(`${p}nm`, months)}月</span><br><span>卒業年月 ${jqSelect(`${p}sy`, years)}年${jqSelect(`${p}sm`, months)}月</span>`)}`;
+    return {
+      name: 'i-webs（富士フイルム）：中学校・高校・「大学院の方は回答」の出身大学の学校名には、在籍中の大学名を入れない',
+      html: `<style>.jqTransformHidden{display:none}</style><form><dl>
+        ${school('j', '中学校')}
+        ${school('h', '高等学校（中等教育学校）')}
+        ${school('b', '出身大学（学士）', '<p>※『最終学歴』で「大学院（修士）」「大学院（博士）」 を選択された方は回答してください。</p><p>【例】●●大学</p>')}
+        ${school('u', '在籍大学')}
+      </dl></form>`,
+      profile: { highSchool: 'サンプル高校', highSchoolAdmission: '2019-04', highSchoolGraduation: '2022-03' },
+      expect: {
+        '[name=jname]': '',
+        '[name=jny]': '',
+        '[name=hname]': 'サンプル高校',
+        '[name=hny]': '2019',
+        '[name=hsy]': '2022',
+        '[name=hsm]': '03',
+        '[name=bname]': '',
+        '[name=bsy]': '',
+        '[name=uname]': 'サンプル大学',
+        '[name=usy]': '2026',
+        '[name=usm]': '03',
+      },
+    } satisfies Case;
+  })(),
 ];

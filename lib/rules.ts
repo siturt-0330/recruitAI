@@ -296,6 +296,17 @@ function classifyField(d: FieldDescriptor): Classification {
   }
   // 緊急連絡先は氏名・続柄・電話番号しか登録していない。フリガナ・住所・メールなどに本人の情報を入れない
   if (emergency && !((cat === 'name' && !kana) || cat === 'relation' || (cat === 'phone' && d.groupSize !== 3))) return result(null, 0);
+  // 「中学校」「高等学校」の見出しの下の学校名・入学年月・卒業年月（i-webs など）。
+  // 中学校はプロフィールにないので入れない。高校は高校の欄として扱う
+  const schoolSection = /高校|高等学校/.test(section) ? 'high' : /中学/.test(section) ? 'junior' : null;
+  if (schoolSection && ['school', 'graduation', 'admission', 'faculty', 'department', 'educationHistory'].includes(cat) && !/大学/.test(`${near} ${ctx}`)) {
+    if (schoolSection === 'junior') return result(null, 0);
+    cat = 'highSchool';
+  }
+  // 「入学／卒業年月」のように 1 つのセルに入学と卒業の欄が並ぶときは、欄のすぐ手前の見出し（lead）で見分ける
+  const lead = norm(d.lead);
+  const term = /卒業|修了/.test(near) ? 'grad' : /入学/.test(near) ? 'adm' : /卒業|修了/.test(lead) ? 'grad' : /入学/.test(lead) ? 'adm' : null;
+  if (term && (cat === 'graduation' || cat === 'admission')) cat = term === 'grad' ? 'graduation' : 'admission';
   // 「卒業学校名」「卒業学部」のように、卒業した学校の名前を聞いている文字の欄
   if (cat === 'graduation' && d.kind === 'text' && !isDateLike(d, near) && !/年|月|日|時期|date|year/.test(`${near} ${ctx}`)) {
     const again = firstMatch(TEXT_RULES, stripModifiers(`${near} ${ctx}`.replace(/卒業/g, '')));
@@ -400,10 +411,10 @@ function classifyField(d: FieldDescriptor): Classification {
       if (isYesNo(d)) return r(has(/卒業/) ? 'highSchoolGraduated' : 'highSchool', has(/卒業/) ? conf : 0);
       const dateLike = isDateLike(d, near) || d.kind === 'select';
       // 「高校入学年月 [年▼]年 [月▼]月」のように、年と月が分かれた欄もある
-      if (dateLike && has(/入学/)) {
+      if (dateLike && (term ? term === 'adm' : has(/入学/))) {
         return dateKey(d, attrs, conf, ['highSchoolAdmission', 'highSchoolAdmissionYear', 'highSchoolAdmissionMonth', null]);
       }
-      if (dateLike && has(/卒業/)) {
+      if (dateLike && (term ? term === 'grad' : has(/卒業/))) {
         return dateKey(d, attrs, conf, ['highSchoolGraduation', 'highSchoolGraduationYear', 'highSchoolGraduationMonth', null]);
       }
       return r('highSchool');

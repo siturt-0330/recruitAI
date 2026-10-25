@@ -5,7 +5,7 @@ import { applyValue, hasUserValue, markTarget, restoreSnapshot, takeSnapshot, ty
 import { Overlay, type BarLink } from './overlay';
 import { adjustForForm, classify, computeHints, type Classification } from './rules';
 import type { FieldStatus, FrameStatus, Profile, RemoteAnswer, RemoteQuestion, Settings } from './types';
-import { SAYS_NONE, valueVariants } from './values';
+import { kiseiIsSame, SAYS_NONE, valueVariants } from './values';
 import { norm } from './japanese';
 import { jqDecoy } from './jqtransform';
 
@@ -87,7 +87,7 @@ const MISSING_ALIAS: Partial<Record<FieldKey, FieldKey>> = {
  * 帰省先が現住所と同じなら、チェックを入れて同じフォームの帰省先の欄には何も入れない。
  */
 function skipKiseiWhenSame(fields: ScannedField[], classes: Classification[], profile: Profile) {
-  if (!profile.kiseiSame) return;
+  if (!kiseiIsSame(profile)) return;
   const formOf = (f: ScannedField) => (f.elements[0] as HTMLInputElement).form ?? null;
   const formsWithCheck = new Set(fields.filter((_, i) => classes[i]!.key === 'kiseiSameCheck').map(formOf));
   if (!formsWithCheck.size) return;
@@ -143,7 +143,8 @@ function stillSelected(r: Result): boolean {
 /** 「※大学院に所属している方のみ」のような条件付きの欄と、その条件をプロフィールが満たすか */
 const CONDITIONS: [RegExp, (p: Profile) => boolean][] = [
   [/博士.{0,8}(の方|方|者)のみ/, (p) => p.schoolType === '大学院（博士）'],
-  [/大学院.{0,12}(の方|方|者|生)のみ|大学院に(所属|在籍)/, (p) => p.schoolType.startsWith('大学院')],
+  // 「『最終学歴』で「大学院（修士）」「大学院（博士）」を選択された方は回答してください」も大学院生だけ
+  [/大学院.{0,12}(の方|方|者|生)のみ|大学院に(所属|在籍)|大学院.{0,24}(選択さ?れ?た|選ばれた)方/, (p) => p.schoolType.startsWith('大学院')],
   [/(既卒|社会人|卒業された|卒業済).{0,8}(の方|方|者)のみ/, (p) => p.graduationStatus === 'graduated'],
   [/留学.{0,12}(の方|方|者)のみ/, (p) => !!p.studyAbroad && !SAYS_NONE.test(p.studyAbroad.normalize('NFKC'))],
 ];
@@ -161,7 +162,9 @@ function applyConditions(fields: ScannedField[], classes: Classification[], prof
     const c = classes[i]!;
     if (!c.key) return;
     const d = f.desc;
-    const text = norm(`${d.label} ${d.prefix} ${d.context}`);
+    // 条件の注意書きは、欄と同じセルの中（欄の上の説明文）にあることも多い
+    const cell = f.elements[0]!.closest('td, dd')?.textContent?.slice(0, 200) ?? '';
+    const text = norm(`${d.label} ${d.prefix} ${d.context} ${cell}`);
     if (CONDITIONS.some(([re, ok]) => re.test(text) && !ok(profile))) {
       classes[i] = { key: null, confidence: 0, source: c.source };
       owner = { kind: 'skip', index: i };
