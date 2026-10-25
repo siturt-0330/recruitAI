@@ -1,0 +1,97 @@
+<!-- このファイルは games/build.mjs で各ゲームの単語一覧のページ（site/game/<slug>/words/index.html）になる。検索から言葉を探して来た人が読めるように、言葉をすべて HTML に書き出す -->
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{listTitle}}｜らくらくエントリー</title>
+    <meta name="description" content="{{listDescription}}" />
+    <link rel="canonical" href="{{listUrl}}" />
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
+    <link rel="icon" href="/images/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#f6f4fb" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="らくらくエントリー" />
+    <meta property="og:url" content="{{listUrl}}" />
+    <meta property="og:title" content="{{listTitle}}" />
+    <meta property="og:description" content="{{listDescription}}" />
+    <meta property="og:image" content="{{ogImage}}" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@500;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/game/engine/game.css?v={{version}}" />
+    <style>
+      .wl { max-width: 980px; margin: 0 auto; }
+      .wl h1 { font-family: var(--head); font-weight: 900; font-size: clamp(26px, 3.4vw, 38px); line-height: 1.35; margin: 10px 0 14px; }
+      .wl .lead { color: var(--sub); font-size: 15px; line-height: 1.9; margin: 0 0 20px; }
+      .wl .acts { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+      .wl .acts .btn { padding: 12px 22px; font-size: 14px; }
+      .wl .toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+      .wl .toc a { display: inline-block; font-size: 13px; color: var(--sub); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; text-decoration: none; }
+      .wl .toc a:hover { color: var(--ink); }
+      .wl section { scroll-margin-top: 16px; }
+      .wl h2 { font-family: var(--head); font-weight: 900; font-size: 19px; margin: 0; }
+      .wl h2 small { font: 500 12px "Noto Sans JP", sans-serif; color: var(--mute); margin-left: 8px; }
+      .wl dl { margin: 0; }
+      .wl .it { display: grid; grid-template-columns: 112px 140px minmax(0, 1fr); gap: 4px 14px; padding: 12px 0; border-top: 1px solid var(--line); scroll-margin-top: 16px; }
+      .wl .it:target { background: #f6f4ff; border-radius: 10px; margin: 0 -10px; padding-left: 10px; padding-right: 10px; }
+      .wl dt { display: contents; }
+      .wl dt b { font-family: var(--head); font-weight: 900; font-size: 18px; line-height: 1.5; }
+      .wl dt .y { font-size: 13px; color: var(--sub); line-height: 1.9; }
+      .wl dd { margin: 0; font-size: 14px; line-height: 1.7; }
+      .wl dd .ex { display: block; font-size: 13px; color: var(--sub); }
+      .wl dd .ex mark { background: none; color: var(--ink); font-weight: 700; }
+      .crumbs { font-size: 12px; color: var(--mute); margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+      .crumbs li + li::before { content: "›"; margin-right: 6px; }
+      .crumbs a { color: var(--sub); text-decoration: none; }
+      .crumbs a:hover { text-decoration: underline; }
+      .wl .end { margin-top: 28px; background: #fff; border-radius: 20px; padding: 22px 24px; text-align: center; }
+      .wl .end p { margin: 0 0 14px; color: var(--sub); font-size: 14px; }
+      .wl .end .btn { padding: 12px 22px; font-size: 14px; }
+      @media (max-width: 640px) {
+        .wl .it { grid-template-columns: minmax(0, 1fr); }
+        .wl dt { display: flex; align-items: baseline; gap: 10px; }
+      }
+    </style>
+    <script type="application/ld+json">{{jsonLd}}</script>
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="/"><img src="/images/icon.svg" alt="" width="26" height="26" />らくらくエントリー</a>
+      <span class="sp"></span>
+      <a class="link" href="/game">SPI 用語集</a>
+      <a class="link ext" href="/">拡張機能について</a>
+    </header>
+    <main class="wrap">
+      <article class="wl">
+        <nav aria-label="パンくずリスト">
+          <ol class="crumbs">
+            <li><a href="/">らくらくエントリー</a></li>
+            <li><a href="/game">SPI 用語集</a></li>
+            <li><a href="{{gamePath}}">{{title}}</a></li>
+            <li aria-current="page">単語一覧</li>
+          </ol>
+        </nav>
+        <h1>{{listHeading}}</h1>
+        <p class="lead">{{listLead}}</p>
+        <div class="acts">
+          <a class="btn dark" href="{{gamePath}}">タイピングで覚える</a>
+          <a class="btn ghost" href="{{gamePath}}?mode=quiz">意味クイズで覚える</a>
+        </div>
+        <ul class="toc" aria-label="レベル">
+{{toc}}
+        </ul>
+{{sections}}
+        <div class="end">
+          <p>読んだ言葉は、例文ごと打って覚えると忘れにくくなります。</p>
+          <a class="btn dark" href="{{gamePath}}">{{title}}で遊ぶ（無料）</a>
+        </div>
+      </article>
+    </main>
+    <footer>© らくらくエントリー ・ <a href="/game">SPI 用語集</a> ・ <a href="/privacy">プライバシーポリシー</a></footer>
+    <!-- Cloudflare Web Analytics（アクセス解析。Cookie は使わない） --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "bfa5d22bd9ef4d3e8c71de69bad08fa1"}'></script><!-- End Cloudflare Web Analytics -->
+  </body>
+</html>

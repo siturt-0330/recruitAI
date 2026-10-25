@@ -2,3 +2,5 @@
 OPENAI_API_KEY=
 ADMIN_TOKEN=
 MOCK_AI=1
+# 手元で読み込んだ拡張機能は ID が公開版と違うので、空にしてどこからでも受け付ける
+ALLOWED_ORIGINS=

@@ -379,6 +379,7 @@ function SponsorCard() {
       const cache = await sponsorCacheItem.getValue();
       if (cache && Date.now() - cache.at < SPONSOR_TTL) return setSponsor(cache.sponsor);
       const s = await fetchSponsor();
+      if (s === undefined) return;
       await sponsorCacheItem.setValue({ at: Date.now(), sponsor: s });
       setSponsor(s);
     })();
