@@ -184,8 +184,27 @@ export function educationLines(p: Profile): string[] {
   return lines;
 }
 
+/** 住所を比べるための形（全角・半角、空白、ハイフンの種類の違いをなくす） */
+const sameForm = (s: string) => s.normalize('NFKC').replace(/\s/g, '').replace(/[-‐‑‒–—―−ー]/g, '-');
+
+/**
+ * 帰省先が現住所と同じか。「同じ」にしていなくても、帰省先に現住所と同じ住所を入れていれば同じとみなす
+ * （「現住所と同じ場合はチェック」の欄にチェックを入れ、帰省先の欄に同じ住所を入れ直さないため）
+ */
+export function kiseiIsSame(p: Profile): boolean {
+  if (p.kiseiSame) return true;
+  if (!p.kiseiPrefecture || !p.kiseiAddressLine) return false;
+  const digits = (s: string) => s.normalize('NFKC').replace(/\D/g, '');
+  return (
+    p.kiseiPrefecture === p.prefecture &&
+    sameForm(`${p.kiseiCity}${p.kiseiAddressLine}`) === sameForm(`${p.city}${p.addressLine}`) &&
+    sameForm(p.kiseiBuilding) === sameForm(p.building) &&
+    (!p.kiseiPostalCode || digits(p.kiseiPostalCode) === digits(p.postalCode))
+  );
+}
+
 function kiseiOf(p: Profile) {
-  return p.kiseiSame
+  return kiseiIsSame(p)
     ? { postal: p.postalCode, pref: p.prefecture, city: p.city, line: p.addressLine, building: p.building, phone: p.landline || p.phone }
     : { postal: p.kiseiPostalCode, pref: p.kiseiPrefecture, city: p.kiseiCity, line: p.kiseiAddressLine, building: p.kiseiBuilding, phone: p.kiseiPhone };
 }
@@ -331,7 +350,7 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
         () => !!p.nearestStation,
       );
     case 'kiseiSameCheck':
-      return [p.kiseiSame ? 'checked' : 'unchecked'];
+      return [kiseiIsSame(p) ? 'checked' : 'unchecked'];
     case 'kiseiPostalCode':
       return postalForms(kisei.postal, h);
     case 'kiseiPrefecture':
@@ -560,7 +579,7 @@ export function valueVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKi
   // 「留学経験 ［あり］［なし］」のように、項目の中身ではなく有無を聞いている欄
   const yesNo = kind === 'radio' || kind === 'select' ? yesNoOptions(options) : null;
   // 「帰省先は現住所と同じですか」は、同じなら「はい」、違うなら「いいえ」
-  if (yesNo && key === 'kiseiSameCheck') return p.kiseiSame ? [yesNo.yes, ...YES_WORDS] : [yesNo.no, ...NO_WORDS];
+  if (yesNo && key === 'kiseiSameCheck') return kiseiIsSame(p) ? [yesNo.yes, ...YES_WORDS] : [yesNo.no, ...NO_WORDS];
   if (yesNo && values.length && !YES_WORDS.includes(values[0]!)) {
     return SAYS_NONE.test(values[0]!.normalize('NFKC')) ? [yesNo.no, ...NO_WORDS] : [yesNo.yes, ...YES_WORDS];
   }

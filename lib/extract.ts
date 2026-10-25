@@ -24,6 +24,11 @@ export interface FieldDescriptor {
   /** 欄の直前・直後にある短いテキスト（「姓」「年」など） */
   prefix: string;
   suffix: string;
+  /**
+   * 同じセル（td・dd）の中で、欄より前にある最後の見出しらしい文字（「年」「月」などの単位は飛ばす）。
+   * 「入学年月 [年▼]年[月▼]月 / 卒業年月 [年▼]年[月▼]月」の月の欄が、どちらの年月かを見分けるのに使う
+   */
+  lead: string;
   /** 行見出し・dt・周辺のテキスト */
   context: string;
   /** 欄が属する区切りの見出し（「帰省先」「緊急連絡先」など） */
@@ -333,6 +338,27 @@ function sectionText(el: HTMLElement): string {
   return '';
 }
 
+/** 単位や区切りの記号だけの文字（見出しとしては使わない） */
+const UNIT_ONLY = /^[\s年月日時分\-‐–—―−ー－~〜～/／:：()（）]*$/;
+
+/** 同じセルの中で、欄より前にある最後の見出しらしい文字（FieldDescriptor.lead） */
+function leadText(el: HTMLElement): string {
+  const cell = el.closest('td, th, dd, li');
+  if (!cell) return '';
+  const walker = (el.ownerDocument ?? document).createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+  let last = '';
+  while (walker.nextNode()) {
+    const t = walker.currentNode;
+    // 欄より後ろの文字は見ない
+    if (el.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING) break;
+    const parent = t.parentElement;
+    if (!parent || SKIP_TEXT_PARENTS.has(parent.tagName) || parent.closest(`${COMBO_SELECTOR}, .jqTransformSelectWrapper`)) continue;
+    const v = (t.nodeValue ?? '').replace(/\s+/g, ' ').trim();
+    if (v && !UNIT_ONLY.test(v)) last = v;
+  }
+  return last.slice(-20);
+}
+
 /** チェックボックスの文言。<label> がなくても、隣や親の要素の短いテキストを使う */
 function checkboxText(el: HTMLInputElement): string {
   const parts = [labelText(el), siblingText(el, 1, 60), siblingText(el, -1, 30)];
@@ -460,6 +486,7 @@ function makeField(el: HTMLElement, kind: FieldKind): ScannedField {
       label: labelText(el),
       prefix: siblingText(el, -1, 20),
       suffix: siblingText(el, 1, 10),
+      lead: leadText(el),
       context: contextText(el),
       section: sectionText(el),
       placeholder: el.getAttribute('placeholder') ?? '',
