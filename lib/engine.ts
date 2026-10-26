@@ -29,6 +29,8 @@ const MAX_REMOTE_QUESTIONS = 60;
 const MIN_CONFIDENCE = 0.5;
 /** 連動するプルダウン（年→月→日）の選択肢が作られるのを待つ間隔 */
 const RETRY_DELAYS = [150, 300, 600];
+/** それでも選択肢が出てこないプルダウンが残っているときだけ、さらに待つ間隔（サーバーに聞いてから選択肢を作る遅いサイト） */
+const SLOW_RETRY_DELAYS = [1000, 1500];
 /** 入力したあと、新しく入力できるようになった欄を探すまでの待ち時間 */
 const NEW_FIELD_DELAY = 200;
 /** サイト側の自動入力（郵便番号からの住所検索など）が終わるのを待つ時間 */
@@ -349,6 +351,12 @@ export class FormFiller {
       // 選択肢が後から作られたもの、作り直されて選択が消えたものを入れ直す
       // 作り直しが遅れて来ることもあるので、待ちきるまで見続ける
       const pending = selects.filter((r) => r.status === 'empty' || !stillSelected(r));
+      for (const r of pending) this.apply(r, threshold);
+    }
+    for (const delay of SLOW_RETRY_DELAYS) {
+      const pending = selects.filter((r) => r.status === 'empty');
+      if (!pending.length) return;
+      await new Promise((resolve) => setTimeout(resolve, delay));
       for (const r of pending) this.apply(r, threshold);
     }
   }

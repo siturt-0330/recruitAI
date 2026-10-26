@@ -2014,4 +2014,57 @@ export const CASES: Case[] = [
     </table></form>`,
     expect: { '[name=u]': 'サンプル大学', '[name=m]': '', '[name=my]': '', '[name=mm]': '', '[name=o]': '' },
   },
+
+  // ---- 第8弾：プルダウンの形 ----
+  {
+    name: 'プルダウン：都道府県が短い名前（東京・京都）・番号つき（13 東京都）',
+    html: `<form><table>
+      <tr><th>都道府県</th><td><select name="p1">${opts(['北海道', '東京', '京都', '大阪'])}</select></td></tr>
+      <tr><th>都道府県（帰省先）</th><td><select name="p2">${opts([['13', '13 東京都'], ['26', '26 京都府']])}</select></td></tr>
+    </table></form>`,
+    profile: { kiseiSame: false, kiseiPrefecture: '京都府', kiseiCity: '京都市', kiseiAddressLine: '中京区1-1' },
+    expect: { '[name=p1]': '東京', '[name=p2]': '26' },
+  },
+  {
+    name: 'プルダウン：京都府の人の都道府県に、東京都を選ばない（番号つき・東京都が先）',
+    html: `<form><table><tr><th>都道府県</th><td><select name="p">${opts([['13', '13：東京都'], ['26', '26：京都府']])}</select></td></tr></table></form>`,
+    profile: { prefecture: '京都府' },
+    expect: { '[name=p]': '26' },
+  },
+  {
+    name: 'プルダウン：月の value が 0 始まり・年の文字が「2026年（令和8年）」・全角の数字の日',
+    html: `<form><table>
+      <tr><th>卒業予定年月</th><td><select name="gy">${opts(range(2024, 2028).map((y, i) => [String(i + 1), `${y}年（令和${y - 2018}年）`]))}</select>
+        <select name="gm">${opts(range(1, 12).map((m) => [String(m - 1), `${m}月`]))}</select></td></tr>
+      <tr><th>生年月日</th><td><select name="by">${opts(range(1995, 2002).map(String))}</select>年<select name="bm">${opts(range(1, 12).map(String))}</select>月<select name="bd">${opts(range(1, 31).map((d) => String(d).normalize('NFKC').replace(/\d/g, (c) => String.fromCharCode(c.charCodeAt(0) + 0xfee0))))}</select>日</td></tr>
+    </table></form>`,
+    expect: { '[name=gy]': '2026年（令和8年）', '[name=gm]': '3月', '[name=by]': '1999', '[name=bm]': '4', '[name=bd]': '１' },
+  },
+  {
+    name: 'プルダウン：年の文字が和暦だけ（value は西暦）',
+    html: `<form><table><tr><th>生年</th><td><select name="y">${opts(range(1997, 2001).map((y) => [String(y), `平成${y - 1988}年`]))}</select></td></tr></table></form>`,
+    expect: { '[name=y]': '1999' },
+  },
+  {
+    name: 'プルダウン：学校区分・性別の value がコード、文理の選択肢に似た言葉が並ぶ',
+    html: `<form><table>
+      <tr><th>学校区分</th><td><select name="st">${opts([['G1', '大学院（修士）'], ['G2', '大学院（博士）'], ['U', '大学'], ['J', '短期大学']])}</select></td></tr>
+      <tr><th>性別</th><td><select name="sx">${opts([['M', '男性'], ['F', '女性'], ['N', '回答しない']])}</select></td></tr>
+      <tr><th>文理区分</th><td><select name="br">${opts(['文理融合', '文系', '理系'])}</select></td></tr>
+    </table></form>`,
+    expect: { '[name=st]': 'U', '[name=sx]': 'M', '[name=br]': '文系' },
+  },
+  {
+    name: 'プルダウン：年を選ぶと、1.5 秒たってから月の選択肢が作られる（遅いサイト）',
+    html: `<form><table><tr><th>卒業予定年月</th><td><select name="sy">${opts(range(2024, 2028).map(String))}</select>年<select name="sm"><option value="">--</option></select>月</td></tr></table></form>`,
+    setup(root) {
+      const y = root.querySelector<HTMLSelectElement>('[name=sy]')!;
+      y.addEventListener('change', () =>
+        setTimeout(() => {
+          root.querySelector<HTMLSelectElement>('[name=sm]')!.innerHTML = opts(range(1, 12).map(String), '--');
+        }, 1500),
+      );
+    },
+    expect: { '[name=sy]': '2026', '[name=sm]': '3' },
+  },
 ];

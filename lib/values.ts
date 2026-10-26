@@ -2,7 +2,7 @@ import type { FieldKind } from './extract';
 import type { FieldKey } from './fieldKeys';
 import type { Hints, Profile } from './types';
 import { toFullWidth, toHalfKana, toHalfWidthAscii, toHiragana, toKatakana, toWareki } from './japanese';
-import { PREFECTURE_KANA } from './prefectures';
+import { PREFECTURE_EN, PREFECTURE_KANA } from './prefectures';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 const uniq = (xs: string[]) => [...new Set(xs.filter(Boolean))];
@@ -57,7 +57,9 @@ function phoneForms(phone: string, h: Hints): string[] {
   const parts = splitPhone(phone);
   if (!parts.length) return [];
   const [a, b] = [parts.join('-'), parts.join('')];
-  return h.hyphen === false ? [b, a] : [a, b];
+  // 国際形式（+81-90-1234-5678）は、欄の pattern がそれしか受け付けないときに選ばれるよう最後に置く
+  const intl = /^0\d/.test(parts[0] ?? '') ? [`+81-${[parts[0]!.slice(1), ...parts.slice(1)].join('-')}`, `+81${b.slice(1)}`] : [];
+  return [...(h.hyphen === false ? [b, a] : [a, b]), ...intl];
 }
 
 function postalForms(code: string, h: Hints): string[] {
@@ -329,7 +331,8 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
       return [key.endsWith('1') ? code.slice(0, 3) : code.slice(3)];
     }
     case 'prefecture':
-      return [p.prefecture, p.prefecture === '北海道' ? '' : p.prefecture.replace(/[都府県]$/, '')];
+      // 英語のフォームの選択肢（Tokyo）にも合うように、英語名も候補に入れる（最後に試す）
+      return [p.prefecture, p.prefecture === '北海道' ? '' : p.prefecture.replace(/[都府県]$/, ''), PREFECTURE_EN[p.prefecture] ?? ''].filter(Boolean);
     case 'city':
       return [p.city];
     case 'addressLine':

@@ -18,6 +18,19 @@ const PREFECTURE_KANA_LIST = [
   'クマモトケン', 'オオイタケン', 'ミヤザキケン', 'カゴシマケン', 'オキナワケン',
 ];
 
+/** 都道府県の英語名（英語のフォームの選択肢「Tokyo」用） */
+const PREFECTURE_EN_LIST = [
+  'Hokkaido', 'Aomori', 'Iwate', 'Miyagi', 'Akita', 'Yamagata', 'Fukushima',
+  'Ibaraki', 'Tochigi', 'Gunma', 'Saitama', 'Chiba', 'Tokyo', 'Kanagawa',
+  'Niigata', 'Toyama', 'Ishikawa', 'Fukui', 'Yamanashi', 'Nagano', 'Gifu',
+  'Shizuoka', 'Aichi', 'Mie', 'Shiga', 'Kyoto', 'Osaka', 'Hyogo',
+  'Nara', 'Wakayama', 'Tottori', 'Shimane', 'Okayama', 'Hiroshima', 'Yamaguchi',
+  'Tokushima', 'Kagawa', 'Ehime', 'Kochi', 'Fukuoka', 'Saga', 'Nagasaki',
+  'Kumamoto', 'Oita', 'Miyazaki', 'Kagoshima', 'Okinawa',
+];
+
+export const PREFECTURE_EN: Record<string, string> = Object.fromEntries(PREFECTURES.map((p, i) => [p, PREFECTURE_EN_LIST[i] ?? '']));
+
 /** 都道府県名 → カタカナの読み（入力不要で自動生成するため） */
 export const PREFECTURE_KANA: Record<string, string> = Object.fromEntries(
   PREFECTURES.map((p, i) => [p, PREFECTURE_KANA_LIST[i] ?? '']),

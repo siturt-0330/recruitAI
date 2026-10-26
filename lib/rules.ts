@@ -655,7 +655,9 @@ function datePart(d: FieldDescriptor, attrs: string): 'era' | 'year' | 'month' |
     if (d.options.filter((o) => MONTH_NAMES.test(o)).length >= 6) return 'month';
     // 元号だけの選択肢（［昭和／平成／令和］）
     if (d.options.some((o) => /平成|昭和|令和/.test(o)) && !d.options.some((o) => /\d/.test(o.normalize('NFKC')))) return 'era';
-    if (d.options.length >= 2 && d.options.every((o) => /^[MTSHR]$/i.test(o.trim()))) return 'era';
+    // 「--」「選択してください」のような空の選択肢は除いて見る
+    const real = d.options.filter((o) => !/^[\s\-‐ー－―▼]*$|選択|select/i.test(o));
+    if (real.length >= 2 && real.every((o) => /^[MTSHR]$/i.test(o.trim()))) return 'era';
     if (d.options.some((o) => /平成|昭和|令和/.test(o))) return 'year';
     const nums = d.options.map((o) => parseInt(norm(o).replace(/[^\d]/g, ''), 10)).filter(Number.isFinite);
     if (nums.filter((n) => n >= 1900).length >= 5) return 'year';
@@ -704,7 +706,8 @@ export function computeHints(d: FieldDescriptor): Hints {
 
   let era: Hints['era'] = null;
   // 元号が「S／H／R」の略号だけの選択肢も和暦
-  const hasWareki = /平成|昭和|令和/.test(options) || (d.options.length >= 2 && d.options.every((o) => /^[MTSHR]$/i.test(o.trim())));
+  const eraLetters = d.options.filter((o) => !/^[\s\-‐ー－―▼]*$|選択|select/i.test(o));
+  const hasWareki = /平成|昭和|令和/.test(options) || (eraLetters.length >= 2 && eraLetters.every((o) => /^[MTSHR]$/i.test(o.trim())));
   const hasSeireki = /(19|20)\d\d/.test(options);
   if ((hasWareki && !hasSeireki) || /和暦/.test(text)) era = 'wareki';
   else if ((hasSeireki && !hasWareki) || /西暦/.test(text)) era = 'seireki';
