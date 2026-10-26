@@ -516,12 +516,12 @@ export const CASES: Case[] = [
   },
   {
     name: '帰省先が別の住所',
-    profile: { kiseiSame: false, kiseiPostalCode: '530-0001', kiseiPrefecture: '福島県', kiseiCity: '大阪市北区', kiseiAddressLine: '梅田1-2-3' },
+    profile: { kiseiSame: false, kiseiPostalCode: '530-0001', kiseiPrefecture: '大阪府', kiseiCity: '大阪市北区', kiseiAddressLine: '梅田1-2-3' },
     html: `<form>
       <h3>現住所</h3><table><tr><th>郵便番号</th><td><input name="d18a"></td></tr></table>
       <h3>帰省先</h3><table><tr><th>郵便番号</th><td><input name="d18b"></td></tr><tr><th>都道府県</th><td><select name="d18c">${opts(PREFECTURES)}</select></td></tr><tr><th>住所</th><td><input name="d18d" size="40"></td></tr></table>
     </form>`,
-    expect: { '[name=d18a]': '150-0041', '[name=d18b]': '530-0001', '[name=d18c]': '福島県', '[name=d18d]': '大阪市北区梅田1-2-3' },
+    expect: { '[name=d18a]': '150-0041', '[name=d18b]': '530-0001', '[name=d18c]': '大阪府', '[name=d18d]': '大阪市北区梅田1-2-3' },
   },
   {
     name: 'select の最初の選択肢が本物の値（年の初期値が 2005）',
@@ -589,7 +589,7 @@ export const CASES: Case[] = [
       schoolKana: 'ガクシュウインダイガク',
       schoolOwnership: '私立',
       highSchool: '大阪府立サンプル高等学校',
-      highSchoolPrefecture: '福島県',
+      highSchoolPrefecture: '大阪府',
     },
     html: `<form><table>
       <tr><th>学校区分</th><td>${['大学院', '大学', '短期大学', '高等専門学校', '専門学校', '高等学校'].map((t) => `<label><input type="radio" name="f1type">${t}</label>`).join(' ')}</td></tr>
@@ -601,7 +601,7 @@ export const CASES: Case[] = [
       'radio:f1type': '大学',
       'radio:f1own': '私立',
       '[name=f1init]': 'ガ',
-      '[name=f1hspref]': '福島県',
+      '[name=f1hspref]': '大阪府',
       '[name=f1hs]': '大阪府立サンプル高等学校',
     },
   },
@@ -788,7 +788,7 @@ export const CASES: Case[] = [
   },
   {
     name: '学校情報（実サイトの形・第2版）：学位の注意書き・入学年月・卒業年月',
-    profile: { schoolKana: 'ニイガタダイガク', schoolOwnership: '国立', highSchool: '大阪府立サンプル高等学校', highSchoolPrefecture: '福島県' },
+    profile: { schoolKana: 'ニイガタダイガク', schoolOwnership: '国立', highSchool: '大阪府立サンプル高等学校', highSchoolPrefecture: '大阪府' },
     html: `<form><table>
       <tr><th>学校区分</th><td><label><input type="radio" name="h1type">大学院</label> <label><input type="radio" name="h1type">大学</label></td></tr>
       <tr><th>設置区分</th><td>${['国立', '公立', '私立', '日本国外'].map((t) => `<label><input type="radio" name="h1own">${t}</label>`).join(' ')}</td></tr>
@@ -807,7 +807,7 @@ export const CASES: Case[] = [
       '[name=h1am]': '04',
       '[name=h1gy]': '2026',
       '[name=h1gm]': '03',
-      '[name=h1hp]': '福島県',
+      '[name=h1hp]': '大阪府',
       '[name=h1hs]': '大阪府立サンプル高等学校',
     },
   },
@@ -817,7 +817,7 @@ export const CASES: Case[] = [
       schoolKana: 'ニイガタダイガク',
       schoolOwnership: '国立',
       highSchool: '大阪府立サンプル高等学校',
-      highSchoolPrefecture: '福島県',
+      highSchoolPrefecture: '大阪府',
       highSchoolAdmission: '2019-04',
       highSchoolGraduation: '2022-03',
     },
@@ -838,7 +838,7 @@ export const CASES: Case[] = [
       '[name=h2init]': 'ニ',
       '[name=h2gy]': '2026',
       '[name=h2gm]': '03',
-      '[name=h2hp]': '福島県',
+      '[name=h2hp]': '大阪府',
       '[name=h2hay]': '2019',
       '[name=h2ham]': '04',
       '[name=h2hgy]': '2022',
@@ -1598,7 +1598,7 @@ export const CASES: Case[] = [
     const row = (head: string, body: string) => `<div class="formbox clearfix"><dt class="formbox01"><span class="inportant">◆</span>${head}</dt><dd class="formbox02"><span class="hosoku clearfix">${body}</span></dd></div>`;
     const address = (p: string) =>
       row('郵便番号 <span>（半角数字７桁のみ）</span>', `<input type="text" name="${p}yubin1"> - <input type="text" name="${p}yubin2"><input type="button" value="郵便番号から住所を検索">`) +
-      row('都道府県', jqSelect(`${p}ken`, [['01', '北海道'], ['07', '福島県'], ['13', '東京都']])) +
+      row('都道府県', jqSelect(`${p}ken`, [['01', '北海道'], ['07', '大阪府'], ['13', '東京都']])) +
       row('市区郡・地名・番地 <span>（全角入力のみ）</span>', `<input type="text" name="${p}adrs1">`);
     return {
       name: 'i-webs（オムロン）：jqTransform で隠したプルダウン・ラジオと、「現住所と同じ」チェックで帰省先を入れない',
@@ -1634,7 +1634,7 @@ export const CASES: Case[] = [
     const row = (key: string, label: string, body: string, required = true) =>
       `<tr><td id="th_${key}" class="td01">${label}${required ? '<span class="required">*</span>' : ''}<input type="hidden" name="hdn_${key}_T" value="${label}"><input type="hidden" name="hdn_${key}" value="${required ? 1 : 0}"></td><td>${body}<p></p></td></tr>`;
     const sel = (name: string, items: (string | [string, string])[]) => `<select name="${name}" id="${name}">${opts(items, '')}</select>`;
-    const ken = (name: string) => sel(name, [['1', '北海道'], ['7', '福島県'], ['13', '東京都'], ['14', '神奈川県']]);
+    const ken = (name: string) => sel(name, [['1', '北海道'], ['7', '大阪府'], ['13', '東京都'], ['14', '神奈川県']]);
     const tel = (n: string) => [1, 2, 3].map((i) => `<input name="tbx_tel${n}${i}" type="text" class="inputSText">`).join(' - ');
     return {
       name: 'snar.jp（マクニカ）：氏名・フリガナの分割、サブメールと再入力、郵便番号、「帰省先がない場合はチェック」、携帯と緊急連絡先',
@@ -1729,14 +1729,14 @@ export const CASES: Case[] = [
         <div><dt>卒業予定年月</dt><dd>${jqSelect('gy', ['2025', '2026', '2027'])}年${jqSelect('gm', ['1', '2', '3', '4'])}月</dd></div>
         <div><dt>文理区分</dt><dd>${jqRadio('bunri', ['文系', '理系'])}</dd></div>
         <div class="heading_l2">現住所</div>
-        <div><dt>都道府県</dt><dd>${jqSelect('gken', ['東京都', '福島県'])}</dd></div>
+        <div><dt>都道府県</dt><dd>${jqSelect('gken', ['東京都', '大阪府'])}</dd></div>
         <div><dt>市区郡・番地</dt><dd><input name="gaddr"></dd></div>
         <div class="heading_l2">帰省先</div>
         <div><span class="jqTransformCheckboxWrapper"><a href="#" class="jqTransformCheckbox jq-same"></a><input type="checkbox" name="same" class="jqTransformHidden"></span><label for="text">現住所と同じ場合はチェック</label></div>
-        <div><dt>都道府県</dt><dd>${jqSelect('kken', ['東京都', '福島県'])}</dd></div>
+        <div><dt>都道府県</dt><dd>${jqSelect('kken', ['東京都', '大阪府'])}</dd></div>
         <div><dt>市区郡・番地</dt><dd><input name="kaddr"></dd></div>
       </dl></form>`,
-      profile: { kiseiSame: false, kiseiPostalCode: '530-0001', kiseiPrefecture: '福島県', kiseiCity: '大阪市北区', kiseiAddressLine: '梅田1-2-3' },
+      profile: { kiseiSame: false, kiseiPostalCode: '530-0001', kiseiPrefecture: '大阪府', kiseiCity: '大阪市北区', kiseiAddressLine: '梅田1-2-3' },
       expect: {
         '[name=gy]': '2026',
         '[name=gm]': '3',
@@ -1745,8 +1745,8 @@ export const CASES: Case[] = [
         '[name=gken]': '東京都',
         '[name=gaddr]': '渋谷区神南1-2-3',
         '[name=same]': false,
-        '[name=kken]': '福島県',
-        'text:.jq-kken > div > span': '福島県',
+        '[name=kken]': '大阪府',
+        'text:.jq-kken > div > span': '大阪府',
         '[name=kaddr]': '大阪市北区梅田1-2-3',
       },
     } satisfies Case;
@@ -1755,12 +1755,12 @@ export const CASES: Case[] = [
     name: '似た形：dl の欄ごとの dt と、h3 の「帰省先」見出し（帰省先が別の住所）',
     html: `<form>
       <h3>現住所</h3>
-      <dl><dt>郵便番号</dt><dd><input name="z1"> - <input name="z2"></dd><dt>都道府県</dt><dd><select name="p">${opts(['東京都', '福島県'])}</select></dd><dt>住所</dt><dd><input name="a"></dd></dl>
+      <dl><dt>郵便番号</dt><dd><input name="z1"> - <input name="z2"></dd><dt>都道府県</dt><dd><select name="p">${opts(['東京都', '大阪府'])}</select></dd><dt>住所</dt><dd><input name="a"></dd></dl>
       <h3>帰省先</h3>
-      <dl><dt>郵便番号</dt><dd><input name="kz1"> - <input name="kz2"></dd><dt>都道府県</dt><dd><select name="kp">${opts(['東京都', '福島県'])}</select></dd><dt>住所</dt><dd><input name="ka"></dd></dl>
+      <dl><dt>郵便番号</dt><dd><input name="kz1"> - <input name="kz2"></dd><dt>都道府県</dt><dd><select name="kp">${opts(['東京都', '大阪府'])}</select></dd><dt>住所</dt><dd><input name="ka"></dd></dl>
     </form>`,
-    profile: { kiseiSame: false, kiseiPostalCode: '530-0001', kiseiPrefecture: '福島県', kiseiCity: '大阪市北区', kiseiAddressLine: '梅田1-2-3' },
-    expect: { '[name=z1]': '150', '[name=z2]': '0041', '[name=p]': '東京都', '[name=kz1]': '976', '[name=kz2]': '0053', '[name=kp]': '福島県', '[name=ka]': '大阪市北区梅田1-2-3' },
+    profile: { kiseiSame: false, kiseiPostalCode: '530-0001', kiseiPrefecture: '大阪府', kiseiCity: '大阪市北区', kiseiAddressLine: '梅田1-2-3' },
+    expect: { '[name=z1]': '150', '[name=z2]': '0041', '[name=p]': '東京都', '[name=kz1]': '530', '[name=kz2]': '0001', '[name=kp]': '大阪府', '[name=ka]': '大阪市北区梅田1-2-3' },
   },
   {
     // チェックボックスがなく、帰省先が現住所と同じなら、帰省先の欄にも現住所を入れる（「帰省先の見出しのある住所」と同じ）
@@ -1787,22 +1787,22 @@ export const CASES: Case[] = [
         name: `似た形：「${text.slice(0, 18)}…」のチェック（帰省先が${same ? '同じ' : '別'}）`,
         html: `<form><table>
           <tr><th>郵便番号</th><td><input name="z1" maxlength="3"> - <input name="z2" maxlength="4"></td></tr>
-          <tr><th>都道府県</th><td><select name="p">${opts(['東京都', '福島県'])}</select></td></tr>
+          <tr><th>都道府県</th><td><select name="p">${opts(['東京都', '大阪府'])}</select></td></tr>
           <tr><th>市区町村・番地</th><td><input name="a"></td></tr>
           <tr><td colspan="2">${text}<input type="checkbox" id="c" name="c"><label for="c">チェックしてください。</label></td></tr>
           <tr><th>郵便番号</th><td><input name="kz1" maxlength="3"> - <input name="kz2" maxlength="4"></td></tr>
-          <tr><th>都道府県</th><td><select name="kp">${opts(['東京都', '福島県'])}</select></td></tr>
+          <tr><th>都道府県</th><td><select name="kp">${opts(['東京都', '大阪府'])}</select></td></tr>
           <tr><th>市区町村・番地</th><td><input name="ka"></td></tr>
           <tr><th>電話番号</th><td><input name="t"></td></tr>
         </table></form>`,
-        profile: same ? {} : { kiseiSame: false, kiseiPostalCode: '530-0001', kiseiPrefecture: '福島県', kiseiCity: '大阪市北区', kiseiAddressLine: '梅田1-2-3' },
+        profile: same ? {} : { kiseiSame: false, kiseiPostalCode: '530-0001', kiseiPrefecture: '大阪府', kiseiCity: '大阪市北区', kiseiAddressLine: '梅田1-2-3' },
         expect: {
           '[name=z1]': '150',
           '[name=p]': '東京都',
           '#c': isSameCheck && same,
-          '[name=kz1]': same ? '' : '976',
-          '[name=kz2]': same ? '' : '0053',
-          '[name=kp]': same ? '' : '福島県',
+          '[name=kz1]': same ? '' : '530',
+          '[name=kz2]': same ? '' : '0001',
+          '[name=kp]': same ? '' : '大阪府',
           '[name=ka]': same ? '' : '大阪市北区梅田1-2-3',
           '[name=t]': '090-1234-5678',
         },
@@ -1865,7 +1865,7 @@ export const CASES: Case[] = [
   (() => {
     // i-webs の「休暇中の連絡先」。帰省先に現住所と同じ住所（全角の数字・ハイフンの違いだけ）を入れたプロフィール
     const jqSelect = (name: string) =>
-      `<div class="jqTransformSelectWrapper"><div><span>-▼-</span><a href="#" class="jqTransformSelectOpen"></a></div><ul style="display:none"></ul><select name="${name}" class="jqTransformHidden">${opts(['東京都', '福島県'], '-▼-')}</select></div>`;
+      `<div class="jqTransformSelectWrapper"><div><span>-▼-</span><a href="#" class="jqTransformSelectOpen"></a></div><ul style="display:none"></ul><select name="${name}" class="jqTransformHidden">${opts(['東京都', '大阪府'], '-▼-')}</select></div>`;
     const row = (head: string, body: string) => `<div class="formbox clearfix"><dt class="formbox01">${head}</dt><dd class="formbox02"><span class="hosoku clearfix">${body}</span></dd></div>`;
     const block = (p: string) =>
       row('郵便番号', `<input type="text" name="${p}yubin1"> - <input type="text" name="${p}yubin2">`) +
@@ -2002,5 +2002,16 @@ export const CASES: Case[] = [
     </form>`,
     profile: { highSchool: 'サンプル高校' },
     expect: { '[name=q1]': 'サンプル高校', '[name=q2]': '', '[name=q3]': '経済学科', '[name=g]': '卒業予定' },
+  },
+  {
+    name: 'i-webs（サントリー）：「博士」を選択した人だけの大学院（修士）の欄と、「上記以外」を選択した場合の欄には入れない',
+    html: `<form><table>
+      <tr><th>大学名</th><td><input name="u"></td></tr>
+      <tr><th>大学院（修士）の大学情報</th><td>※上記で「博士」を選択し、修士課程と博士課程の大学情報が異なる場合、<br>修士課程（大学名、研究科名、専攻名）の大学情報、卒業年月をご記載ください。<input name="m"></td></tr>
+      <tr><th>大学院（修士）の卒業年月</th><td>※上記で「博士」を選択した場合のみ登録可能です。<select name="my">${opts(range(2024, 2030).map(String))}</select>年<select name="mm">${opts(range(1, 12).map((n) => String(n).padStart(2, '0')))}</select>月</td></tr>
+      <tr><th>学科系統</th><td><select name="f">${opts(['人文科学系', '社会科学系（経済・経営・商）', '理学系'])}</select></td></tr>
+      <tr><th>「上記以外」を選択した場合<br>（全角20字以内）</th><td><input name="o"></td></tr>
+    </table></form>`,
+    expect: { '[name=u]': 'サンプル大学', '[name=m]': '', '[name=my]': '', '[name=mm]': '', '[name=o]': '' },
   },
 ];

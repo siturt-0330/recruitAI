@@ -282,6 +282,8 @@ function classifyField(d: FieldDescriptor): Classification {
   const r = (key: FieldKey, c = conf) => result(key, c);
   const has = (re: RegExp) => re.test(near) || re.test(ctx);
 
+  // 「『上記以外』を選択した場合」「その他を選んだ方」の自由記述の欄は、選択肢を選ばないので入れない
+  if (/(上記以外|その他).{0,4}を?(選択|選ん|選ば|チェック)/.test(`${near} ${ctx}`)) return result(null, 0);
   // 紹介者・保護者など、本人以外の人の欄には本人の情報を入れない
   if (!emergency && (OTHER_PERSON.test(`${near} ${ctx}`) || OTHER_PERSON_SECTION.test(section)) && PERSONAL_CATEGORIES.has(cat)) {
     return result(null, 0);
