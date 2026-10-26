@@ -93,13 +93,24 @@ async function runCase(c: Case, stage: HTMLElement): Promise<CaseResult> {
   return result;
 }
 
+/** 実装の違う「似た形」のフォーム（fixtures/patterns/*.ts）。ファイル名（拡張子なし）ごと */
+const PATTERNS: Record<string, Case[]> = Object.fromEntries(
+  Object.entries(import.meta.glob<{ CASES: Case[] }>('./fixtures/patterns/*.ts', { eager: true })).map(([path, m]) => [
+    path.replace(/^.*\/|\.ts$/g, ''),
+    m.CASES,
+  ]),
+);
+
 async function main() {
   const stage = document.getElementById('stage')!;
   const out = document.getElementById('results')!;
   const results: CaseResult[] = [];
-  // ?only=第3版 のように名前の一部を渡すと、そのケースだけ実行する
-  const only = new URLSearchParams(location.search).get('only');
-  for (const c of CASES) if (!only || c.name.includes(only)) results.push(await runCase(c, stage));
+  // ?only=第3版 のように名前の一部を渡すと、そのケースだけ実行する。?set=widgets のように渡すと fixtures/patterns/widgets.ts のケースだけ
+  const params = new URLSearchParams(location.search);
+  const only = params.get('only');
+  const set = params.get('set');
+  const cases = set ? (PATTERNS[set] ?? []) : [...CASES, ...Object.values(PATTERNS).flat()];
+  for (const c of cases) if (!only || c.name.includes(only)) results.push(await runCase(c, stage));
 
   const failed = results.filter((r) => r.failures.length || r.undoFailures.length || r.error);
   const esc = (s: unknown) => String(s).replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[ch]!);
