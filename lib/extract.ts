@@ -34,6 +34,11 @@ export interface FieldDescriptor {
   /** 欄が属する区切りの見出し（「帰省先」「緊急連絡先」など） */
   section: string;
   placeholder: string;
+  /**
+   * 画面の見出しには出ない書式の指定：pattern・class・data-*・title・inputmode と、
+   * aria-describedby・欄の下の注意書き・表の右の列の注意書き（「半角カナ」「ハイフンなし」など）
+   */
+  rules: string;
   name: string;
   htmlId: string;
   autocomplete: string;
@@ -477,6 +482,32 @@ function isLoginForm(form: HTMLFormElement): boolean {
   return /ログイン|サインイン|login|log in|sign ?in/i.test(words);
 }
 
+/** 注意書きらしい要素（欄の下の small・help など） */
+const NOTE = /^(SMALL|P|SPAN|DIV)$/;
+const NOTE_CLASS = /note|help|hint|caution|example|annotation|desc|attention|guide|form-text|chui|ex\b/i;
+
+function rulesText(el: HTMLElement): string {
+  const parts: string[] = [];
+  for (const a of ['pattern', 'class', 'title', 'inputmode', 'data-validation', 'data-rule', 'data-vv-rules', 'data-parsley-pattern', 'data-parsley-type']) {
+    const v = el.getAttribute(a);
+    if (v) parts.push(v);
+  }
+  for (const a of Array.from(el.attributes)) if (/^data-(rule|parsley|validate|valid)/.test(a.name)) parts.push(a.name, a.value);
+  const doc = el.ownerDocument;
+  for (const id of (el.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean)) parts.push(textOf(doc.getElementById(id), 80));
+  // 欄（またはそれを包む label）のすぐ後ろの注意書き
+  const host = el.closest('label') ?? el;
+  for (let n = host.nextElementSibling, i = 0; n && i < 2; n = n.nextElementSibling, i++) {
+    if (n.matches(CONTROLS) || n.querySelector(CONTROLS)) break;
+    if (NOTE.test(n.tagName) && (n.tagName === 'SMALL' || NOTE_CLASS.test(n.className))) parts.push(textOf(n, 80));
+  }
+  // 3 列の表：見出し・欄・注意書き。欄のセルの右の、欄のないセル
+  const cell = el.closest('td, dd');
+  const next = cell?.nextElementSibling;
+  if (next && /^(TD|DD)$/.test(next.tagName) && !next.querySelector(CONTROLS)) parts.push(textOf(next, 80));
+  return parts.join(' ');
+}
+
 function makeField(el: HTMLElement, kind: FieldKind): ScannedField {
   const maxLength = 'maxLength' in el && typeof el.maxLength === 'number' && el.maxLength > 0 ? el.maxLength : null;
   return {
@@ -491,6 +522,7 @@ function makeField(el: HTMLElement, kind: FieldKind): ScannedField {
       context: contextText(el),
       section: sectionText(el),
       placeholder: el.getAttribute('placeholder') ?? '',
+      rules: rulesText(el),
       name: el.getAttribute('name') ?? '',
       htmlId: el.id,
       autocomplete: el.getAttribute('autocomplete') ?? '',

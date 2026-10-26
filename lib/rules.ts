@@ -644,8 +644,8 @@ function datePart(d: FieldDescriptor, attrs: string): 'era' | 'year' | 'month' |
     return null;
   };
   // 「YYYY/MM/DD」「例：1999/04/01」「例：2026年3月」「YYYY/MM」のように年月（日）をまとめて入れる欄
-  const sample = norm(`${d.placeholder} ${d.label}`);
-  if (/y{2,4}\s*[\/\-.年]?\s*m{1,2}|\d{4}\s*[\/\-.年]\s*\d{1,2}|\d{8}/.test(sample)) return null;
+  const sample = norm(`${d.placeholder} ${d.label} ${d.rules}`);
+  if (/y{2,4}\s*[\/\-.年]?\s*m{1,2}|[md]{2}\s*[\/\-.]\s*[md]{2}\s*[\/\-.]\s*y{2,4}|\d{4}\s*[\/\-.年]\s*\d{1,2}|\d{8}|[hsr]\d{1,2}\.\d/i.test(sample)) return null;
 
   // 直前のテキストは前の欄の単位（「年」の後ろに月の欄…）なので見ない
   const fromSuffix = unit(d.suffix);
@@ -655,6 +655,7 @@ function datePart(d: FieldDescriptor, attrs: string): 'era' | 'year' | 'month' |
     if (d.options.filter((o) => MONTH_NAMES.test(o)).length >= 6) return 'month';
     // 元号だけの選択肢（［昭和／平成／令和］）
     if (d.options.some((o) => /平成|昭和|令和/.test(o)) && !d.options.some((o) => /\d/.test(o.normalize('NFKC')))) return 'era';
+    if (d.options.length >= 2 && d.options.every((o) => /^[MTSHR]$/i.test(o.trim()))) return 'era';
     if (d.options.some((o) => /平成|昭和|令和/.test(o))) return 'year';
     const nums = d.options.map((o) => parseInt(norm(o).replace(/[^\d]/g, ''), 10)).filter(Number.isFinite);
     if (nums.filter((n) => n >= 1900).length >= 5) return 'year';
@@ -675,13 +676,18 @@ function datePart(d: FieldDescriptor, attrs: string): 'era' | 'year' | 'month' |
 const NEGATED = /(全角|半角|和暦|西暦)(?:(?!全角|半角|和暦|西暦)[^、。,，\s])*?(不可|禁止|ng|は使用できません|は使えません)/gi;
 
 export function computeHints(d: FieldDescriptor): Hints {
-  const text = [d.label, d.prefix, d.suffix, d.context, d.placeholder].join(' ').replace(NEGATED, ' ');
+  const text = [d.label, d.prefix, d.suffix, d.context, d.placeholder, d.rules].join(' ').replace(NEGATED, ' ');
+  // pattern・class・data-* などの書式の指定（見出しには出ないが、送信のときに確かめられる）
+  const code = d.rules;
   const options = d.options.join(' ');
   // 「全角カタカナで入力してください」のような説明の placeholder は入力例ではない
   const sample = /入力|ください|して/.test(d.placeholder) ? '' : d.placeholder;
 
   let kana: Hints['kana'] = 'kata';
-  if ((/半角/.test(text) && /カナ|ｶﾅ|ﾌﾘｶﾞﾅ/.test(text)) || hasHalfKana(sample)) kana = 'half';
+  if (/ｦ-ﾟ|ｱ-ﾝ|ｧ-ﾝ|han_?kana|hankaku_?kana|half_?kana|kana_?half/i.test(code)) kana = 'half';
+  else if (/ぁ-ん|ぁ-ゖ|\bhira(gana)?\b/i.test(code)) kana = 'hira';
+  else if (/ァ-ヶ|ァ-ン|\bkatakana\b|zenkaku_?kana/i.test(code)) kana = 'kata';
+  else if ((/半角/.test(text) && /カナ|ｶﾅ|ﾌﾘｶﾞﾅ/.test(text)) || hasHalfKana(sample)) kana = 'half';
   // 「カタカナ」「カナ」と書かれていれば、見出しが「ふりがな」でもカタカナ
   else if (/カタカナ|カナ/.test(text) && !/ひらがな|平仮名/.test(text)) kana = 'kata';
   else if (hasHiragana(sample)) kana = 'hira';
@@ -690,27 +696,36 @@ export function computeHints(d: FieldDescriptor): Hints {
   else if (/ふりがな|ひらがな|平仮名/.test(text)) kana = 'hira';
 
   let width: Hints['width'] = null;
-  if (/全角/.test(text) && !/全角カナ/.test(text)) width = 'full';
+  if (/\^\\x01-\\x7E|０-９|\bzenkaku\b/i.test(code)) width = 'full';
+  else if (/\bhankaku\b/i.test(code)) width = 'half';
+  else if (/全角/.test(text) && !/全角カナ/.test(text)) width = 'full';
   else if (/半角/.test(text)) width = 'half';
   else if (hasFullDigit(sample)) width = 'full';
 
   let era: Hints['era'] = null;
-  const hasWareki = /平成|昭和|令和/.test(options);
+  // 元号が「S／H／R」の略号だけの選択肢も和暦
+  const hasWareki = /平成|昭和|令和/.test(options) || (d.options.length >= 2 && d.options.every((o) => /^[MTSHR]$/i.test(o.trim())));
   const hasSeireki = /(19|20)\d\d/.test(options);
   if ((hasWareki && !hasSeireki) || /和暦/.test(text)) era = 'wareki';
   else if ((hasSeireki && !hasWareki) || /西暦/.test(text)) era = 'seireki';
 
   let hyphen: Hints['hyphen'] = null;
-  if (/ハイフン(なし|無し|不要|を除|は不要|抜き|を入れず)|ハイフンを?入れないで|[\-‐‑‒–—―−ー－ｰ]なし|数字のみ|\d+桁/.test(text)) hyphen = false;
+  // pattern・inputmode が数字だけ（\d{10,11}・[0-9]{7}・numeric）ならハイフンは打てない
+  const digitsOnly = /numeric|\\d|0-9/.test(code) && !/[\-‐－]|\+/.test(code.replace(/data-[\w-]+|\w-\w/g, ''));
+  if (digitsOnly || /ハイフン[（(]?[\-‐‑‒–—―−ー－ｰ]?[）)]?(なし|無し|不要|を除|は不要|抜き|を入れず|は入れず)|ハイフンを?入れないで|[\-‐‑‒–—―−ー－ｰ]なし|数字のみ|[\d０-９]+桁/.test(text)) hyphen = false;
   else if (/ハイフン(あり|有り|を含|付き|を入れて)/.test(text)) hyphen = true;
   else if (/\d[\-‐‑‒–—―−ー－ｰ]\d/.test(d.placeholder)) hyphen = true;
-  else if (/^\d{7,11}$/.test(norm(d.placeholder).replace(/^例[:：)）]?\s*/, ''))) hyphen = false;
+  else if (/^\d{7,11}$/.test(norm(d.placeholder).replace(/^例[:：)）]?\s*/, '')) || /例[:：)）]?\s*\d{7,11}(?![\d\-])/.test(norm(d.rules))) hyphen = false;
   else if (d.maxLength === 7 || d.maxLength === 10 || d.maxLength === 11) hyphen = false;
 
   let dateFormat: Hints['dateFormat'] = null;
   const ph = norm(d.placeholder);
-  if (/\d{8}|yyyymmdd|8桁/.test(ph + text) || d.maxLength === 8) dateFormat = 'compact';
-  else if (/年/.test(ph)) dateFormat = 'kanji';
+  if (/\d{8}|yyyymmdd|8桁|\\d\{[68]\}|yyyymm$/i.test(ph + text) || d.maxLength === 8 || d.maxLength === 6) dateFormat = 'compact';
+  else if (/\d{4}\.\d|yyyy\./.test(ph)) dateFormat = 'dot';
+  else if (/^(例[:：]?\s*)?[HSRhsr]\d{1,2}\.\d/.test(ph)) dateFormat = 'eraDot';
+  else if (/mm\/dd\/yyyy/i.test(ph)) dateFormat = 'mdy';
+  else if (/dd\/mm\/yyyy/i.test(ph)) dateFormat = 'dmy';
+  else if (/年/.test(ph) || /例[:：]?\s*\d{4}年/.test(norm(d.rules))) dateFormat = 'kanji';
   else if (/\d{4}-\d|yyyy-/.test(ph)) dateFormat = 'hyphen';
   else if (/\d{4}\/\d|yyyy\//.test(ph)) dateFormat = 'slash';
 
@@ -720,7 +735,7 @@ export function computeHints(d: FieldDescriptor): Hints {
   if (/[^\s　]　[^\s　]/.test(example)) nameSpace = 'full';
   else if (/[^\s　] [^\s　]/.test(example)) nameSpace = 'half';
   else if (/^[぀-ヿ㐀-鿿]{3,}$/.test(example)) nameSpace = 'none';
-  else if (/スペースなし|スペース不要|空白なし|詰めて/.test(text)) nameSpace = 'none';
+  else if (/スペース(なし|不要|を入れず|は入れず)|空白(なし|を入れず)|詰めて/.test(text)) nameSpace = 'none';
 
   let dakuten: Hints['dakuten'] = null;
   if (/清音|濁点[^含]{0,2}(なし|不要|除|外)|濁点を付けない/.test(text)) dakuten = false;

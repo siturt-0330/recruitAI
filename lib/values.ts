@@ -70,7 +70,8 @@ function postalForms(code: string, h: Hints): string[] {
 function yearForms(y: number, m: number, d: number, era: Hints['era']): string[] {
   const w = toWareki(y, m, d);
   const wareki = w ? [`${w.era}${w.year}`, w.year === 1 ? `${w.era}元` : '', `${w.abbr}${w.year}`] : [];
-  const seireki = [String(y)];
+  // 「1999(H11)」のように西暦に和暦を添えた選択肢
+  const seireki = w ? [String(y), `${y}(${w.abbr}${w.year})`, `${y}(${w.era}${w.year})`] : [String(y)];
   // 元号が別のプルダウンになっている「［平成▼］［17▼］年」用に、数字だけの和暦年を最後の候補にする
   const eraNumber = w ? [w.year === 1 ? '元' : '', String(w.year)] : [];
   return era === 'wareki' ? [...wareki, ...eraNumber, ...seireki] : [...seireki, ...wareki, ...eraNumber];
@@ -83,6 +84,10 @@ function dateForms([y, m, d]: [number, number, number], h: Hints): string[] {
     hyphen: `${y}-${pad2(m)}-${pad2(d)}`,
     kanji: `${y}年${m}月${d}日`,
     compact: `${y}${pad2(m)}${pad2(d)}`,
+    dot: `${y}.${pad2(m)}.${pad2(d)}`,
+    eraDot: w ? `${w.era === '令和' ? 'R' : w.era === '平成' ? 'H' : w.era === '昭和' ? 'S' : ''}${pad2(w.year)}.${pad2(m)}.${pad2(d)}` : '',
+    mdy: `${pad2(m)}/${pad2(d)}/${y}`,
+    dmy: `${pad2(d)}/${pad2(m)}/${y}`,
   };
   const wareki = w ? `${w.era}${w.year === 1 ? '元' : w.year}年${m}月${d}日` : '';
   const first = h.era === 'wareki' ? wareki : forms[h.dateFormat ?? 'slash'];
@@ -100,8 +105,11 @@ function ymForms(s: string, h: Hints, kind: FieldKind): string[] {
   const wareki = w ? `${w.era}${w.year === 1 ? '元' : w.year}年${m}月` : '';
   const kanji = `${y}年${m}月`;
   const slash = `${y}/${pad2(m)}`;
-  const first = h.era === 'wareki' ? wareki : h.dateFormat === 'slash' || h.dateFormat === 'hyphen' ? slash : kanji;
-  return uniq([first, kanji, slash, `${y}.${pad2(m)}`, wareki]);
+  const compact = `${y}${pad2(m)}`;
+  const dot = `${y}.${pad2(m)}`;
+  const first =
+    h.era === 'wareki' ? wareki : h.dateFormat === 'compact' ? compact : h.dateFormat === 'dot' ? dot : h.dateFormat === 'slash' || h.dateFormat === 'hyphen' ? slash : kanji;
+  return uniq([first, kanji, slash, dot, wareki]);
 }
 
 const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -119,13 +127,13 @@ function ymPart(s: string, part: 'year' | 'month', h: Hints): string[] {
 }
 
 const GENDER: Record<string, string[]> = {
-  male: ['男性', '男', 'male', 'man', 'm'],
-  female: ['女性', '女', 'female', 'woman', 'f'],
+  male: ['男性', '男', '男子', 'male', 'man', 'm'],
+  female: ['女性', '女', '女子', 'female', 'woman', 'f'],
   other: ['その他', '回答しない', '無回答', 'other'],
 };
 
 const SCHOOL_TYPE_VARIANTS: Record<string, string[]> = {
-  大学: ['大学', '大学（学部）', '4年制大学', '四年制大学', '学部', '大学生', '学士'],
+  大学: ['大学', '大学（学部）', '大学（4年制）', '4年制大学', '四年制大学', '学部', '学部生', '大学生', '学士'],
   '大学院（修士）': ['大学院（修士）', '大学院修士', '修士', '大学院（修士課程）', '大学院'],
   '大学院（博士）': ['大学院（博士）', '大学院博士', '博士', '大学院（博士課程）', '大学院'],
   短期大学: ['短期大学', '短大', '短期大学士'],
@@ -426,8 +434,11 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
       return ymPart(p.admission, 'month', h);
     case 'graduation':
       return ymForms(p.graduation, h, kind);
-    case 'graduationYear':
-      return ymPart(p.graduation, 'year', h);
+    case 'graduationYear': {
+      // 「26卒」「2026年卒」のような卒業年度の選択肢も候補にする
+      const y = p.graduation.slice(0, 4);
+      return [...ymPart(p.graduation, 'year', h), ...(y ? [`${y.slice(2)}卒`, `${y}年卒`, `${y}卒`] : [])];
+    }
     case 'graduationMonth':
       return ymPart(p.graduation, 'month', h);
     case 'graduationStatus':
