@@ -139,7 +139,7 @@ export interface Hints {
   width: 'full' | 'half' | null;
   era: 'wareki' | 'seireki' | null;
   hyphen: boolean | null;
-  dateFormat: 'slash' | 'hyphen' | 'kanji' | 'compact' | null;
+  dateFormat: 'slash' | 'hyphen' | 'kanji' | 'compact' | 'dot' | 'eraDot' | 'mdy' | 'dmy' | null;
   /** 氏名の姓と名の間のスペース（placeholder の例に合わせる） */
   nameSpace: 'full' | 'half' | 'none' | null;
   /** 1文字だけ入れる欄で濁点を残すか（「濁点含む」「清音で」などの指定） */
