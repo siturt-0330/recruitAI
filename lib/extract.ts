@@ -238,6 +238,17 @@ function structuralHeader(el: HTMLElement): string {
       const t = textOf(node.querySelector('legend'), 60);
       if (t) return t;
     }
+    // <div role="group" aria-labelledby="…"> の見出し（axol の「入学年月」など。年・月の欄には「年」「月」のラベルしかない）
+    const labelledby = /^(group|radiogroup)$/.test(node.getAttribute('role') ?? '') ? node.getAttribute('aria-labelledby') : null;
+    if (labelledby) {
+      const doc = node.ownerDocument;
+      const t = labelledby
+        .split(/\s+/)
+        .map((id) => textOf(doc.getElementById(id), 60))
+        .join(' ')
+        .trim();
+      if (t) return t;
+    }
   }
   return '';
 }

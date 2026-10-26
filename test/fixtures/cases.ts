@@ -2067,4 +2067,21 @@ export const CASES: Case[] = [
     },
     expect: { '[name=sy]': '2026', '[name=sm]': '3' },
   },
+  (() => {
+    // axol（味の素）：年・月の select を、見えない「年」「月」の label で包み、項目名はグループの aria-labelledby
+    const item = (id: string, title: string, name: string, years: number[], selectedMonth = '') => `<div class="form__item" role="group" aria-labelledby="item_${id}">
+      <div id="item_${id}" class="form__item__title__wrap"><div class="form__item__title">${title}</div></div>
+      <div class="need__item"><strong class="mark">必須</strong></div>
+      <div class="form__item__group fb_checkpoint"><span name="${name}">
+        <label class="select_wrap"><span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">年</span><select name="${name}_Y"><option value="" aria-label="選択してください">--</option>${years.map((y) => `<option value="${y}">${y}</option>`).join('')}</select></label>
+        <span aria-hidden="true">年 </span>
+        <label class="select_wrap"><span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">月</span><select name="${name}_m"><option value="" aria-label="選択してください">--</option>${range(1, 12).map((m) => `<option value="${m}"${String(m) === selectedMonth ? ' selected' : ''}>${String(m).padStart(2, '0')}</option>`).join('')}</select></label>
+        <span aria-hidden="true">月</span>
+      </span></div></div>`;
+    return {
+      name: 'axol（味の素）：入学年月・卒業年月の年と月が、見えない「年」「月」のラベルで包まれている',
+      html: `<form>${item('schoolfrom', '入学年月', 'school_from', range(1996, 2032))}${item('schoolto', '卒業（予定）年月', 'school_to', range(2003, 2032), '3')}</form>`,
+      expect: { '[name=school_from_Y]': '2022', '[name=school_from_m]': '4', '[name=school_to_Y]': '2026', '[name=school_to_m]': '3' },
+    } satisfies Case;
+  })(),
 ];
