@@ -76,15 +76,17 @@ const TEXT_RULES: [Category, RegExp][] = [
   ['station', /最寄|沿線|路線|駅/],
   ['age', /年齢|^age$/],
   ['nationality', /国籍|nationality/],
-  ['schoolType', /学校区分|学校種別|学校の種類|学校種類|在籍区分|学歴区分|最終学歴/],
+  // 「最終学歴となる大学の入学年月」は入学年月
+  ['schoolType', /学校区分|学校種別|学校の種類|学校種類|在籍区分|学歴区分|最終学歴(?!とな|であ)/],
   ['bunri', /文理|文系.{0,3}理系/],
   ['graduationStatus', /卒業区分|卒業状況|見込.{0,2}区分|新卒.{0,3}既卒|卒業見込.{0,4}(区分|有無)/],
   ['fieldCategory', /学科系統|専攻分野|系統/],
-  ['degree', /学位|課程/],
+  // 「後期博士課程への進学年月」は課程ではなく年月
+  ['degree', /学位|課程(?!.{0,6}(年月|年度|時期))/],
   ['researchTheme', /研究テーマ|研究内容|研究課題|卒業論文|卒論|卒業研究|修士論文|修論/],
   ['lab', /研究室|ゼミ|指導教員|指導教官|指導教授/],
   ['highSchool', /高校|高等学校/],
-  ['admission', /入学/],
+  ['admission', /入学|進学(年月|時期)/],
   ['educationHistory', /学歴/],
   ['license', /運転免許|自動車免許|普通免許|車の免許/],
   ['toeic', /toeic/],
@@ -169,7 +171,7 @@ const ATTR_RULES: [Category, RegExp][] = [
 ];
 
 /** 本人以外の人を指す言葉（紹介者のお名前・保護者の電話番号など） */
-const OTHER_PERSON = /紹介者|推薦者|保護者|担当者|代表者|上司|配偶者|父親|母親|ご両親|家族|保証人|面接官|社員|知人|友人/;
+const OTHER_PERSON = /紹介者|推薦者|保護者|担当者|代表者|上司|配偶者|父親|母親|ご両親|家族|保証人|面接官|社員|知人|友人|指導教|教官|教授/;
 /** 区切りの見出し（h3「保護者連絡先」など）で本人以外とわかる言葉。「担当者からのお知らせ」のような見出しは含めない */
 const OTHER_PERSON_SECTION = /紹介者|推薦者|保護者|配偶者|父親|母親|ご両親|家族|保証人/;
 const PERSONAL_CATEGORIES = new Set<string>(['name', 'roman', 'phone', 'email', 'emailSub', 'emailConfirm', 'birth', 'address']);

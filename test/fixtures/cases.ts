@@ -2084,4 +2084,61 @@ export const CASES: Case[] = [
       expect: { '[name=school_from_Y]': '2022', '[name=school_from_m]': '4', '[name=school_to_Y]': '2026', '[name=school_to_m]': '3' },
     } satisfies Case;
   })(),
+  // ---- 第9弾：i-webs（東レ）の学歴の欄 ----
+  {
+    name: 'i-webs（東レ）：最終学歴となる大学（院）の入学年月に入れ、博士の方だけの修士課程の欄には入れない',
+    html: `<form><table class='entryTb'>
+      <tr><th>◆現時点の年齢を記入してください。</th><td><input name='age' size='4'></td></tr>
+      <tr><th>◆卒業（修了）する（見込み）の学位を選択して下さい。</th><td><select name='deg'>${opts(['学士（学部）', '修士', '博士'])}</select></td></tr>
+      <tr><th>◆現在在籍している、もしくは最終学歴となる大学（院）の入学年月を教えてください。</th><td><span class='red'>※</span>博士の方は、後期博士課程への進学年月を記入ください。<br><select name='ay'>${opts(range(2015, 2028).map(String))}</select>年<select name='am'>${opts(range(1, 12).map((n) => String(n).padStart(2, '0')))}</select>月</td></tr>
+      <tr><th>博士（博士後期課程）の方は修士課程の学校情報を記入してください。</th><td>記入例：●●大学院■■研究科▲▲専攻（50字以内）<br><input name='ms' size='60'></td></tr>
+      <tr><th>博士（博士後期課程）の方は修士課程の入学・卒業年月を選択してください。</th><td>入学（修士）<select name='may'>${opts(range(2015, 2030).map(String))}</select>年<select name='mam'>${opts(range(1, 12).map((n) => String(n).padStart(2, '0')))}</select>月<br>卒業（修士）<select name='mgy'>${opts(range(2015, 2030).map(String))}</select>年<select name='mgm'>${opts(range(1, 12).map((n) => String(n).padStart(2, '0')))}</select>月</td></tr>
+    </table></form>`,
+    profile: { degree: '学士' },
+    expect: { '[name=ay]': '2022', '[name=am]': '04', '[name=ms]': "", '[name=may]': "", '[name=mam]': "", '[name=mgy]': "", '[name=mgm]': "" },
+  },
+  {
+    name: 'i-webs（東レ）：学校区分のラジオ。見出しに「大学院（修士）」を選択してください、とあっても大学の人は大学',
+    html: `<form>
+      <div class='box'><h3>■現在の学校情報をご登録ください。</h3><p>院生の方はこちらで大学院の情報をご登録ください。<br>続けて次の画面より出身大学（学部）情報をご登録ください。</p>
+      <p class='red'>・修士課程修了予定の方は、「大学院（修士）」を選択してください。<br>・博士課程修了予定の方は、「大学院（博士）」を選択してください。</p></div>
+      <p>以下の選択肢より、該当する内容(学校区分、所在地、学校名頭文字)を選択して『次へ』ボタンをクリックしてください。</p>
+      <table class='entryTb'><tr><th>学校区分を選択してください。</th></tr><tr><td>
+        <ul><li><input type='radio' name='kbn' id='k1' value='1'><label for='k1'>大学</label></li><li><input type='radio' name='kbn' id='k2' value='2'><label for='k2'>大学院（修士）</label></li><li><input type='radio' name='kbn' id='k3' value='3'><label for='k3'>大学院（博士）</label></li>
+        <li><input type='radio' name='kbn' id='k4' value='4'><label for='k4'>高等専門学校</label></li><li><input type='radio' name='kbn' id='k5' value='5'><label for='k5'>外国大学日本校</label></li><li><input type='radio' name='kbn' id='k6' value='6'><label for='k6'>外国大学</label></li></ul>
+      </td></tr></table>
+    </form>`,
+    expect: { 'radio:kbn': '1' },
+  },
+  {
+    name: 'i-webs（東レ）：「文理区分で理系を選択された方は」の見出しの下の欄に、文系の人は入れない（見出しが表の行）',
+    html: `<form><table class=entryTb><tr><th colspan=2>●文理区分で理系を選択された方は、下記A～Eまでの設問にお答えください。</th></tr>
+      <tr><th>▲A)ゼミ、研究室名（全角20文字以内）</th><td><p class=red>※研究室が未決定の場合は、「未定」と記入ください。</p>【例】山田研究室（重合化学分野）<br><input name=xa size=40></td></tr>
+      <tr><th>▲B）指導教官氏名（全角入力のみ）</th><td>【例】 姓：日本　名：太郎<br>姓 <input name=xb1> 名 <input name=xb2></td></tr>
+      <tr><th>▲D）研究テーマ（全半角50文字以内）</th><td><input name=xd size=60></td></tr></table>
+      <table class=entryTb><tr><th colspan=2>◆その他について教えてください。</th></tr><tr><th>◆ゼミ・研究室名</th><td><input name=after></td></tr></table></form>`,
+    profile: { bunri: '文系', lab: 'サンプルゼミ' },
+    expect: { '[name=xa]': '', '[name=xb1]': '', '[name=xb2]': '', '[name=xd]': '', '[name=after]': 'サンプルゼミ' },
+  },
+  {
+    name: 'i-webs（東レ）：理系の人は「理系を選択された方は」の欄に入れる。指導教官の氏名には本人の名前を入れない（見出しが表の前）',
+    html: `<form><div class=ttl>●文理区分で理系を選択された方は、下記A～Eまでの設問にお答えください。</div><table class=entryTb>
+      <tr><th>▲A)ゼミ、研究室名（全角20文字以内）</th><td><p class=red>※研究室が未決定の場合は、「未定」と記入ください。</p>【例】山田研究室（重合化学分野）<br><input name=ya size=40></td></tr>
+      <tr><th>▲B）指導教官氏名（全角入力のみ）</th><td>【例】 姓：日本　名：太郎<br>姓 <input name=yb1> 名 <input name=yb2></td></tr>
+      <tr><th>▲D）研究テーマ（全半角50文字以内）</th><td><input name=yd size=60></td></tr></table></form>`,
+    profile: { bunri: '理系', lab: 'サンプル研究室' },
+    expect: { '[name=ya]': 'サンプル研究室', '[name=yb1]': '', '[name=yb2]': '' },
+  },
+  {
+    name: 'i-webs（東レ）：学校検索の学校区分（jqTransform のラジオ・label for="text"）で、大学の人は大学',
+    html: `<form><div class="heading_l2"><span class="h3">■現在の学校情報をご登録ください。</span><p>院生の方はこちらで大学院の情報をご登録ください。<br>続けて次の画面より出身大学（学部）情報をご登録ください。</p><p style="color:red">・修士課程修了予定の方は、「大学院（修士）」を選択してください。<br>・博士課程修了予定の方は、「大学院（博士）」を選択してください。</p></div>
+      <p>以下の選択肢より、該当する内容(学校区分、所在地、学校名頭文字)を選択して『次へ』ボタンをクリックしてください。</p>
+      <div class="formbox clearfix"><dt class="formbox01">学校区分を選択してください。</dt><dd class="formbox02"><ul class="hosoku clearfix">${[["1", "大学"], ["2", "大学院（修士）"], ["3", "大学院（博士）"], ["4", "高等専門学校"], ["5", "外国大学日本校"], ["6", "外国大学"]]
+        .map(([v, l]) => `<li class="kbn"><span class="jqTransformRadioWrapper"><a href="#" class="jqTransformRadio" rel="kbn"></a><input type="radio" name="kbn" value="${v}" class="jqTransformHidden"></span><label for="text">${l}</label></li>`).join("")}</ul></dd></div>
+      <div class="formbox clearfix"><dt class="formbox01">学校名頭文字を選択してください。</dt><dd class="formbox02"><ul class="hosoku clearfix">${[..."あいうえおかきくけこさしすせそたちつてとなにぬねの"]
+        .map((k, i) => `<li class="init"><span class="jqTransformRadioWrapper"><a href="#" class="jqTransformRadio" rel="init"></a><input type="radio" name="init" value="${i + 1}" class="jqTransformHidden"></span><label for="text">${k}</label></li>`).join("")}</ul></dd></div>
+    </form>`,
+    profile: { schoolKana: "サンプルダイガク" },
+    expect: { '[name=kbn][value="1"]': true, '[name=kbn][value="2"]': false, '[name=init][value="11"]': true },
+  },
 ];
