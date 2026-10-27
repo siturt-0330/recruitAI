@@ -211,6 +211,17 @@
   color: var(--ok);
 }
 
+.btn-save {
+  min-height: 34px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.loading {
+  padding: 40px 24px;
+  color: var(--text-2);
+}
+
 .spin {
   animation: spin 0.8s linear infinite;
 }

@@ -44,14 +44,20 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
+      // どれか 1 つ読めなくても、ポップアップが空のままにならないようにする
+      const safe = <T,>(p: Promise<T>, fallback: T) =>
+        p.catch((e) => {
+          console.error('[らくらくエントリー] 読み込みに失敗しました', e);
+          return fallback;
+        });
       const [ps, id, s, tab, commands, link, [current]] = await Promise.all([
-        getProfiles(),
-        activeProfileIdItem.getValue(),
-        getSettings(),
-        activeTabId(),
-        browser.commands.getAll(),
-        sophonDataItem.getValue(),
-        browser.tabs.query({ active: true, currentWindow: true }),
+        safe(getProfiles(), []),
+        safe(activeProfileIdItem.getValue(), ''),
+        safe(getSettings(), DEFAULT_SETTINGS),
+        safe(activeTabId(), undefined),
+        safe(browser.commands.getAll(), []),
+        safe(sophonDataItem.getValue(), null),
+        safe(browser.tabs.query({ active: true, currentWindow: true }), []),
       ]);
       setCompanies(link?.companies ?? []);
       setTabUrl(current?.url ?? '');

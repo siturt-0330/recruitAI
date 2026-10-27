@@ -28,18 +28,27 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      const [ps, id, s] = await Promise.all([getProfiles(), activeProfileIdItem.getValue(), getSettings()]);
-      setSettings(s);
-      if (!ps.length) {
+      try {
+        const [ps, id, s] = await Promise.all([getProfiles(), activeProfileIdItem.getValue(), getSettings()]);
+        setSettings(s);
+        if (!ps.length) {
+          const first = emptyProfile('新卒用');
+          await profilesItem.setValue([first]);
+          await activeProfileIdItem.setValue(first.id);
+          setProfiles([first]);
+          setActiveId(first.id);
+          return;
+        }
+        setProfiles(ps);
+        setActiveId(ps.some((p) => p.id === id) ? id : ps[0]!.id);
+      } catch (e) {
+        // 保存データを読めなくても真っ白にしない。空のプロフィールで開き、入力すればそれを保存する
+        console.error('[らくらくエントリー] 保存したプロフィールを読めませんでした', e);
         const first = emptyProfile('新卒用');
-        await profilesItem.setValue([first]);
-        await activeProfileIdItem.setValue(first.id);
         setProfiles([first]);
         setActiveId(first.id);
-        return;
+        setToast('保存したプロフィールを読めませんでした');
       }
-      setProfiles(ps);
-      setActiveId(ps.some((p) => p.id === id) ? id : ps[0]!.id);
     })();
     // Sophon でプロフィールを直したときは、保存待ちの編集がなければ画面にも反映する
     const unwatch = profilesItem.watch((ps) => {
@@ -132,7 +141,8 @@ export default function App() {
     setToast('保存しました');
   };
 
-  if (!profile) return null;
+  // 読み込みが終わるまでも、真っ白にしない
+  if (!profile) return <p className="loading">読み込み中… / Loading…</p>;
 
   const essentials = essentialProgress(profile);
   const pageIndex = PAGES.findIndex((p) => p.id === page);
@@ -212,6 +222,17 @@ export default function App() {
             {saveState === 'saving' ? <Loader2 size={14} className="spin" /> : <Check size={14} />}
             {saveState === 'saving' ? '保存中…' : '保存済み'}
           </span>
+          {/* 入力は自動で保存するが、保存できたことを確かめたい人のために押せる「保存」も置く */}
+          <button
+            type="button"
+            className="btn btn-primary btn-save"
+            onClick={() => {
+              persist(profiles, true);
+              setToast('保存しました');
+            }}
+          >
+            保存
+          </button>
         </div>
 
         {page === 'ai' ? (
