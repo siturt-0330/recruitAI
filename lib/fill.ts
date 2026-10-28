@@ -104,8 +104,11 @@ export function pickOption(options: string[], variants: string[], exactOnly = fa
   for (const v of variants.map(normOption)) {
     // 「1」が「10」「11」に部分一致しないよう、短い数字は部分一致させない
     if (/^\d{1,3}$/.test(v) || v.length < 2) continue;
-    // 「大学」が「大学院」に部分一致しないようにする
-    const i = normalized.findIndex((o) => o.includes(v) && !o.includes(`${v}院`));
+    // 「大学」が「大学院」に部分一致しないようにする。
+    // 「博士」は「修士（博士前期課程）」より「博士（博士後期課程）」のように先頭が一致するものを選ぶ
+    const partial = (o: string) => o.includes(v) && !o.includes(`${v}院`);
+    let i = normalized.findIndex((o) => o.startsWith(v) && partial(o));
+    if (i < 0) i = normalized.findIndex(partial);
     if (i >= 0) return i;
   }
   return -1;

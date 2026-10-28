@@ -148,9 +148,9 @@ const CONDITIONS: [RegExp, (p: Profile) => boolean][] = [
   // 博士の人の修士課程の学校（「博士（博士後期課程）の方は修士課程の〜」）はプロフィールにない
   [/博士.{0,10}の方は.{0,3}修士/, () => false],
   // 博士課程の人だけ（「修士・博士課程の方のみ」は大学院生）。「上記で『博士』を選択し〜」「『博士』を選択した場合のみ」も
-  [/(?<![・、/／])(博士(後期)?課程|博士|ドクター)(に)?(在籍|在学)?(している|中)?の?(方|者|生)?(のみ|だけ|に限り)|博士.{0,3}を?選択/, (p) => p.schoolType === '大学院（博士）'],
+  [/(?<![・、/／])(?<!修士.{0,8})(博士(後期)?課程|博士|ドクター)(に)?(在籍|在学)?(している|中)?の?(方|者|生)?(のみ|だけ|に限り)|博士.{0,3}を?選択/, (p) => p.schoolType === '大学院（博士）'],
   // 修士課程の人だけ
-  [/修士(課程)?(に)?(在籍|在学)?(している|中)?の?(方|者|生)?(のみ|だけ|に限り)(?![・、]?博士)/, (p) => p.schoolType === '大学院（修士）'],
+  [/(修士(課程)?|博士前期(課程)?)(に)?(在籍|在学)?(している|中)?の?(方|者|生)?(のみ|だけ|に限り)(?![・、]?博士)/, (p) => p.schoolType === '大学院（修士）'],
   // 大学院生だけ。「院生の方のみこちらを」「大学院（修士・博士）の方のみ」「大学院に在籍している方は記入」「『最終学歴』で「大学院（修士）」を選択された方は」
   [
     /(大学院|院生).{0,12}(の方|方|者|生)(のみ|だけ|に限り)|修士.{0,4}博士.{0,4}(の方|方|者|生)?(のみ|だけ|に限り)|院生.{0,3}のみ|大学院に(所属|在籍|在学)|(大学院生|院生)の方は.{0,2}(ご)?(記入|入力|回答)|大学院.{0,24}(選択さ?れ?た|選ばれた)方/,
@@ -166,6 +166,8 @@ const CONDITIONS: [RegExp, (p: Profile) => boolean][] = [
   [/文系.{0,4}選(択さ?れ?た|んだ|ばれた)(方|場合)|文系の(方|者)のみ/, (p) => p.bunri === '文系'],
   // 編入した学校はプロフィールにないので、「大学編入歴のある方のみ」の欄には入れない
   [/編入.{0,12}(の方|方|者)のみ|編入(歴|経験)のある/, () => false],
+  // 進学予定の大学院はプロフィールにない（「大学院進学予定［あり／なし］」「進学予定の大学院名」）
+  [/進学(予定|先|希望)/, () => false],
   [/留学.{0,12}(の方|方|者)のみ/, (p) => !!p.studyAbroad && !SAYS_NONE.test(p.studyAbroad.normalize('NFKC'))],
 ];
 
@@ -177,7 +179,9 @@ const PREVIOUS_SCHOOL = /出身大学(?!院)|出身学部|学部.{0,2}(時|時�
 const MENTIONS_GRAD = /院生|大学院|修士|博士/;
 const EDUCATION_KEY = /^(school|faculty|department|fieldCategory|degree|admission|graduation|lab|advisor|researchTheme|bunri)/;
 /** 欄の見出しが「大学院の〜」「大学院名」（大学院生だけの欄）。「大学・大学院名」「大学（院）」は含めない */
-const GRAD_LABEL = /^[◆■●▲※*＊s]*大学院(?!生)(の|名|での|研究科|専攻)/;
+const GRAD_LABEL = /^[◆■●▲※*＊\s]*大学院(?!生)(の|名|での|研究科|専攻|[／/])/;
+/** 行見出しが「大学」「学部」で列見出しもある表の行（「大学 学校名」）。大学院生にとっては学部のときの学校 */
+const UNDERGRAD_ROW = /^[◆■●▲※*＊\s]*(大学|学部|学士)[／/]/;
 
 /** 卒業年月の欄が、直前のどの欄（高校・在籍校・条件付きで飛ばした欄）に続くものかを見る範囲 */
 const OWNER_DISTANCE = 3;
@@ -197,7 +201,10 @@ function applyConditions(fields: ScannedField[], classes: Classification[], prof
     const text = norm(`${d.label} ${d.prefix} ${d.context} ${d.section} ${d.sectionNote ?? ''} ${cell}`);
     const own = norm(`${d.label} ${d.prefix} ${d.context} ${cell}`);
     const scope = norm(`${d.section} ${d.sectionNote ?? ''}`);
-    const previousSchool = EDUCATION_KEY.test(c.key) && PREVIOUS_SCHOOL.test(`${own} ${scope}`) && (isGrad(profile) || MENTIONS_GRAD.test(`${own} ${scope}`));
+    const previousSchool =
+      EDUCATION_KEY.test(c.key) &&
+      ((PREVIOUS_SCHOOL.test(`${own} ${scope}`) && (isGrad(profile) || MENTIONS_GRAD.test(`${own} ${scope}`))) ||
+        (UNDERGRAD_ROW.test(norm(d.context)) && isGrad(profile)));
     const gradLabel = GRAD_LABEL.test(norm(d.context)) || GRAD_LABEL.test(norm(d.label));
     if (previousSchool || (gradLabel && !isGrad(profile)) || CONDITIONS.some(([re, ok]) => re.test(text) && !ok(profile))) {
       classes[i] = { key: null, confidence: 0, source: c.source };

@@ -33,7 +33,7 @@ function optionCategory(d: FieldDescriptor): Category | null {
   if (opts.filter((o) => PREFECTURE_RE.test(o)).length >= 7) return 'prefecture';
   // あ・か・さ… の五十音（学校名の頭文字など）
   if (opts.length >= 20 && opts.filter((o) => /^[ぁ-んァ-ン]$/.test(o)).length >= opts.length * 0.8) return 'schoolInitial';
-  if (opts.some((o) => /^大学$|^大学\(|学部/.test(o)) && opts.some((o) => /大学院|短期大学|短大|高専|高等専門学校|専門学校/.test(o))) {
+  if (opts.some((o) => /^大学$|^大学\(|学部/.test(o)) && opts.some((o) => /大学院|短期大学|短大|高専|高等専門学校|専門学校/.test(o) || (/修士|博士/.test(o) && !opts.some((x) => /^学士/.test(x))))) {
     return 'schoolType';
   }
   if (opts.some((o) => /文系/.test(o)) && opts.some((o) => /理系/.test(o))) return 'bunri';
@@ -296,6 +296,8 @@ function classifyField(d: FieldDescriptor): Classification {
   }
   // 見出しが「その他」「備考」だけの欄は、例の文（「〇〇大学商学部 3年次編入」）に引っぱられて学校名などを入れない
   if (/^(その他|備考)$/.test(ctx.replace(/[\s※*＊]/g, ''))) return result(null, 0);
+  // 文字欄に「修士」などの学位を入れるのは、見出しに「学位」とあるときだけ（「前期課程の研究」「博士課程への進学予定」には入れない）
+  if (cat === 'degree' && d.kind !== 'select' && d.kind !== 'radio' && !/学位/.test(`${near} ${ctx}`)) return result(null, 0);
   // 「コース・講座名など」はプロフィールにない（「学科・専攻・コース名」は学科）
   if (cat === 'department' && /コース|講座/.test(`${near} ${ctx}`) && !/学科|専攻/.test(`${near} ${ctx}`)) return result(null, 0);
   // 紹介者・保護者など、本人以外の人の欄には本人の情報を入れない

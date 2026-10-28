@@ -136,13 +136,21 @@ const GENDER: Record<string, string[]> = {
 
 const SCHOOL_TYPE_VARIANTS: Record<string, string[]> = {
   大学: ['大学', '大学（学部）', '大学（4年制）', '4年制大学', '四年制大学', '学部', '学部生', '大学生', '学士'],
-  '大学院（修士）': ['大学院（修士）', '大学院修士', '修士', '大学院（修士課程）', '大学院'],
-  '大学院（博士）': ['大学院（博士）', '大学院博士', '博士', '大学院（博士課程）', '大学院'],
+  '大学院（修士）': ['大学院（修士）', '大学院修士', '修士', '大学院（修士課程）', '修士課程', '大学院（博士前期課程）', '博士前期課程', '博士前期', '大学院'],
+  '大学院（博士）': ['大学院（博士）', '大学院博士', '大学院（博士課程）', '博士課程', '大学院（博士後期課程）', '博士後期課程', '博士後期', '博士', '大学院'],
   短期大学: ['短期大学', '短大', '短期大学士'],
   高等専門学校: ['高等専門学校', '高専', '準学士'],
   専門学校: ['専門学校', '専修学校'],
   海外の学校: ['海外の学校', '海外大学', '外国大学', '海外'],
   高校: ['高校', '高等学校'],
+};
+
+/** 学位。「修士（博士前期課程）」「博士（博士後期課程）」「学部」「専門職」の選択肢にも合わせる */
+const DEGREE_VARIANTS: Record<string, string[]> = {
+  学士: ['学士', '学士（学部）', '学部', '学部卒', '学部生'],
+  修士: ['修士', '修士課程', '修士（博士前期課程）', '博士前期課程', '博士前期'],
+  博士: ['博士', '博士課程', '博士（博士後期課程）', '博士後期課程', '博士後期'],
+  専門職学位: ['専門職学位', '専門職', '専門職大学院'],
 };
 
 const BUNRI_VARIANTS: Record<string, string[]> = {
@@ -428,7 +436,7 @@ function rawVariants(key: FieldKey, p: Profile, h: Hints, kind: FieldKind): stri
     case 'fieldCategory':
       return [p.fieldCategory, p.fieldCategory.replace(/（.*）/, '')];
     case 'degree':
-      return [p.degree];
+      return DEGREE_VARIANTS[p.degree] ?? [p.degree];
     case 'admission':
       return ymForms(p.admission, h, kind);
     case 'admissionYear':

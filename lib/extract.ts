@@ -225,7 +225,12 @@ function structuralHeader(el: HTMLElement): string {
         cells.slice(0, Math.max(0, cells.indexOf(cell))).reverse().find((c) => c.tagName === 'TH' && isHeader(c)) ??
         cells.find(isHeader);
       const t = textOf(header ?? null, 60);
-      if (t && !/^[\s\-‐‑‒–—―−ー－ｰ~〜～()（）]*$/.test(t)) return t;
+      if (t && !/^[\s\-‐‑‒–—―−ー－ｰ~〜～()（）]*$/.test(t)) {
+        // 「大学｜［学校名］｜［学部］」「大学院｜［学校名］｜［研究科］」のように行見出しと列見出しの両方がある表は、両方を使う
+        const controlCells = cells.filter((c) => c.querySelector(VISIBLE_CONTROLS)).length;
+        const column = controlCells > 1 ? columnHeader(cell) : '';
+        return column && column !== t ? `${t}／${column}` : t;
+      }
       // 行見出しがない表（「年｜月｜学歴・職歴」のような表）は、列の見出しを使う
       const column = columnHeader(cell);
       if (column) return column;

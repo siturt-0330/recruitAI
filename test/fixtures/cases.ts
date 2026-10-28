@@ -2233,4 +2233,30 @@ export const CASES: Case[] = [
       })),
     );
   })(),
+  // ---- 学部・大学院の行が並ぶ表、学位・課程の選択肢（博士前期／後期）、修士または博士の方のみ ----
+  ...(() => {
+    const o = (a: string[]) => opts(a);
+    const grad = (t: string) => ({ schoolType: t, degree: t.includes('博士') ? '博士' : '修士', school: 'サンプル大学大学院', faculty: '経済学研究科', department: '経済学専攻' });
+    const P = { U: { schoolType: '大学', degree: '学士' }, M: grad('大学院（修士）'), D: grad('大学院（博士）') };
+    const html = `<form><table><tr><th></th><th>学校名</th><th>学部・研究科</th><th>学科・専攻</th></tr>
+      <tr><th>大学</th><td><input name="us"></td><td><input name="uf"></td><td><input name="ud"></td></tr>
+      <tr><th>大学院</th><td><input name="gs"></td><td><input name="gf"></td><td><input name="gd"></td></tr></table>
+      <table><tr><th>学位</th><td><select name="deg">${o(['学士（学部）', '修士（博士前期課程）', '博士（博士後期課程）', '専門職'])}</select></td></tr>
+      <tr><th>在籍課程</th><td><label><input type="radio" name="cr" value="1">学部</label><label><input type="radio" name="cr" value="2">修士課程</label><label><input type="radio" name="cr" value="3">博士課程</label></td></tr>
+      <tr><th>研究テーマ</th><td><p>※修士または博士課程の方のみ</p><input name="rt"></td></tr>
+      <tr><th>前期課程の研究</th><td><p>※博士前期課程の方のみ</p><input name="zk"></td></tr>
+      <tr><th>大学院進学予定</th><td><label><input type="radio" name="sg" value="1">あり</label><label><input type="radio" name="sg" value="0">なし</label></td></tr>
+      <tr><th>進学予定の大学院名</th><td><input name="ps"></td></tr></table></form>`;
+    const expect = {
+      U: { '[name=us]': 'サンプル大学', '[name=uf]': '経済学部', '[name=gs]': '', '[name=gf]': '', '[name=deg]': '学士（学部）', '[name=cr][value="1"]': true, '[name=rt]': '', '[name=zk]': '' },
+      M: { '[name=us]': '', '[name=uf]': '', '[name=gs]': 'サンプル大学大学院', '[name=gf]': '経済学研究科', '[name=deg]': '修士（博士前期課程）', '[name=cr][value="2"]': true, '[name=rt]': 'テーマ', '[name=zk]': '' },
+      D: { '[name=us]': '', '[name=uf]': '', '[name=gs]': 'サンプル大学大学院', '[name=gf]': '経済学研究科', '[name=deg]': '博士（博士後期課程）', '[name=cr][value="3"]': true, '[name=rt]': 'テーマ', '[name=zk]': '' },
+    } as const;
+    return (Object.keys(P) as (keyof typeof P)[]).map((k) => ({
+      name: `学部・大学院の行の表と学位・課程（${k === 'U' ? '学部生' : k === 'M' ? '修士' : '博士'}）`,
+      html,
+      profile: { ...P[k], researchTheme: 'テーマ' },
+      expect: { ...expect[k], '[name=ps]': '', '[name=sg][value="1"]': false },
+    }));
+  })(),
 ];
