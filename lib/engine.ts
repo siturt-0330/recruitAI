@@ -149,6 +149,11 @@ const CONDITIONS: [RegExp, (p: Profile) => boolean][] = [
   // 「『最終学歴』で「大学院（修士）」「大学院（博士）」を選択された方は回答してください」も大学院生だけ
   [/大学院.{0,12}(の方|方|者|生)のみ|大学院に(所属|在籍)|大学院.{0,24}(選択さ?れ?た|選ばれた)方/, (p) => p.schoolType.startsWith('大学院')],
   [/(既卒|社会人|卒業された|卒業済).{0,8}(の方|方|者)のみ/, (p) => p.graduationStatus === 'graduated'],
+  // 出身大学の区切りの「修士課程の方は『学部』時の情報を」「博士課程の方は『学部』時の情報を」
+  [/博士課程の方は.{0,4}学部.{0,3}時/, (p) => p.schoolType === '大学院（博士）'],
+  [/修士課程の方は.{0,4}学部.{0,3}時/, (p) => p.schoolType.startsWith('大学院')],
+  // 「その他学校情報」「ダブルスクール」は、プロフィールにない別の学校
+  [/その他.{0,2}学校情報|ダブルスクール/, () => false],
   // 「文理区分で理系を選択された方は、下記A〜Eまでの設問にお答えください」（区切りの見出し）
   [/理系.{0,4}選(択さ?れ?た|んだ|ばれた)(方|場合)|理系の(方|者)のみ/, (p) => p.bunri === '理系'],
   [/文系.{0,4}選(択さ?れ?た|んだ|ばれた)(方|場合)|文系の(方|者)のみ/, (p) => p.bunri === '文系'],
@@ -172,7 +177,7 @@ function applyConditions(fields: ScannedField[], classes: Classification[], prof
     const d = f.desc;
     // 条件の注意書きは、欄と同じセルの中（欄の上の説明文）にあることも多い
     const cell = f.elements[0]!.closest('td, dd')?.textContent?.slice(0, 200) ?? '';
-    const text = norm(`${d.label} ${d.prefix} ${d.context} ${d.section} ${cell}`);
+    const text = norm(`${d.label} ${d.prefix} ${d.context} ${d.section} ${d.sectionNote ?? ''} ${cell}`);
     if (CONDITIONS.some(([re, ok]) => re.test(text) && !ok(profile))) {
       classes[i] = { key: null, confidence: 0, source: c.source };
       owner = { kind: 'skip', index: i };

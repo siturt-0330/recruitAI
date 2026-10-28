@@ -33,6 +33,8 @@ export interface FieldDescriptor {
   context: string;
   /** 欄が属する区切りの見出し（「帰省先」「緊急連絡先」など） */
   section: string;
+  /** 区切りの見出しと欄のあいだの注意書き（「・修士課程の方は「学部」時の情報を入力してください」など） */
+  sectionNote?: string;
   placeholder: string;
   /**
    * 画面の見出しには出ない書式の指定：pattern・class・data-*・title・inputmode と、
@@ -355,6 +357,22 @@ function sectionText(el: HTMLElement): string {
   return '';
 }
 
+/** 区切りの見出しから欄の入った要素までのあいだにある、入力欄のない注意書き */
+function sectionNoteText(el: HTMLElement): string {
+  let node: Element | null = el;
+  for (let depth = 0; node && depth < 8; depth++, node = node.parentElement) {
+    const notes: string[] = [];
+    let sib = node.previousElementSibling;
+    for (let i = 0; sib && i < 15; i++, sib = sib.previousElementSibling) {
+      if (sib.querySelector(VISIBLE_CONTROLS)) continue;
+      const t = textOf(sib, 200);
+      if (isHeadingLike(sib) && t.length <= 40 && !/^[※・＊*]/.test(t)) return notes.join(' ');
+      if (t) notes.unshift(t);
+    }
+  }
+  return '';
+}
+
 /** 単位や区切りの記号だけの文字（見出しとしては使わない） */
 const UNIT_ONLY = /^[\s年月日時分\-‐–—―−ー－~〜～/／:：()（）]*$/;
 
@@ -532,6 +550,7 @@ function makeField(el: HTMLElement, kind: FieldKind): ScannedField {
       lead: leadText(el),
       context: contextText(el),
       section: sectionText(el),
+      sectionNote: sectionNoteText(el),
       placeholder: el.getAttribute('placeholder') ?? '',
       rules: rulesText(el),
       name: el.getAttribute('name') ?? '',

@@ -286,9 +286,21 @@ function classifyField(d: FieldDescriptor): Classification {
 
   // 「『上記以外』を選択した場合」「その他を選んだ方」の自由記述の欄は、選択肢を選ばないので入れない
   if (/(上記以外|その他).{0,4}を?(選択|選ん|選ば|チェック)/.test(`${near} ${ctx}`)) return result(null, 0);
+  // 見出しが「その他」「備考」だけの欄は、例の文（「〇〇大学商学部 3年次編入」）に引っぱられて学校名などを入れない
+  if (/^(その他|備考)$/.test(ctx.replace(/[\s※*＊]/g, ''))) return result(null, 0);
+  // 「コース・講座名など」はプロフィールにない（「学科・専攻・コース名」は学科）
+  if (cat === 'department' && /コース|講座/.test(`${near} ${ctx}`) && !/学科|専攻/.test(`${near} ${ctx}`)) return result(null, 0);
   // 紹介者・保護者など、本人以外の人の欄には本人の情報を入れない
   if (!emergency && (OTHER_PERSON.test(`${near} ${ctx}`) || OTHER_PERSON_SECTION.test(section)) && PERSONAL_CATEGORIES.has(cat)) {
     return result(null, 0);
+  }
+  // 学校用のメールアドレスはプロフィールにないので、個人のメールアドレスを入れない
+  // （「大学のメールアドレス以外を入力してください」のような注意書きは除く）
+  if (/^email/.test(cat)) {
+    const t = `${near} ${ctx} ${section}`;
+    if (/学校用.{0,3}(メール|アドレス)|(学校|大学|学内)の?(メール|e-?mail|アドレス)/.test(t) && !/以外|避け|不可|ではなく|使わ|使用しない|ご遠慮|推奨しません|おすすめしません/.test(t)) {
+      return result(null, 0);
+    }
   }
   // 内線・FAX は電話番号ではない
   if (cat === 'phone' && (/内線|\bext\b/i.test(near) || /fax|ファックス|ファクス/i.test(`${near} ${ctx}`))) return result(null, 0);
@@ -414,7 +426,8 @@ function classifyField(d: FieldDescriptor): Classification {
       // 高卒認定試験は高校を卒業していない人向けの質問なので触らない
       if (has(/認定試験|高認|大検/)) return result(null, 0);
       if (isYesNo(d)) return r(has(/卒業/) ? 'highSchoolGraduated' : 'highSchool', has(/卒業/) ? conf : 0);
-      const dateLike = isDateLike(d, near) || d.kind === 'select';
+      // 「出身高校 入学年月 [    ]年 [月▼]月」の年の文字欄も年月
+      const dateLike = isDateLike(d, near) || d.kind === 'select' || /^[年月]/.test(d.suffix.trim()) || /年月/.test(ctx);
       // 「高校入学年月 [年▼]年 [月▼]月」のように、年と月が分かれた欄もある
       if (dateLike && (term ? term === 'adm' : has(/入学/))) {
         return dateKey(d, attrs, conf, ['highSchoolAdmission', 'highSchoolAdmissionYear', 'highSchoolAdmissionMonth', null]);

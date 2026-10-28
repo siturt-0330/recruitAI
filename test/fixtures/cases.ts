@@ -2141,4 +2141,50 @@ export const CASES: Case[] = [
     profile: { schoolKana: "サンプルダイガク" },
     expect: { '[name=kbn][value="1"]': true, '[name=kbn][value="2"]': false, '[name=init][value="11"]': true },
   },
+  {
+    name: '学校用メールアドレスの欄に、個人のメールアドレスを入れない（「大学のメール以外」の注意書きの欄には入れる）',
+    html: `<form><h3>■学校用メールアドレス情報</h3><p>・既に卒業されている方は、「現在学校に所属していません。」を選択してください。学校用メールアドレスの入力は不要です。</p>
+      <table><tr><th>現在、学校に所属していますか？</th></tr><tr><td><label><input type=radio name=belong>現在、学校に所属しています。</label><label><input type=radio name=belong>現在、学校に所属していません。</label></td></tr>
+      <tr><td>＊学校に所属している方は、学校用メールアドレスを入力してください。<br><input type=email name=smail><br>＊現在所属している学校のメールアドレスを記入してください。</td></tr></table>
+      <h3>■連絡先</h3><table><tr><th>メールアドレス</th><td>※大学のメールアドレス以外を入力してください。<br><input type=email name=mail></td></tr></table></form>`,
+    expect: { '[name=smail]': '', '[name=mail]': 'taro@example.com' },
+  },
+  (() => {
+    const m = (n: string) => `<select name=${n}>${opts(range(1, 12).map(String))}</select>`;
+    const ym = (n: string, ex = '') => `<input name=${n}y size=6>年${m(n + 'm')}月<span class=red>（半角数字・西暦）</span>${ex}`;
+    const school = (s: string, fac: string, dep: string) => `<tr><th>学校</th><td><input name=${s}s size=60><button type=button>学校検索</button><button type=button>クリア</button></td></tr>
+      <tr><th>${fac}</th><td><input name=${s}f size=60></td></tr><tr><th>${dep}</th><td><input name=${s}d size=60></td></tr>
+      <tr><th>入学年月</th><td>${ym(s + 'a')}</td></tr><tr><th>卒業年月</th><td>${ym(s + 'g')}</td></tr>`;
+    return {
+      name: 'KOKUSAI ELECTRIC：コース・講座名、出身高校の学科・入学年月、大学院生だけの出身大学・その他学校情報',
+      html: `<form>
+        <h3>■在籍学校情報</h3><p>・編入や転学をしている場合は、「その他」にご記入ください。</p>
+        <table><tr><th>学校種別<span class=red>※</span></th><td><select name=kind>${opts(['', '大学院', '大学', '短期大学'])}</select></td></tr>
+        <tr><th>学校<span class=red>※</span></th><td><input name=cs size=60><button type=button>学校検索</button></td></tr>
+        <tr><th>学部（研究科）<span class=red>※</span></th><td><input name=cf size=60></td></tr>
+        <tr><th>学科（専攻）<span class=red>※</span></th><td><input name=cd size=60></td></tr>
+        <tr><th>コース・講座名など</th><td><input name=course size=60><span class=red>（50文字以内）</span></td></tr>
+        <tr><th>入学年月<span class=red>※</span></th><td>${ym('ca', '<br>例：2024年4月')}</td></tr>
+        <tr><th>卒業（見込）年月<span class=red>※</span></th><td>${ym('cg', '<br>例：2028年3月')}</td></tr>
+        <tr><th>ゼミ・研究室名</th><td><input name=lab size=60></td></tr>
+        <tr><th>その他</th><td><input name=other size=60><br>＊例：2022年4月～2024年3月〇〇大学商学部商学科　3年次編入</td></tr></table>
+        <h3>■出身大学情報</h3><p>・修士課程の方は「学部」時の情報を、博士課程の方は「修士」時の情報を入力してください。</p>
+        <table>${school('u', '学部（研究科）', '学科（専攻）')}</table>
+        <h3>■その他学校情報</h3><p>・博士課程の方は「学部」時の情報を入力してください。その他ダブルスクールなどの場合も入力してください。</p>
+        <table>${school('o', '学部（学科）', '学科（専攻・コース）')}</table>
+        <h3>■出身高校（高専）情報</h3><p>・高専の方は重複しますがこちらにも入力してください。</p>
+        <table><tr><th>高等学校または<br>高等専門学校<span class=red>※</span></th><td><input name=hs size=60><button type=button>高校検索</button><button type=button>クリア</button><br>＊高認・大検試験を受けられた方は『高認・大検試験』と入力してください。</td></tr>
+        <tr><th>学科・専攻・コース名</th><td><input name=hsd size=60><span class=red>（50文字以内）</span></td></tr>
+        <tr><th>出身高校（高専）<br>入学年月<span class=red>※</span></th><td>${ym('ha', '<br>＊高認・大検試験を受けられた方は合格年月を入力してください。')}</td></tr>
+        <tr><th>出身高校（高専）<br>卒業年月<span class=red>※</span></th><td>${ym('hg', '<br>＊高認・大検試験を受けられた方は合格年月を入力してください。')}</td></tr></table>
+      </form>`,
+      profile: { highSchool: 'サンプル高校', highSchoolAdmission: '2019-04', highSchoolGraduation: '2022-03', lab: 'サンプルゼミ' },
+      expect: {
+        '[name=kind]': '大学', '[name=cs]': 'サンプル大学', '[name=cf]': '経済学部', '[name=cd]': '経済学科', '[name=course]': '', '[name=cay]': '2022', '[name=cam]': '4', '[name=cgy]': '2026', '[name=cgm]': '3', '[name=lab]': 'サンプルゼミ', '[name=other]': '',
+        '[name=us]': '', '[name=uf]': '', '[name=ud]': '', '[name=uay]': '', '[name=uam]': '', '[name=ugy]': '', '[name=ugm]': '',
+        '[name=os]': '', '[name=of]': '', '[name=od]': '', '[name=oay]': '', '[name=oam]': '', '[name=ogy]': '', '[name=ogm]': '',
+        '[name=hs]': 'サンプル高校', '[name=hsd]': '', '[name=hay]': '2019', '[name=ham]': '4', '[name=hgy]': '2022', '[name=hgm]': '3',
+      },
+    } satisfies Case;
+  })(),
 ];
