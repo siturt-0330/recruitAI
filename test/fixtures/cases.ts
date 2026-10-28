@@ -2187,4 +2187,50 @@ export const CASES: Case[] = [
       },
     } satisfies Case;
   })(),
+  {
+    name: 'i-webs（SCSK）：「その他を選んだ方は記入ください（※回答は任意です）」の性別の文字欄に入れない。回答しないが選ばれていても男性を選ぶ',
+    html: `<form><table><tr><th>◆性別</th><td><ul>${['男性', '女性', '回答しない', 'その他'].map((l, i) => `<li><span class="jqTransformRadioWrapper"><a href="#" class="jqTransformRadio${i === 2 ? ' jqTransformChecked' : ''}" rel="sex"></a><input type="radio" name="sex" value="${i + 1}" class="jqTransformHidden"${i === 2 ? ' checked' : ''}></span><label for="text">${l}</label></li>`).join('')}</ul><input type="button" value="リセット"></td></tr>
+      <tr><th>性別</th><td>その他を選んだ方は記入ください（※回答は任意です）<br><input type="text" name="sexother" size="60"></td></tr></table></form>`,
+    expect: { '[name=sex][value="1"]': true, '[name=sex][value="3"]': false, '[name=sexother]': '' },
+  },
+  {
+    name: 'i-webs（SCSK）：「◆院生の方のみこちらをご記入ください◆」の区切りの欄には、大学の人は入れない',
+    html: `<form><table><tr><th colspan="2">◆院生の方のみこちらをご記入ください◆</th></tr>
+      <tr><th>◆出身大学をご記入ください。</th><td>（○○大学○○学部○○学科・全角50字以内）<br><input name="ug_school" size="60"></td></tr>
+      <tr><th>◆出身大学の入卒年月を選択してください。</th><td>入学<select name="ug_ay">${opts(range(2015, 2028).map(String))}</select>年<select name="ug_am">${opts(range(1, 12).map(String))}</select>月<br>卒業<select name="ug_gy">${opts(range(2015, 2030).map(String))}</select>年<select name="ug_gm">${opts(range(1, 12).map(String))}</select>月</td></tr>
+      <tr><th>◆大学院の卒業時期を選択ください。</th><td><select name="gr_gy">${opts(range(2025, 2031).map(String))}</select>年<select name="gr_gm">${opts(range(1, 12).map((n) => String(n).padStart(2, '0')))}</select>月</td></tr></table></form>`,
+    expect: { '[name=ug_school]': '', '[name=ug_ay]': '', '[name=ug_gy]': '', '[name=gr_gy]': '', '[name=gr_gm]': '' },
+  },
+  // ---- 大学院（修士・博士）・学部生だけの欄：言い回しを変えて、学部生・修士・博士のそれぞれで確かめる ----
+  ...(() => {
+    const U = { schoolType: '大学' }, M = { schoolType: '大学院（修士）' }, D = { schoolType: '大学院（博士）' };
+    const who = { U, M, D } as const;
+    const variants: [string, string, string, (keyof typeof who)[]][] = [
+      ['', '大学院名', '', ['M', 'D']],
+      ['', '大学名', '※大学院生のみ', ['M', 'D']],
+      ['', '大学名', '※院生の方のみご記入ください', ['M', 'D']],
+      ['', '大学名', '※大学院（修士・博士）の方のみ', ['M', 'D']],
+      ['', '大学名', '※修士・博士課程の方のみ', ['M', 'D']],
+      ['', '大学名', '※博士課程の方のみ', ['D']],
+      ['', '大学名', '※博士後期課程在籍者のみ', ['D']],
+      ['', '大学名', '※修士課程の方のみ', ['M']],
+      ['', '大学名', '※学部生の方のみ', ['U']],
+      ['', '大学名', '※大学院に在籍している方は記入してください', ['M', 'D']],
+      ['', '出身大学', '※大学院生の方は学部時代の大学を記入', []],
+      ['', '出身大学', '', ['U']],
+      ['◆院生の方のみこちらをご記入ください◆', '大学院名', '', ['M', 'D']],
+      ['◆院生の方のみこちらをご記入ください◆', '出身大学をご記入ください。', '', []],
+      ['', '大学名', '※大学院生の方は研究科名も記入してください', ['U', 'M', 'D']],
+      ['', '最終学歴となる大学（院）名', '', ['U', 'M', 'D']],
+      ['', '大学・大学院名', '', ['U', 'M', 'D']],
+    ];
+    return variants.flatMap(([section, label, note, allowed], i) =>
+      (Object.keys(who) as (keyof typeof who)[]).map((k) => ({
+        name: `大学院・学部生だけの欄 ${i + 1}（${k === 'U' ? '学部生' : k === 'M' ? '修士' : '博士'}）：${section} ${label} ${note}`,
+        html: `<form><table>${section ? `<tr><th colspan="2">${section}</th></tr>` : ''}<tr><th>${label}</th><td>${note ? `<p>${note}</p>` : ''}<input name="x" size="40"></td></tr></table></form>`,
+        profile: who[k],
+        expect: { '[name=x]': allowed.includes(k) ? 'サンプル' + '大学' : '' },
+      })),
+    );
+  })(),
 ];

@@ -87,7 +87,7 @@ const TEXT_RULES: [Category, RegExp][] = [
   ['lab', /研究室|ゼミ|指導教員|指導教官|指導教授/],
   ['highSchool', /高校|高等学校/],
   ['admission', /入学|進学(年月|時期)/],
-  ['educationHistory', /学歴/],
+  ['educationHistory', /(?<!最終)学歴/],
   ['license', /運転免許|自動車免許|普通免許|車の免許/],
   ['toeic', /toeic/],
   ['toefl', /toefl/],
@@ -257,8 +257,12 @@ function classifyField(d: FieldDescriptor): Classification {
   }
   let conf: number = cat ? CONF.context : 0;
   let kana = false;
+  // 行見出しがあるとき、欄の前の「※博士課程の方のみ」「大学院生の方は研究科名も記入してください」のような注意書きは
+  // 欄の名前ではない（「課程」「研究科」「学部生」で学位・学部と判定しない）
+  const sentence = /(のみ|だけ|ください|下さい|です|ます|。)s*$/;
+  const nearForCategory = ctx && sentence.test(d.prefix) ? norm([d.label, d.placeholder].join(' ')) : near;
   for (const [text, c, rules, isAttr] of [
-    [near, CONF.near, TEXT_RULES, false],
+    [nearForCategory, CONF.near, TEXT_RULES, false],
     [ctx, CONF.context, TEXT_RULES, false],
     [section, CONF.section, TEXT_RULES, false],
     [attrs, CONF.attr, ATTR_RULES, true],
@@ -286,6 +290,10 @@ function classifyField(d: FieldDescriptor): Classification {
 
   // 「『上記以外』を選択した場合」「その他を選んだ方」の自由記述の欄は、選択肢を選ばないので入れない
   if (/(上記以外|その他).{0,4}を?(選択|選ん|選ば|チェック)/.test(`${near} ${ctx}`)) return result(null, 0);
+  // 前の文字が 20 字で切れて「その他を」が見えなくても、「〜を選んだ方は記入ください」は選んだ人だけの欄
+  if (d.kind !== 'select' && d.kind !== 'radio' && /(選んだ|んだ|選択した|選択された|選ばれた)(方|場合)は?.{0,4}(記入|入力)/.test(`${near} ${norm(d.lead)}`)) {
+    return result(null, 0);
+  }
   // 見出しが「その他」「備考」だけの欄は、例の文（「〇〇大学商学部 3年次編入」）に引っぱられて学校名などを入れない
   if (/^(その他|備考)$/.test(ctx.replace(/[\s※*＊]/g, ''))) return result(null, 0);
   // 「コース・講座名など」はプロフィールにない（「学科・専攻・コース名」は学科）
@@ -296,7 +304,7 @@ function classifyField(d: FieldDescriptor): Classification {
   }
   // 学校用のメールアドレスはプロフィールにないので、個人のメールアドレスを入れない
   // （「大学のメールアドレス以外を入力してください」のような注意書きは除く）
-  if (/^email/.test(cat)) {
+  if (/^email/.test(cat) || d.kind === 'email' || /メール|mail/.test(near)) {
     const t = `${near} ${ctx} ${section}`;
     if (/学校用.{0,3}(メール|アドレス)|(学校|大学|学内)の?(メール|e-?mail|アドレス)/.test(t) && !/以外|避け|不可|ではなく|使わ|使用しない|ご遠慮|推奨しません|おすすめしません/.test(t)) {
       return result(null, 0);
