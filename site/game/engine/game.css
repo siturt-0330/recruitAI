@@ -269,3 +269,4 @@ footer { text-align: center; font-size: 12px; color: var(--mute); padding: 20px;
 
 /* テーマ（site/game/themes/*.css）が使うイラストの枠。テーマがなければ出さない */
 .es .il, .choice .card .il { display: none; }
+.proc[hidden] { display: none; }

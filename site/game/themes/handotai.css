@@ -99,3 +99,58 @@
 .theme-handotai .es .m { margin-top: 10px; font-size: 12px; }
 /* カードの横のピン（金色の点）は出さない */
 .theme-handotai .es::before, .theme-handotai .es::after { content: none; }
+
+/* 工程の流れ図（プレイ中のステージの下・スマホの 4 択の下）と、工程ごとのイラスト */
+.theme-handotai {
+  --st-design: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='7' y='9' width='34' height='30' rx='2'/%3E%3Cpath d='M7 17h34M15 9v30' stroke='%2334d399' stroke-width='1.4'/%3E%3Cpath d='M22 32l12-12 3 3-12 12h-3z'/%3E%3C/svg%3E");
+  --st-wafer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M24 5a19 19 0 1 0 3 .2'/%3E%3Cpath d='M27 5.2l-3 3-3-3'/%3E%3Cpath d='M12 18h24M9 24h30M12 30h24M18 12v24M24 9v30M30 12v24' stroke='%2334d399' stroke-width='1.2'/%3E%3C/svg%3E");
+  --st-film: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='7' y='34' width='34' height='7' rx='1'/%3E%3Cpath d='M7 28h34M7 23h34' stroke='%2334d399'/%3E%3Cpath d='M16 7v9M12 12l4 4 4-4M32 7v9M28 12l4 4 4-4'/%3E%3C/svg%3E");
+  --st-litho: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 5h16l-3 7H19z'/%3E%3Cpath d='M20 15l-4 9M24 15v9M28 15l4 9' stroke='%2334d399'/%3E%3Cpath d='M7 28h12M29 28h12'/%3E%3Crect x='7' y='35' width='34' height='6' rx='1'/%3E%3C/svg%3E");
+  --st-etch: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 26h8v6h6v-6h6v6h6v-6h8v15H7z'/%3E%3Cpath d='M24 6v10M20 12l4 4 4-4' stroke='%2334d399'/%3E%3Ccircle cx='13' cy='12' r='2' stroke='%2334d399'/%3E%3Ccircle cx='35' cy='10' r='2' stroke='%2334d399'/%3E%3C/svg%3E");
+  --st-dope: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='7' y='30' width='34' height='11' rx='1'/%3E%3Cpath d='M14 7l3 15M24 7v15M34 7l-3 15' stroke='%2334d399'/%3E%3Ccircle cx='17' cy='35' r='1.5'/%3E%3Ccircle cx='24' cy='36' r='1.5'/%3E%3Ccircle cx='31' cy='35' r='1.5'/%3E%3C/svg%3E");
+  --st-flat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='24' cy='32' rx='18' ry='7'/%3E%3Cellipse cx='24' cy='29' rx='9' ry='3.5' stroke='%2334d399'/%3E%3Cpath d='M24 8v12M36 12a14 14 0 0 1 4 8'/%3E%3Cpath d='M38 21l2-1 1 2'/%3E%3C/svg%3E");
+  --st-wire: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 13h32M8 24h32M8 35h32'/%3E%3Cpath d='M15 13v11M33 24v11M24 13v22' stroke='%2334d399'/%3E%3Ccircle cx='15' cy='24' r='1.6'/%3E%3Ccircle cx='33' cy='35' r='1.6'/%3E%3C/svg%3E");
+  --st-cut: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 17h32M8 31h32M17 8v32M31 8v32' stroke='%2334d399' stroke-width='1.4'/%3E%3Ccircle cx='31' cy='17' r='7'/%3E%3Cpath d='M31 10v-3M38 17h3M31 24v3M24 17h-3'/%3E%3C/svg%3E");
+  --st-pkg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='14' y='14' width='20' height='20' rx='2'/%3E%3Crect x='20' y='20' width='8' height='8' stroke='%2334d399'/%3E%3Cpath d='M19 14v-6M24 14v-6M29 14v-6M19 34v6M24 34v6M29 34v6M14 19H8M14 24H8M14 29H8M34 19h6M34 24h6M34 29h6'/%3E%3C/svg%3E");
+  --st-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='8' y='20' width='22' height='20' rx='2'/%3E%3Cpath d='M34 6l-8 16' /%3E%3Cpath d='M33 4l4 2'/%3E%3Cpath d='M13 30l4 4 8-8' stroke='%2334d399'/%3E%3C/svg%3E");
+  --st-device: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='12' y='12' width='24' height='24' rx='3'/%3E%3Crect x='19' y='19' width='10' height='10' rx='1' stroke='%2334d399'/%3E%3Cpath d='M18 12V6M24 12V6M30 12V6M18 42v-6M24 42v-6M30 42v-6M12 18H6M12 24H6M12 30H6M42 18h-6M42 24h-6M42 30h-6'/%3E%3C/svg%3E");
+  --st-biz: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 40h36'/%3E%3Cpath d='M10 40V24l8 5v-5l8 5v-5l8 5v11' /%3E%3Cpath d='M36 40V12h4v28'/%3E%3Cpath d='M12 16l7-5 6 4 9-7' stroke='%2334d399'/%3E%3C/svg%3E");
+}
+.theme-handotai [data-st="design"] .il, .theme-handotai .proc li[data-st="design"] i { background-image: var(--st-design); }
+.theme-handotai [data-st="wafer"] .il, .theme-handotai .proc li[data-st="wafer"] i { background-image: var(--st-wafer); }
+.theme-handotai [data-st="film"] .il, .theme-handotai .proc li[data-st="film"] i { background-image: var(--st-film); }
+.theme-handotai [data-st="litho"] .il, .theme-handotai .proc li[data-st="litho"] i { background-image: var(--st-litho); }
+.theme-handotai [data-st="etch"] .il, .theme-handotai .proc li[data-st="etch"] i { background-image: var(--st-etch); }
+.theme-handotai [data-st="dope"] .il, .theme-handotai .proc li[data-st="dope"] i { background-image: var(--st-dope); }
+.theme-handotai [data-st="flat"] .il, .theme-handotai .proc li[data-st="flat"] i { background-image: var(--st-flat); }
+.theme-handotai [data-st="wire"] .il, .theme-handotai .proc li[data-st="wire"] i { background-image: var(--st-wire); }
+.theme-handotai [data-st="cut"] .il, .theme-handotai .proc li[data-st="cut"] i { background-image: var(--st-cut); }
+.theme-handotai [data-st="pkg"] .il, .theme-handotai .proc li[data-st="pkg"] i { background-image: var(--st-pkg); }
+.theme-handotai [data-st="check"] .il, .theme-handotai .proc li[data-st="check"] i { background-image: var(--st-check); }
+.theme-handotai [data-st="device"] .il, .theme-handotai .proc li[data-st="device"] i { background-image: var(--st-device); }
+.theme-handotai [data-st="biz"] .il, .theme-handotai .proc li[data-st="biz"] i { background-image: var(--st-biz); }
+.theme-handotai [data-st="front"] .il, .theme-handotai [data-st="all"] .il { background-image: var(--st-wafer); }
+
+.theme-handotai .proc { margin: 14px auto 0; max-width: 1180px; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 12px 14px 14px; }
+.theme-handotai .proc .ph { font-size: 12px; font-weight: 700; color: var(--accent); margin: 0 0 8px 4px; letter-spacing: .04em; }
+.theme-handotai .proc ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 6px; counter-reset: st; }
+.theme-handotai .proc li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px 6px; border-radius: 12px; color: var(--mute); font-size: 11px; text-align: center; opacity: .45; transition: opacity .2s, background .2s; }
+.theme-handotai .proc li + li::before { content: "›"; position: absolute; left: -7px; top: 18px; color: var(--mute); font-size: 14px; }
+.theme-handotai .proc li i { display: block; width: 34px; height: 34px; background: center / contain no-repeat; }
+.theme-handotai .proc li span { white-space: nowrap; }
+.theme-handotai .proc li.on { opacity: 1; color: var(--ink); background: rgba(34, 211, 238, .12); box-shadow: inset 0 0 0 1px rgba(34, 211, 238, .55), 0 0 18px rgba(34, 211, 238, .25); font-weight: 700; }
+.theme-handotai .proc.other li { opacity: .3; }
+@media (max-width: 820px) {
+  .theme-handotai .proc { padding: 10px; }
+  .theme-handotai .proc ol { grid-template-columns: repeat(6, minmax(0, 1fr)); row-gap: 8px; }
+  .theme-handotai .proc li + li::before { content: none; }
+  .theme-handotai .proc li i { width: 26px; height: 26px; }
+  .theme-handotai .proc li { font-size: 10px; padding: 6px 0 4px; }
+}
+
+/* カードのイラストを大きく、スマホの工程名は折り返して重ならないように */
+.theme-handotai .es .il { width: 44px; height: 44px; top: 12px; margin-left: -22px; }
+.theme-handotai .es .w { margin-top: 46px; }
+@media (max-width: 820px) {
+  .theme-handotai .proc li span { white-space: normal; line-height: 1.25; word-break: keep-all; overflow-wrap: anywhere; font-size: 9px; }
+}

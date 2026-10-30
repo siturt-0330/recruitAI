@@ -272,6 +272,7 @@
     el.className = 'es';
     // テーマ（games/<slug>/game.json の theme）がレベルごとのイラストを出せるように、レベルを持たせる
     el.dataset.lv = w.lv;
+    if (w.st) el.dataset.st = w.st;
     el.innerHTML = '<i class="il"></i><div class="t"><span>' + esc(CFG.card) + '</span><span>No.' + (G.n = (G.n || 0) + 1) + '</span></div>' +
       '<div class="w' + (w.w.length >= 3 ? ' long' : '') + (w.w.length >= 6 ? ' xlong' : '') + (w.w.length >= 9 ? ' xxlong' : '') + (w.w.length >= 12 ? ' xxxlong' : '') + '">' + esc(w.w) + '</div>' +
       '<div class="m"><b>意味</b>' + esc(w.m) + '</div>';
@@ -298,8 +299,34 @@
     renderGuide();
   }
 
+  /**
+   * 工程の流れ図（game.json の steps）。言葉の st がその工程なら光らせる。ranges の名前なら範囲ごと、others の名前なら流れの外の言葉として見出しを出す
+   */
+  function renderProc(box, w) {
+    if (!box || !CFG.steps) return;
+    // 打つたびに呼ばれるので、言葉が変わったときだけ描き直す
+    if (box.dataset.w === (w ? w.w : '')) return;
+    box.dataset.w = w ? w.w : '';
+    var st = w && w.st;
+    var range = (CFG.ranges || {})[st];
+    var ids = CFG.steps.map(function (s) { return s.id; });
+    var on = function (id) {
+      if (range) return ids.indexOf(id) >= ids.indexOf(range[0]) && ids.indexOf(id) <= ids.indexOf(range[1]);
+      return id === st;
+    };
+    var other = (CFG.others || {})[st];
+    box.hidden = !w;
+    var step = CFG.steps.filter(function (s) { return s.id === st; })[0];
+    // 見出し：流れの外の言葉はその説明、範囲の言葉は ranges の 3 つ目（説明）、1 つの工程なら工程の名前
+    var head = other || (range ? range[2] || '' : step ? '製造工程：' + step.name : '');
+    box.innerHTML = '<div class="ph">' + esc(head) + '</div><ol>' +
+      CFG.steps.map(function (s) { return '<li data-st="' + s.id + '"' + (on(s.id) ? ' class="on"' : '') + '><i></i><span>' + esc(s.name) + '</span></li>'; }).join('') + '</ol>';
+    box.classList.toggle('other', !!other);
+  }
+
   function renderGuide() {
     var t = target();
+    renderProc($('proc'), t && t.w);
     if (!t) { $('sent').innerHTML = ''; $('sent').dataset.w = ''; $('yomi').innerHTML = ''; $('roma').innerHTML = ''; return; }
     var w = t.w;
     // 例文全体を出し、打つ言い回しの部分に色をつける。意味は言い回しの真上に出す（打つときに目に入るように）
@@ -537,6 +564,8 @@
     G.answered = false;
     $('q-word').textContent = w.w;
     $('q-word').parentNode.dataset.lv = w.lv;
+    if (w.st) $('q-word').parentNode.dataset.st = w.st;
+    renderProc($('proc-sp'), w);
     $('q-yomi').textContent = '';
     $('q-ask').hidden = false;
     $('q-ex').hidden = true;

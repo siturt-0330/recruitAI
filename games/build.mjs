@@ -76,6 +76,12 @@ function load(slug, errors) {
       if (![...guide].every((ch) => word.input(ch)) || !word.done()) err(`${at}: 「${full}」がローマ字で打てません`);
     }
     const out = { w: w.w, y: w.y, m: w.m, e: w.e, p: w.p, pre, post, lv: w.lv };
+    // 工程（steps の id、ranges・others の名前）
+    if (w.st !== undefined) {
+      const known = new Set([...(cfg.steps || []).map((s) => s.id), ...Object.keys(cfg.ranges || {}), ...Object.keys(cfg.others || {})]);
+      if (!known.has(w.st)) err(`${at}: st「${w.st}」は game.json の steps・ranges・others にありません`);
+      out.st = w.st;
+    }
     if (w.alt && w.alt.length) out.alt = w.alt;
     if (w.syn !== undefined && !Array.isArray(w.syn)) err(`${at}: syn は言葉の配列で書いてください`);
     else if (w.syn && w.syn.length) out.syn = w.syn;
