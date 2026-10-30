@@ -269,7 +269,9 @@
     if (!w) return;
     var el = document.createElement('div');
     el.className = 'es';
-    el.innerHTML = '<div class="t"><span>' + esc(CFG.card) + '</span><span>No.' + (G.n = (G.n || 0) + 1) + '</span></div>' +
+    // テーマ（games/<slug>/game.json の theme）がレベルごとのイラストを出せるように、レベルを持たせる
+    el.dataset.lv = w.lv;
+    el.innerHTML = '<i class="il"></i><div class="t"><span>' + esc(CFG.card) + '</span><span>No.' + (G.n = (G.n || 0) + 1) + '</span></div>' +
       '<div class="w' + (w.w.length >= 3 ? ' long' : '') + '">' + esc(w.w) + '</div>' +
       '<div class="m"><b>意味</b>' + esc(w.m) + '</div>';
     $('cards').appendChild(el);
@@ -533,6 +535,7 @@
     G.cur = w;
     G.answered = false;
     $('q-word').textContent = w.w;
+    $('q-word').parentNode.dataset.lv = w.lv;
     $('q-yomi').textContent = '';
     $('q-ask').hidden = false;
     $('q-ex').hidden = true;

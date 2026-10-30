@@ -148,6 +148,15 @@ const listPage = template('words.html');
 /** <script type="application/ld+json"> に埋め込む（</script> で切れないように < を逃がす） */
 const ld = (data) => JSON.stringify(data).replace(/</g, '\\u003c');
 const PUBLISHER = { '@type': 'Organization', name: 'らくらくエントリー', url: `${SITE}/`, logo: `${SITE}/images/icon-128.png` };
+/** テーマ（site/game/themes/<theme>.css）。ゲームごとの色・背景・カードのイラスト */
+const themeCss = (g) => {
+  if (!g.cfg.theme) return '';
+  const file = path.join(siteGame, 'themes', `${g.cfg.theme}.css`);
+  if (!fs.existsSync(file)) throw new Error(`テーマの CSS がありません：site/game/themes/${g.cfg.theme}.css`);
+  const v = createHash('sha1').update(fs.readFileSync(file)).digest('hex').slice(0, 8);
+  return `<link rel="stylesheet" href="/game/themes/${g.cfg.theme}.css?v=${v}" />`;
+};
+const themeClass = (g) => (g.cfg.theme ? ` class="theme-${g.cfg.theme}"` : '');
 const HUB_LINK = '<a class="link" href="/game">SPI 用語集</a>';
 /** パンくずの「SPI 用語集」。standalone のゲームは SPI 用語集の下に置かない */
 const hubCrumb = (g) => (g.cfg.standalone ? [] : [['SPI 用語集', `${SITE}/game`]]);
@@ -206,6 +215,8 @@ for (const g of games) {
   const html = page
     .replaceAll('{{seoTitle}}', () => esc(g.cfg.seoTitle))
     .replaceAll('{{hubLink}}', () => (g.cfg.standalone ? '' : HUB_LINK))
+    .replaceAll('{{themeCss}}', () => themeCss(g))
+    .replaceAll('{{themeClass}}', () => themeClass(g))
     .replaceAll('{{description}}', () => esc(g.cfg.description))
     .replaceAll('{{url}}', () => url)
     .replaceAll('{{ogImage}}', () => gameOg)
@@ -301,6 +312,8 @@ for (const g of games) {
     .replaceAll('{{gamePath}}', () => gamePath)
     .replaceAll('{{title}}', () => esc(g.cfg.title))
     .replaceAll('{{hubLink}}', () => (g.cfg.standalone ? '' : HUB_LINK))
+    .replaceAll('{{themeCss}}', () => themeCss(g))
+    .replaceAll('{{themeClass}}', () => themeClass(g))
     .replaceAll('{{hubCrumb}}', () => (g.cfg.standalone ? '' : '<li><a href="/game">SPI 用語集</a></li>'))
     .replaceAll('{{hubFoot}}', () => (g.cfg.standalone ? '' : '<a href="/game">SPI 用語集</a> ・ '))
     .replaceAll('{{ogImage}}', () => gameOg)

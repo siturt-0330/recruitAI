@@ -1,0 +1,88 @@
+/* 半導体用語タイピングのテーマ：クリーンルームと回路。濃紺の地にシアンと緑、カードは IC チップの形 */
+.theme-handotai {
+  --ink: #e6f1ff; --sub: #9fb3cc; --mute: #6f84a0; --line: rgba(120, 200, 255, .16); --paper: #0b1424;
+  --accent: #22d3ee; --stamp: #34d399; --ok: #34d399;
+  --panel: rgba(17, 28, 48, .82); --panel-2: #13213a;
+  --chip-ink: #e6f1ff;
+  --il-chip: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none' stroke='%2322d3ee' stroke-width='2'%3E%3Crect x='16' y='16' width='32' height='32' rx='3'/%3E%3Crect x='24' y='24' width='16' height='16' rx='1' stroke='%2334d399'/%3E%3Cpath d='M22 16V8M32 16V8M42 16V8M22 56v-8M32 56v-8M42 56v-8M16 22H8M16 32H8M16 42H8M56 22h-8M56 32h-8M56 42h-8'/%3E%3C/svg%3E");
+  --il-wafer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none' stroke='%2322d3ee' stroke-width='2'%3E%3Cpath d='M32 6a26 26 0 1 0 4 .3' /%3E%3Cpath d='M36 6.3l-4 4-4-4.2'/%3E%3Cg stroke='%2334d399' stroke-width='1.4'%3E%3Cpath d='M14 24h36M10 32h44M14 40h36M24 14v36M32 10v44M40 14v36'/%3E%3C/g%3E%3C/svg%3E");
+  --il-stack: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M32 10 54 21 32 32 10 21Z' stroke='%2334d399'/%3E%3Cpath d='M10 30l22 11 22-11M10 39l22 11 22-11'/%3E%3Cpath d='M32 32v9M32 41v9' stroke-dasharray='2 3'/%3E%3C/svg%3E");
+  background: #070e1b;
+  background-image:
+    radial-gradient(1200px 600px at 80% -10%, rgba(34, 211, 238, .12), transparent 60%),
+    radial-gradient(900px 500px at -10% 30%, rgba(52, 211, 153, .08), transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' fill='none' stroke='%2322d3ee' stroke-opacity='.07' stroke-width='1.5'%3E%3Cpath d='M0 40h50l20 20h40l10-10h40M40 160v-40l20-20v-30M120 0v30l-20 20M0 120h30l15 15h60l20-20h35'/%3E%3Cg fill='%2322d3ee' fill-opacity='.12' stroke='none'%3E%3Ccircle cx='50' cy='40' r='3'/%3E%3Ccircle cx='110' cy='60' r='3'/%3E%3Ccircle cx='60' cy='100' r='3'/%3E%3Ccircle cx='105' cy='135' r='3'/%3E%3C/g%3E%3C/svg%3E");
+  color: var(--ink);
+}
+.theme-handotai .brand { color: var(--ink); }
+.theme-handotai .top .link:hover { background: rgba(255, 255, 255, .06); }
+.theme-handotai .kick { color: var(--accent); }
+.theme-handotai .start h1 em { background: linear-gradient(90deg, #22d3ee, #34d399 55%, #a3e635); -webkit-background-clip: text; background-clip: text; }
+
+/* パネル類（白い面を暗いガラスに） */
+.theme-handotai :is(.course, .mode, .about, .score, .book, .cta, .wbg, .review, .choice .card, .opt, .two .op, .focus, .gloss, .paused, .end) {
+  background: var(--panel); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 18px 40px rgba(0, 0, 0, .35);
+}
+.theme-handotai .course[aria-pressed="true"] { border: 2px solid var(--accent); box-shadow: 0 0 0 4px rgba(34, 211, 238, .12), 0 18px 40px rgba(0, 0, 0, .4); }
+.theme-handotai .course .tag, .theme-handotai .tabs button, .theme-handotai .wb .tabs button { background: rgba(255, 255, 255, .06); color: var(--sub); border-color: var(--line); }
+.theme-handotai .course[aria-pressed="true"] .tag { background: var(--accent); color: #04121c; }
+.theme-handotai .tabs button[aria-pressed="true"], .theme-handotai .wb .tabs button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #04121c; }
+.theme-handotai .btn.dark, .theme-handotai .dark { background: linear-gradient(90deg, #22d3ee, #34d399); color: #04121c; }
+.theme-handotai .ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.theme-handotai .note kbd { background: var(--panel-2); color: var(--ink); border-color: var(--line); }
+.theme-handotai .mode .ic.quiz { background: linear-gradient(135deg, #0891b2, #22d3ee); }
+.theme-handotai .mode .ic.book { background: linear-gradient(135deg, #059669, #34d399); }
+.theme-handotai .about a, .theme-handotai .weak-link, .theme-handotai .bookfoot button { color: var(--accent); }
+.theme-handotai footer, .theme-handotai footer a { color: var(--mute); }
+.theme-handotai .wbr { border-top-color: var(--line); }
+.theme-handotai .wbr .sw { background: #2a3a55; }
+
+/* プレイの画面：ウエハーの地図のような格子と、金属のベルト */
+.theme-handotai .stage { background: linear-gradient(#0c1730, #08111f); box-shadow: 0 26px 60px rgba(0, 0, 0, .5), 0 0 0 1px var(--line); }
+.theme-handotai .stage .wall {
+  background:
+    radial-gradient(circle at 50% 120%, rgba(34, 211, 238, .14), transparent 60%),
+    repeating-linear-gradient(90deg, transparent 0 39px, rgba(34, 211, 238, .08) 39px 40px),
+    repeating-linear-gradient(0deg, transparent 0 39px, rgba(34, 211, 238, .08) 39px 40px);
+}
+.theme-handotai .hud, .theme-handotai .hud b, .theme-handotai .hud .cname { color: var(--ink); }
+.theme-handotai .belt { background: repeating-linear-gradient(90deg, #1b2638 0 24px, #142033 24px 48px); border-top-color: #2c3d58; border-bottom-color: #0a1220; }
+.theme-handotai .sent { color: var(--mute); }
+.theme-handotai .sent .tp { background: rgba(34, 211, 238, .14); color: var(--ink); }
+.theme-handotai .sent mark { background: linear-gradient(transparent 55%, rgba(52, 211, 153, .45) 55%); color: var(--ink); }
+.theme-handotai .focus .y .dn, .theme-handotai .focus .r .dn { color: #3b4d6b; }
+
+/* ベルトのカード：金色のピンが付いた IC チップ */
+.theme-handotai .es {
+  background: linear-gradient(160deg, #1a2a46, #0f1a2e); color: var(--chip-ink); border-radius: 8px;
+  border: 1px solid rgba(34, 211, 238, .35); padding-top: 34px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(255, 255, 255, .03);
+}
+.theme-handotai .es::before, .theme-handotai .es::after {
+  content: ""; position: absolute; top: 18px; bottom: 18px; width: 6px;
+  background: repeating-linear-gradient(180deg, #d4a94a 0 6px, transparent 6px 14px);
+}
+.theme-handotai .es::before { left: -6px; border-radius: 2px 0 0 2px; }
+.theme-handotai .es::after { right: -6px; border-radius: 0 2px 2px 0; }
+.theme-handotai .es .t { position: absolute; left: 12px; right: 12px; top: 8px; color: var(--mute); border-bottom-color: var(--line); }
+.theme-handotai .es .w { color: var(--chip-ink); margin-top: 22px; }
+.theme-handotai .es .m { color: var(--sub); }
+.theme-handotai .es .m b { color: var(--accent); }
+.theme-handotai .es.on { outline: 3px solid var(--accent); box-shadow: 0 0 24px rgba(34, 211, 238, .45); }
+.theme-handotai .es .il, .theme-handotai .choice .card .il {
+  display: block; width: 30px; height: 30px; margin: 0 auto -18px; background: var(--il-chip) center / contain no-repeat; opacity: .95;
+}
+.theme-handotai [data-lv="2"] .il { background-image: var(--il-wafer); }
+.theme-handotai [data-lv="3"] .il { background-image: var(--il-stack); }
+.theme-handotai .es .il { position: absolute; left: 50%; top: 26px; margin: 0 0 0 -15px; }
+.theme-handotai .es .w { margin-top: 30px; }
+.theme-handotai .choice .card .il { width: 56px; height: 56px; margin-bottom: 10px; }
+.theme-handotai .stamp { background: rgba(7, 14, 27, .8); }
+
+/* 単語一覧のページ */
+.theme-handotai .wl .toc a { background: var(--panel); color: var(--sub); border-color: var(--line); }
+.theme-handotai .wl .it:target { background: rgba(34, 211, 238, .1); }
+.theme-handotai .wl dd .ex mark { color: var(--ink); }
+.theme-handotai .crumbs a { color: var(--sub); }
+.theme-handotai .timer { background: rgba(255, 255, 255, .08); }
+.theme-handotai .timer i { background: linear-gradient(90deg, #22d3ee, #34d399); }
