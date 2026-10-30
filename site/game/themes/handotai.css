@@ -157,3 +157,11 @@
 
 /* 流れ図はステージ（スマホは言葉のカード）の上に置く */
 .theme-handotai .proc { margin: 0 auto 14px; }
+
+/* 範囲の言葉（前工程全体・工場全体）にも専用の絵。カードのイラストの下に分類名を出す */
+.theme-handotai { --st-front: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='7' y='12' width='34' height='28' rx='2'/%3E%3Cpath d='M7 18h34'/%3E%3Cpath d='M14 8v4M24 8v4M34 8v4' stroke='%2334d399'/%3E%3Cpath d='M16 24v8M24 24v8M32 24v8' stroke='%2334d399' stroke-dasharray='2 3'/%3E%3Cpath d='M12 36h24'/%3E%3C/svg%3E"); --st-all: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 41h38'/%3E%3Cpath d='M8 41V24l9 6v-6l9 6v-6l9 6v11'/%3E%3Cpath d='M37 41V10h5v31'/%3E%3Cpath d='M38 6c2-1 3 0 4-1' stroke='%2334d399'/%3E%3Cpath d='M13 35h3M21 35h3M29 35h3' stroke='%2334d399'/%3E%3C/svg%3E"); }
+.theme-handotai [data-st="front"] .il, .theme-handotai [data-st="front"].card .il { background-image: var(--st-front); }
+.theme-handotai [data-st="all"] .il, .theme-handotai [data-st="all"].card .il { background-image: var(--st-all); }
+.theme-handotai .es .ct { display: block; position: absolute; left: 0; right: 0; top: 58px; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--accent); }
+.theme-handotai .es .w { margin-top: 60px; }
+.theme-handotai .es .m { margin-top: 8px; }

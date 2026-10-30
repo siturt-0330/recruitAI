@@ -273,7 +273,7 @@
     // テーマ（games/<slug>/game.json の theme）がレベルごとのイラストを出せるように、レベルを持たせる
     el.dataset.lv = w.lv;
     if (w.st) el.dataset.st = w.st;
-    el.innerHTML = '<i class="il"></i><div class="t"><span>' + esc(CFG.card) + '</span><span>No.' + (G.n = (G.n || 0) + 1) + '</span></div>' +
+    el.innerHTML = '<i class="il"></i>' + (w.st ? '<span class="ct">' + esc(stLabel(w.st)) + '</span>' : '') + '<div class="t"><span>' + esc(CFG.card) + '</span><span>No.' + (G.n = (G.n || 0) + 1) + '</span></div>' +
       '<div class="w' + (w.w.length >= 3 ? ' long' : '') + (w.w.length >= 6 ? ' xlong' : '') + (w.w.length >= 9 ? ' xxlong' : '') + (w.w.length >= 12 ? ' xxxlong' : '') + '">' + esc(w.w) + '</div>' +
       '<div class="m"><b>意味</b>' + esc(w.m) + '</div>';
     $('cards').appendChild(el);
@@ -302,6 +302,12 @@
   /**
    * 工程の流れ図（game.json の steps）。言葉の st がその工程なら光らせる。ranges の名前なら範囲ごと、others の名前なら流れの外の言葉として見出しを出す
    */
+  /** 工程の短い名前（カードのイラストの下に出す）。steps の名前か、game.json の stLabels */
+  function stLabel(st) {
+    var s = (CFG.steps || []).filter(function (x) { return x.id === st; })[0];
+    return s ? s.name : (CFG.stLabels || {})[st] || '';
+  }
+
   function renderProc(box, w) {
     if (!box || !CFG.steps) return;
     // 打つたびに呼ばれるので、言葉が変わったときだけ描き直す
