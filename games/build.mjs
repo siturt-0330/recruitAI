@@ -148,6 +148,9 @@ const listPage = template('words.html');
 /** <script type="application/ld+json"> に埋め込む（</script> で切れないように < を逃がす） */
 const ld = (data) => JSON.stringify(data).replace(/</g, '\\u003c');
 const PUBLISHER = { '@type': 'Organization', name: 'らくらくエントリー', url: `${SITE}/`, logo: `${SITE}/images/icon-128.png` };
+const HUB_LINK = '<a class="link" href="/game">SPI 用語集</a>';
+/** パンくずの「SPI 用語集」。standalone のゲームは SPI 用語集の下に置かない */
+const hubCrumb = (g) => (g.cfg.standalone ? [] : [['SPI 用語集', `${SITE}/game`]]);
 const crumbs = (items) => ({
   '@type': 'BreadcrumbList',
   itemListElement: items.map(([name, item], i) => ({ '@type': 'ListItem', position: i + 1, name, item })),
@@ -195,13 +198,14 @@ for (const g of games) {
       },
       crumbs([
         ['らくらくエントリー', `${SITE}/`],
-        ['SPI 用語集', `${SITE}/game`],
+        ...hubCrumb(g),
         [g.cfg.title, url],
       ]),
     ],
   };
   const html = page
     .replaceAll('{{seoTitle}}', () => esc(g.cfg.seoTitle))
+    .replaceAll('{{hubLink}}', () => (g.cfg.standalone ? '' : HUB_LINK))
     .replaceAll('{{description}}', () => esc(g.cfg.description))
     .replaceAll('{{url}}', () => url)
     .replaceAll('{{ogImage}}', () => gameOg)
@@ -282,7 +286,7 @@ for (const g of games) {
       },
       crumbs([
         ['らくらくエントリー', `${SITE}/`],
-        ['SPI 用語集', `${SITE}/game`],
+        ...hubCrumb(g),
         [g.cfg.title, url],
         ['単語一覧', listUrl],
       ]),
@@ -296,6 +300,9 @@ for (const g of games) {
     .replaceAll('{{listUrl}}', () => listUrl)
     .replaceAll('{{gamePath}}', () => gamePath)
     .replaceAll('{{title}}', () => esc(g.cfg.title))
+    .replaceAll('{{hubLink}}', () => (g.cfg.standalone ? '' : HUB_LINK))
+    .replaceAll('{{hubCrumb}}', () => (g.cfg.standalone ? '' : '<li><a href="/game">SPI 用語集</a></li>'))
+    .replaceAll('{{hubFoot}}', () => (g.cfg.standalone ? '' : '<a href="/game">SPI 用語集</a> ・ '))
     .replaceAll('{{ogImage}}', () => gameOg)
     .replaceAll('{{version}}', () => version)
     .replaceAll('{{toc}}', () => toc)
@@ -306,15 +313,16 @@ for (const g of games) {
   console.log(`${listPath}  単語一覧`);
 }
 
-// ゲームの一覧
-games.sort((a, b) => (a.cfg.order ?? 99) - (b.cfg.order ?? 99) || a.cfg.title.localeCompare(b.cfg.title));
-const cards = games
+// ゲームの一覧（standalone のゲームは SPI 用語集とは別のものとして、一覧に載せない）
+const hubGames = games.filter((g) => !g.cfg.standalone);
+hubGames.sort((a, b) => (a.cfg.order ?? 99) - (b.cfg.order ?? 99) || a.cfg.title.localeCompare(b.cfg.title));
+const cards = hubGames
   .map(
     (g) =>
       `          <a class="gcard" href="/game/${g.slug}"><span class="k">${esc(g.cfg.kicker)}</span><b>${esc(g.cfg.title)}</b><p>${esc(g.cfg.summary)}</p><div class="n">${g.words.length} 語 ・ ${g.cfg.courses.length} コース</div></a>`,
   )
   .join('\n');
-const lists = games.map((g) => `          <li><a href="/game/${g.slug}/words">${esc(g.cfg.title)}の単語一覧（${g.words.length} 語）</a></li>`).join('\n');
+const lists = hubGames.map((g) => `          <li><a href="/game/${g.slug}/words">${esc(g.cfg.title)}の単語一覧（${g.words.length} 語）</a></li>`).join('\n');
 const hubLd = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -326,7 +334,7 @@ const hubLd = {
       publisher: PUBLISHER,
       mainEntity: {
         '@type': 'ItemList',
-        itemListElement: games.map((g, i) => ({ '@type': 'ListItem', position: i + 1, name: g.cfg.title, url: `${SITE}/game/${g.slug}` })),
+        itemListElement: hubGames.map((g, i) => ({ '@type': 'ListItem', position: i + 1, name: g.cfg.title, url: `${SITE}/game/${g.slug}` })),
       },
     },
     crumbs([
