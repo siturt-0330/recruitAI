@@ -97,3 +97,5 @@
 .theme-handotai .es .w.xxlong { font-size: 18px; letter-spacing: 0; }
 .theme-handotai .es .w.xxxlong { font-size: 15px; }
 .theme-handotai .es .m { margin-top: 10px; font-size: 12px; }
+/* カードの横のピン（金色の点）は出さない */
+.theme-handotai .es::before, .theme-handotai .es::after { content: none; }
