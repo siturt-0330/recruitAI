@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>業界用語タイピング｜打って覚える就活の業界用語（IT・金融・商社・メーカー・コンサル・広告）｜らくらくエントリー</title>
+    <meta name="description" content="面接や説明会で出てくる業界用語を、タイピングで覚える無料ゲーム。IT・金融・商社・メーカー・コンサル・広告・マスコミの言葉を、例文と意味を見ながら打ちます。スマホでは意味を 4 択で選んで覚えられます。" />
+    <link rel="canonical" href="https://rakuraku-entry.com/game/gyokai-yougo" />
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
+    <link rel="icon" href="/images/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#f6f4fb" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="らくらくエントリー" />
+    <meta property="og:url" content="https://rakuraku-entry.com/game/gyokai-yougo" />
+    <meta property="og:title" content="業界用語タイピング｜打って覚える就活の業界用語（IT・金融・商社・メーカー・コンサル・広告）" />
+    <meta property="og:description" content="面接や説明会で出てくる業界用語を、タイピングで覚える無料ゲーム。IT・金融・商社・メーカー・コンサル・広告・マスコミの言葉を、例文と意味を見ながら打ちます。スマホでは意味を 4 択で選んで覚えられます。" />
+    <meta property="og:image" content="https://rakuraku-entry.com/game/gyokai-yougo/og/game.png?v=2a8c50f9" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@500;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/game/engine/game.css?v=9bb8eb6f" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"業界用語タイピング","url":"https://rakuraku-entry.com/game/gyokai-yougo","description":"面接や説明会で出てくる業界用語を、タイピングで覚える無料ゲーム。IT・金融・商社・メーカー・コンサル・広告・マスコミの言葉を、例文と意味を見ながら打ちます。スマホでは意味を 4 択で選んで覚えられます。","applicationCategory":"EducationalApplication","operatingSystem":"Web","inLanguage":"ja","isAccessibleForFree":true,"image":"https://rakuraku-entry.com/game/gyokai-yougo/og/game.png?v=2a8c50f9","offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"},"publisher":{"@type":"Organization","name":"らくらくエントリー","url":"https://rakuraku-entry.com/","logo":"https://rakuraku-entry.com/images/icon-128.png"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"らくらくエントリー","item":"https://rakuraku-entry.com/"},{"@type":"ListItem","position":2,"name":"SPI 用語集","item":"https://rakuraku-entry.com/game"},{"@type":"ListItem","position":3,"name":"業界用語タイピング","item":"https://rakuraku-entry.com/game/gyokai-yougo"}]}]}</script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8699150005065903" crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="/"><img src="/images/icon.svg" alt="" />らくらくエントリー</a>
+      <span class="sp"></span>
+      <a class="link" href="/game">SPI 用語集</a>
+      <a class="link" href="/column">コラム</a>
+      <a class="link ext" href="/">拡張機能について</a>
+    </header>
+
+    <main class="wrap">
+      <!-- スタート -->
+      <section id="start" class="start">
+        <div class="kick">INDUSTRY WORDS TYPING</div>
+        <h1>打って覚える、<br /><em>志望業界の言葉。</em></h1>
+        <div class="courses" id="courses"></div>
+        <div class="go">
+          <button class="btn dark" id="play">スペースキーでスタート</button>
+          <div class="modes">
+            <button class="mode" id="quizStart"><span class="ic quiz">?</span><span class="tx"><b>意味クイズ</b><small>言葉の意味を 2 択で答えて覚える</small></span><span class="ar">→</span></button>
+            <button class="mode" id="bookOpen"><span class="ic book">帳</span><span class="tx"><b>単語帳</b><small>84 語を意味と例文つきで見る</small></span><span class="ar">→</span></button>
+          </div>
+          <p class="note" id="keys">ローマ字入力（<kbd>半角英数</kbd>）で打ちます。<kbd>Esc</kbd> でやめる</p>
+          <p class="note warn" id="empty" hidden></p>
+          <button class="weak-link" id="weakStart" hidden></button>
+        </div>
+        
+        <!-- 検索から来た人向けの説明と、単語一覧（HTML で全部読める）への入り口 -->
+        <div class="about">
+          <h2>業界用語タイピングとは</h2>
+          <p>説明会や面接、OB・OG 訪問で当たり前のように出てくる業界用語を、ゲームで覚える無料の練習ツールです。志望する業界のコースを選び、例文の言い回しごと打つので、意味と使い方がいっしょに身につきます。登録やログインはいりません。</p>
+          <ul>
+            <li><b>タイピング</b>流れてくる言い回しを、例文と意味を見ながらローマ字で打つ</li>
+            <li><b>意味クイズ</b>言葉の意味を選んで答える（スマホは 4 択）</li>
+            <li><b>単語帳</b>84 語を意味と例文つきで見て、覚えた言葉は出題から外せる</li>
+          </ul>
+          <p><a href="/game/gyokai-yougo/words">84 語の一覧（読み・意味・例文）を見る →</a></p>
+        </div>
+      </section>
+
+      <!-- 単語帳（出題しない言葉を選ぶ） -->
+      <section id="wordbook" class="wb" hidden>
+        <div class="wbh"><button class="btn ghost" id="bookBack">戻る</button><h2>単語帳</h2><span class="sp"></span><span class="cnt" id="wbCount"></span></div>
+        <div class="tabs" id="wbTabs"><button data-t="all" data-label="すべて"></button><button data-t="off" data-label="出題しない"></button><button data-t="weak" data-label="苦手"></button></div>
+        <div id="wbList"></div>
+      </section>
+      <!-- プレイ（パソコン） -->
+      <section id="play-pc" hidden>
+        <div class="stage" id="stage">
+          <div class="wall"></div>
+          <div class="hud">
+            <span class="cname" id="cname"></span>
+            <div class="timer"><i id="timer"></i></div>
+            残り<b id="left">0</b>秒
+            <span class="paused" id="paused" hidden>一時停止</span>
+            <span class="combo" id="combo"></span>
+            <span class="sp"></span>
+            スコア<b id="score">0</b>
+          </div>
+          <div class="belt" id="belt"></div>
+          <div id="cards"></div>
+          <div class="focus" id="type">
+            <div class="fs" id="fs"><div class="sent" id="sent"></div><div class="y" id="yomi"></div><div class="r" id="roma"></div></div>
+            <div class="qz" id="qz" hidden></div>
+          </div>
+          <div class="ime" id="ime" hidden>入力を「半角英数」にしてください</div>
+          <div class="countdown" id="countdown" hidden></div>
+        </div>
+        <p class="quit"><kbd>Esc</kbd> でやめる</p>
+        
+      </section>
+
+      <!-- プレイ（スマホ：4 択） -->
+      <section id="play-sp" class="choice" hidden>
+        <div class="hud">
+          <div class="timer" style="flex:1"><i id="timer-sp"></i></div>
+          残り<b id="left-sp">0</b>秒　スコア<b id="score-sp">0</b>
+        </div>
+        <div class="card"><div class="w" id="q-word"></div><div class="yo" id="q-yomi"></div><div class="q" id="q-ask">この言葉の意味は？</div><div class="exs" id="q-ex" hidden></div></div>
+        <div class="opts" id="opts"></div>
+        <p class="quit"><button class="quit-sp" id="quitSp">やめる</button></p>
+      </section>
+
+      <!-- 結果 -->
+      <section id="result" hidden>
+        <div class="cta">
+          <img src="/images/icon.svg" alt="" />
+          <div><b>エントリーの入力は、ワンクリックで。</b><br /><span>氏名・住所・学歴を、応募フォームに自動入力する Chrome 拡張機能</span></div>
+          <a class="btn dark" href="https://chromewebstore.google.com/detail/kdppelkdplekjbiehpodfmmfcpbbfeho?utm_source=rakuraku-entry.com&amp;utm_campaign=game" target="_blank" rel="noopener">Chrome に無料で追加</a>
+        </div>
+        <div class="res">
+          <div class="side">
+            <div class="score">
+              <span class="rank" id="rank"></span>
+              <div class="pt"><span id="r-score">0</span><small> 点</small></div>
+              <div class="best" id="r-best"></div>
+              <div class="st"><div><b id="r-ok">0</b>正解</div><div><b id="r-weak">0</b><span id="r-weak-label">見送り</span></div><div><b id="r-acc">0%</b>正確さ</div></div>
+              <a class="btn dark" id="share" target="_blank" rel="noopener">𝕏 で結果をシェア</a>
+              <button class="btn ghost" id="again">もう一度（R キー）</button>
+              <button class="btn ghost" id="back">コースをえらぶ</button>
+            </div>
+            
+          </div>
+          <div>
+            <div class="book">
+              <div class="hd"><h2>今回の単語帳</h2><div class="tabs"><button id="tab-all" aria-pressed="true"></button><button id="tab-weak" aria-pressed="false"></button></div><button class="bulk" id="hideOk" hidden></button></div>
+              <div id="words"></div>
+              <div class="review" id="review" hidden><span id="review-text"></span><button class="btn dark" id="reviewBtn">苦手だけ復習する</button></div>
+              <p class="bookfoot">外した言葉は次のゲームから出ません。<button id="bookLink">単語帳</button>でいつでも戻せます。</p>
+            </div>
+          </div>
+        </div>
+        
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" hidden><span id="toastText"></span><button id="toastUndo">元に戻す</button></div>
+    <footer>© らくらくエントリー ・ <a href="/game/gyokai-yougo/words">単語一覧</a> ・ <a href="/">就活の応募フォーム自動入力（Chrome 拡張機能）</a> ・ <a href="/privacy">プライバシーポリシー</a></footer>
+    <script type="application/json" id="game-config">{"title":"業界用語タイピング","seoTitle":"業界用語タイピング｜打って覚える就活の業界用語（IT・金融・商社・メーカー・コンサル・広告）","description":"面接や説明会で出てくる業界用語を、タイピングで覚える無料ゲーム。IT・金融・商社・メーカー・コンサル・広告・マスコミの言葉を、例文と意味を見ながら打ちます。スマホでは意味を 4 択で選んで覚えられます。","aboutHeading":"業界用語タイピングとは","aboutText":"説明会や面接、OB・OG 訪問で当たり前のように出てくる業界用語を、ゲームで覚える無料の練習ツールです。志望する業界のコースを選び、例文の言い回しごと打つので、意味と使い方がいっしょに身につきます。登録やログインはいりません。","listTitle":"就活の業界用語一覧｜IT・金融・商社・メーカー・コンサル・広告の言葉を意味と例文つきで","listDescription":"就活の説明会や面接で出てくる業界用語を、業界ごとに読み・意味・例文つきで一覧にしました。IT・Web、金融、商社・メーカー、コンサル・広告・マスコミの 4 つに分け、五十音順に並べています。","listHeading":"就活の業界用語一覧","listLead":"説明会や面接で出てくる業界用語を、業界ごとに読み・意味・例文つきでまとめました。志望業界の言葉を読んだあとは、タイピングや意味クイズで例文ごと覚えられます。","summary":"志望業界の言葉を、例文ごと打って覚える","kicker":"INDUSTRY WORDS TYPING","heading1":"打って覚える、","heading2":"志望業界の言葉。","card":"名刺","ogWord":"与信","hashtags":["就活","業界研究","らくらくエントリー"],"defaultCourse":4,"courses":[{"id":"it","tag":"IT・Web","name":"IT・Web コース","sec":60,"levels":[1],"cross":12,"ex":"要件定義・マネタイズ など"},{"id":"finance","tag":"金融","name":"金融コース","sec":60,"levels":[2],"cross":12,"ex":"与信・時価総額 など"},{"id":"maker","tag":"商社・メーカー","name":"商社・メーカーコース","sec":60,"levels":[3],"cross":12,"ex":"商流・歩留まり など"},{"id":"consul","tag":"コンサル・広告","name":"コンサル・広告・マスコミコース","sec":60,"levels":[4],"cross":12,"ex":"アサイン・出稿 など"},{"id":"all","tag":"全業界","name":"全業界ミックス","sec":120,"levels":[1,2,3,4],"cross":10,"ex":"4 業界の言葉から\u003cbr />まんべんなく"}],"levelNames":{"1":"IT・Web","2":"金融","3":"商社・メーカー","4":"コンサル・広告・マスコミ"},"ranks":[[6000,"業界通"],[3500,"業界研究の達人"],[1500,"業界研究ルーキー"],[0,"業界研究見習い"]],"slug":"gyokai-yougo","url":"https://rakuraku-entry.com/game/gyokai-yougo","version":"9bb8eb6f"}</script>
+    <script src="/game/engine/romaji.js?v=9bb8eb6f"></script>
+    <script src="/game/engine/game.js?v=9bb8eb6f"></script>
+    <!-- Cloudflare Web Analytics（アクセス解析。Cookie は使わない） --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "bfa5d22bd9ef4d3e8c71de69bad08fa1"}'></script><!-- End Cloudflare Web Analytics -->
+  </body>
+</html>
