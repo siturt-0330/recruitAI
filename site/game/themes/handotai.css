@@ -86,3 +86,14 @@
 .theme-handotai .crumbs a { color: var(--sub); }
 .theme-handotai .timer { background: rgba(255, 255, 255, .08); }
 .theme-handotai .timer i { background: linear-gradient(90deg, #22d3ee, #34d399); }
+
+/* カードを大きくし、名刺・No. の見出しは出さない。長い言葉は文字を小さくして、それでも入らなければ折り返す */
+.theme-handotai .es { width: 240px; height: 200px; padding: 18px 16px 14px; }
+.theme-handotai .es .t { display: none; }
+.theme-handotai .es .il { top: 14px; }
+.theme-handotai .es .w { margin-top: 36px; font-size: 34px; letter-spacing: .02em; white-space: nowrap; line-height: 1.25; }
+.theme-handotai .es .w.long { font-size: 30px; }
+.theme-handotai .es .w.xlong { font-size: 24px; }
+.theme-handotai .es .w.xxlong { font-size: 18px; letter-spacing: 0; }
+.theme-handotai .es .w.xxxlong { font-size: 15px; }
+.theme-handotai .es .m { margin-top: 10px; font-size: 12px; }

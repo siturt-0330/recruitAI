@@ -228,7 +228,8 @@
 
   // ---- パソコン：ベルトコンベア ----
   // ES は 1 枚ずつ流す。打ち終わったら（または右に落ちたら）次の 1 枚が左から入ってくる
-  var CARD_W = 150, EDGE = 16, FAST = 900;
+  // カードの幅は game.json の cardWidth で変えられる（テーマで大きいカードにするとき）
+  var CARD_W = CFG.cardWidth || 150, EDGE = 16, FAST = 900;
   // 意味の 2 択を出す間隔（語数）
   var QUIZ_EVERY = 5;
 
@@ -272,7 +273,7 @@
     // テーマ（games/<slug>/game.json の theme）がレベルごとのイラストを出せるように、レベルを持たせる
     el.dataset.lv = w.lv;
     el.innerHTML = '<i class="il"></i><div class="t"><span>' + esc(CFG.card) + '</span><span>No.' + (G.n = (G.n || 0) + 1) + '</span></div>' +
-      '<div class="w' + (w.w.length >= 3 ? ' long' : '') + '">' + esc(w.w) + '</div>' +
+      '<div class="w' + (w.w.length >= 3 ? ' long' : '') + (w.w.length >= 6 ? ' xlong' : '') + (w.w.length >= 9 ? ' xxlong' : '') + (w.w.length >= 12 ? ' xxxlong' : '') + '">' + esc(w.w) + '</div>' +
       '<div class="m"><b>意味</b>' + esc(w.m) + '</div>';
     $('cards').appendChild(el);
     // 打つのは言い回し（例：義憤を覚える）。言葉の読みが 2 通りあるときは、どちらの読みでもよい

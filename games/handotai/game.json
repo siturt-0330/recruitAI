@@ -15,6 +15,7 @@
   "card": "名刺",
   "standalone": true,
   "theme": "handotai",
+  "cardWidth": 240,
   "ogWord": "露光",
   "hashtags": [
     "就活",
