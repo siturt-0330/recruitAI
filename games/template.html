@@ -74,6 +74,7 @@
       </section>
       <!-- プレイ（パソコン） -->
       <section id="play-pc" hidden>
+        <div class="proc" id="proc" hidden></div>
         <div class="stage" id="stage">
           <div class="wall"></div>
           <div class="hud">
@@ -94,7 +95,6 @@
           <div class="ime" id="ime" hidden>入力を「半角英数」にしてください</div>
           <div class="countdown" id="countdown" hidden></div>
         </div>
-        <div class="proc" id="proc" hidden></div>
         <p class="quit"><kbd>Esc</kbd> でやめる</p>
         {{adPlay}}
       </section>
@@ -105,9 +105,9 @@
           <div class="timer" style="flex:1"><i id="timer-sp"></i></div>
           残り<b id="left-sp">0</b>秒　スコア<b id="score-sp">0</b>
         </div>
+        <div class="proc" id="proc-sp" hidden></div>
         <div class="card"><i class="il"></i><div class="w" id="q-word"></div><div class="yo" id="q-yomi"></div><div class="q" id="q-ask">この言葉の意味は？</div><div class="exs" id="q-ex" hidden></div></div>
         <div class="opts" id="opts"></div>
-        <div class="proc" id="proc-sp" hidden></div>
         <p class="quit"><button class="quit-sp" id="quitSp">やめる</button></p>
       </section>
 

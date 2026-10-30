@@ -22,7 +22,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@500;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/game/engine/game.css?v=ad48f30c" />
-    <link rel="stylesheet" href="/game/themes/handotai.css?v=a460c69f" />
+    <link rel="stylesheet" href="/game/themes/handotai.css?v=26d23763" />
     <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"半導体用語タイピング","url":"https://rakuraku-entry.com/game/handotai","description":"半導体業界を受ける就活生のための、業界用語をタイピングで覚える無料ゲーム。初心者・中級者・上級者の 3 段階で 195 語。ウエハー・露光から先端パッケージ・経済安全保障まで、例文と意味を見ながら打ちます。スマホでは意味を 4 択で選んで覚えられます。","applicationCategory":"EducationalApplication","operatingSystem":"Web","inLanguage":"ja","isAccessibleForFree":true,"image":"https://rakuraku-entry.com/game/handotai/og/game.png?v=c203dfa6","offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"},"publisher":{"@type":"Organization","name":"らくらくエントリー","url":"https://rakuraku-entry.com/","logo":"https://rakuraku-entry.com/images/icon-128.png"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"らくらくエントリー","item":"https://rakuraku-entry.com/"},{"@type":"ListItem","position":2,"name":"半導体用語タイピング","item":"https://rakuraku-entry.com/game/handotai"}]}]}</script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8699150005065903" crossorigin="anonymous"></script>
   </head>
@@ -73,6 +73,7 @@
       </section>
       <!-- プレイ（パソコン） -->
       <section id="play-pc" hidden>
+        <div class="proc" id="proc" hidden></div>
         <div class="stage" id="stage">
           <div class="wall"></div>
           <div class="hud">
@@ -93,7 +94,6 @@
           <div class="ime" id="ime" hidden>入力を「半角英数」にしてください</div>
           <div class="countdown" id="countdown" hidden></div>
         </div>
-        <div class="proc" id="proc" hidden></div>
         <p class="quit"><kbd>Esc</kbd> でやめる</p>
         
       </section>
@@ -104,9 +104,9 @@
           <div class="timer" style="flex:1"><i id="timer-sp"></i></div>
           残り<b id="left-sp">0</b>秒　スコア<b id="score-sp">0</b>
         </div>
+        <div class="proc" id="proc-sp" hidden></div>
         <div class="card"><i class="il"></i><div class="w" id="q-word"></div><div class="yo" id="q-yomi"></div><div class="q" id="q-ask">この言葉の意味は？</div><div class="exs" id="q-ex" hidden></div></div>
         <div class="opts" id="opts"></div>
-        <div class="proc" id="proc-sp" hidden></div>
         <p class="quit"><button class="quit-sp" id="quitSp">やめる</button></p>
       </section>
 

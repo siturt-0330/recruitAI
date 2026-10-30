@@ -154,3 +154,6 @@
 @media (max-width: 820px) {
   .theme-handotai .proc li span { white-space: normal; line-height: 1.25; word-break: keep-all; overflow-wrap: anywhere; font-size: 9px; }
 }
+
+/* 流れ図はステージ（スマホは言葉のカード）の上に置く */
+.theme-handotai .proc { margin: 0 auto 14px; }
