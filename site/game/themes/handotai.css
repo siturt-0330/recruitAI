@@ -334,3 +334,10 @@
 .theme-handotai .choice .card[data-st="front"] .il { background-image: var(--st-front); }
 .theme-handotai .choice .card[data-st="all"] .il { background-image: var(--st-all); }
 .theme-handotai .choice .card .exs mark { background: rgba(52, 211, 153, .28); color: var(--ink); }
+
+/* 「もう出さない」：押す前は縁取りのボタン、押したあと（出さない）はシアンの面にして、どちらも読めるように */
+.theme-handotai .hide { background: transparent; color: #cfe3f7; border: 1px solid rgba(159, 179, 204, .45); }
+.theme-handotai .hide:hover { color: #fff; border-color: #22d3ee; }
+.theme-handotai .hide.on { background: rgba(34, 211, 238, .18); border-color: #22d3ee; color: #a5f3fc; }
+.theme-handotai .bulk { background: transparent; color: #cfe3f7; border: 1px solid rgba(159, 179, 204, .45); }
+.theme-handotai .bulk .o { background: rgba(52, 211, 153, .2); color: #34d399; }

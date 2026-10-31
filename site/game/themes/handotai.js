@@ -287,7 +287,7 @@
   }
 
   /* ---- エンジンの合図ごとの演出 ---- */
-  var COMBO = { 5: '歩留まり上昇中', 10: '歩留まり 100%！', 20: '量産体制に入った！', 30: '最先端ノード到達！' };
+  var COMBO = { 5: 1, 10: 1, 20: 1, 30: 1 };
   var doneSteps = {}, allShown = false, dark = null;
   var on = {
     // 34. 画面の切り替えをフェードとスライドでつなぐ
@@ -329,7 +329,7 @@
       rollSoon();
       flyToProc(d.el, d.w);
       // 19・20. コンボで一言と、ベルトの光の色が変わる
-      if (COMBO[d.combo]) banner(d.combo + ' 連続　' + COMBO[d.combo]);
+      if (COMBO[d.combo]) banner(d.combo + ' 連続');
       var stage = $('stage');
       if (stage) stage.dataset.combo = d.combo >= 20 ? '3' : d.combo >= 10 ? '2' : d.combo >= 5 ? '1' : '0';
       // 23. 11 の工程をすべて 1 回ずつ打つと「全工程コンプリート」
@@ -337,7 +337,7 @@
       if (d.w.st && steps.indexOf(d.w.st) >= 0) doneSteps[d.w.st] = true;
       if (!allShown && steps.length && steps.every(function (s) { return doneSteps[s]; })) {
         allShown = true;
-        after(700, function () { banner('全工程コンプリート！', 'fx-complete'); });
+        after(700, function () { banner('全工程', 'fx-complete'); });
       }
     },
     // 21・22. 流れ図：光の点が工程を移る。範囲の言葉は左から順に光る
