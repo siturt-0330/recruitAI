@@ -1,0 +1,21 @@
+/* 半導体用語タイピングのシェア画像（games/og.mjs が og.html に足す）。ゲームの画面と同じ、濃紺と回路・シアンと緑 */
+body { background: #070e1b; color: #e6f1ff; }
+.panel { background: radial-gradient(700px 400px at 85% 0%, rgba(34,211,238,.16), transparent 60%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' fill='none' stroke='%2322d3ee' stroke-opacity='.08' stroke-width='1.5'%3E%3Cpath d='M0 40h50l20 20h40l10-10h40M40 160v-40l20-20v-30M120 0v30l-20 20M0 120h30l15 15h60l20-20h35'/%3E%3C/svg%3E"), linear-gradient(135deg, #0c1730, #08111f); box-shadow: inset 0 0 0 1px rgba(120,200,255,.16); }
+.brand { color: #e6f1ff; }
+.kick { color: #22d3ee; }
+h1 em { background: linear-gradient(90deg, #22d3ee, #34d399 55%, #a3e635); -webkit-background-clip: text; background-clip: text; }
+.lv i { background: rgba(255,255,255,.1); }
+.lv i.on { background: linear-gradient(90deg, #22d3ee, #34d399); }
+.pill { background: linear-gradient(90deg, #22d3ee, #34d399); color: #04121c; }
+.url { color: #9fb3cc; }
+.wall { background: repeating-linear-gradient(90deg, transparent 0 39px, rgba(34,211,238,.08) 39px 40px), repeating-linear-gradient(0deg, transparent 0 39px, rgba(34,211,238,.08) 39px 40px); }
+.belt { background: repeating-linear-gradient(90deg, #1b2638 0 24px, #142033 24px 48px); border-top-color: #2c3d58; border-bottom-color: #0a1220; }
+.es { background: linear-gradient(160deg, #1a2a46, #0f1a2e); border: 1px solid rgba(34,211,238,.35); box-shadow: 0 22px 44px rgba(0,0,0,.5); color: #e6f1ff; padding-top: 26px; }
+.es.main { outline: 4px solid #22d3ee; box-shadow: 0 0 34px rgba(34,211,238,.45), 0 22px 44px rgba(0,0,0,.5); }
+.es .t { display: none; }
+.es::before { content: ""; display: block; width: 54px; height: 54px; margin: 0 auto; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 5h16l-3 7H19z'/%3E%3Cpath d='M20 15l-4 9M24 15v9M28 15l4 9' stroke='%2334d399'/%3E%3Cpath d='M7 28h12M29 28h12'/%3E%3Crect x='7' y='35' width='34' height='6' rx='1'/%3E%3C/svg%3E") center / contain no-repeat; }
+.es .w { margin-top: 8px; font-size: 52px; color: #e6f1ff; }
+.es .y { color: #6f84a0; }
+.es .m { color: #9fb3cc; }
+.es .m b { color: #22d3ee; }
+.stamp { border-color: #34d399; color: #34d399; background: rgba(7,14,27,.85); }

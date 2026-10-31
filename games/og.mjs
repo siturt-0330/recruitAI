@@ -23,8 +23,10 @@ const template = fs.readFileSync(path.join(gamesDir, 'og.html'), 'utf8').replace
 const icon = fs.readFileSync(path.join(root, 'site', 'images', 'icon.svg'), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
 
 /** 1 枚ぶんの HTML。left は左の文、card は右のカードに出す言葉 */
-function page(left, card, stamp) {
+/** css はゲームごとの見た目（games/<slug>/og.css。なければ共通の見た目） */
+function page(left, card, stamp, css = '') {
   return template
+    .replace('</head>', () => (css ? `<style>${css}</style></head>` : '</head>'))
     .replace('{{icon}}', icon)
     .replace('{{left}}', left)
     .replace('{{word}}', esc(card.w))
@@ -46,7 +48,10 @@ for (const slug of slugs) {
   // カードに出す言葉は game.json の ogWord（なければ最初の言葉）。後ろのカードはその次の言葉
   const i = Math.max(0, words.findIndex((w) => w.w === cfg.ogWord));
   const card = { ...words[i], back: words[(i + 1) % words.length].w };
-  hubCard = hubCard || card;
+  // ゲーム一覧（SPI 用語集）の画像には、一覧に載るゲームの言葉だけを使う
+  if (!cfg.standalone) hubCard = hubCard || card;
+  const cssFile = path.join(gamesDir, slug, 'og.css');
+  const css = fs.existsSync(cssFile) ? fs.readFileSync(cssFile, 'utf8') : '';
   const out = path.join(siteGame, slug, 'og');
   shots.push({
     file: path.join(out, 'game.png'),
@@ -55,6 +60,7 @@ for (const slug of slugs) {
         `<div class="pill">無料・登録なしで遊べる</div>`,
       card,
       false,
+      css,
     ),
   });
   const ranks = cfg.ranks || RANKS;
@@ -67,6 +73,7 @@ for (const slug of slugs) {
           `<div class="lv">${lv}</div><div class="pill">あなたは何点とれる？</div>`,
         card,
         true,
+        css,
       ),
     });
   });
