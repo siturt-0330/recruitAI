@@ -16,6 +16,7 @@
   "standalone": true,
   "theme": "handotai",
   "cardWidth": 240,
+  "finishDelay": 900,
   "ogWord": "露光",
   "hashtags": [
     "就活",

@@ -165,3 +165,172 @@
 .theme-handotai .es .ct { display: block; position: absolute; left: 0; right: 0; top: 58px; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--accent); }
 .theme-handotai .es .w { margin-top: 60px; }
 .theme-handotai .es .m { margin-top: 8px; }
+
+/* ===== 演出（handotai.js が付けるクラス）。動きは「動きを減らす」設定でない人だけ。色の変化はだれにでも ===== */
+/* 暗い背景に合わせて直す：称号のラベル・カウントダウンの幕・答えのボタン */
+.theme-handotai .score .rank { background: linear-gradient(90deg, #22d3ee, #34d399); color: #04121c; }
+.theme-handotai .countdown { background: rgba(7, 14, 27, .72); color: #e6f1ff; text-shadow: 0 0 28px rgba(34, 211, 238, .8); }
+.theme-handotai .countdown::before { content: ""; position: absolute; left: 50%; top: 50%; width: 230px; height: 230px; transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid rgba(34, 211, 238, .45);
+  background: repeating-linear-gradient(90deg, transparent 0 21px, rgba(34, 211, 238, .14) 21px 23px), repeating-linear-gradient(0deg, transparent 0 21px, rgba(34, 211, 238, .14) 21px 23px); z-index: -1; }
+.theme-handotai .countdown { isolation: isolate; }
+.theme-handotai :is(.opt, .two .op).right { background: rgba(52, 211, 153, .16); border-color: #34d399; color: var(--ink); box-shadow: 0 0 22px rgba(52, 211, 153, .35); }
+.theme-handotai :is(.opt, .two .op).wrong { background: rgba(248, 113, 113, .12); border-color: #f87171; color: var(--sub); }
+.theme-handotai .stamp { background: rgba(7, 14, 27, .85); }
+
+/* 1. 背景の回路を流れる光 */
+.fx-circuit { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+.fx-circuit path { fill: none; stroke: #22d3ee; stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 26 900; stroke-dashoffset: 926; opacity: .55; filter: drop-shadow(0 0 4px #22d3ee); animation: fx-current linear infinite; }
+@keyframes fx-current { to { stroke-dashoffset: 0; } }
+
+/* 色の変化（動かない演出）：コンボでベルトとステージの光の色が変わる・答えの色・単語帳の切り替え */
+.theme-handotai .stage[data-combo="1"] .belt { box-shadow: 0 0 22px rgba(34, 211, 238, .45); }
+.theme-handotai .stage[data-combo="2"] .belt { box-shadow: 0 0 26px rgba(52, 211, 153, .55); border-top-color: #34d399; }
+.theme-handotai .stage[data-combo="3"] .belt { box-shadow: 0 0 34px rgba(163, 230, 53, .65); border-top-color: #a3e635; }
+.theme-handotai .stage[data-combo="3"] { box-shadow: 0 0 0 1px rgba(163, 230, 53, .4), 0 26px 60px rgba(0, 0, 0, .5); }
+.theme-handotai .es.fx-danger:not(.done) { border-color: #f87171; outline-color: #f87171; }
+.theme-handotai .focus .r.fx-miss .cu { color: #f87171; border-color: #f87171; }
+.fx-banner { position: absolute; left: 50%; top: 92px; transform: translateX(-50%); z-index: 9; white-space: nowrap; pointer-events: none;
+  font: 900 26px "Zen Kaku Gothic New", sans-serif; color: #e6f1ff; padding: 10px 28px; border-radius: 999px; overflow: hidden;
+  background: rgba(7, 14, 27, .8); border: 1px solid rgba(34, 211, 238, .6); box-shadow: 0 0 30px rgba(34, 211, 238, .4); }
+.fx-banner.fx-complete { border-color: #a3e635; box-shadow: 0 0 36px rgba(163, 230, 53, .5); color: #ecfccb; }
+.fx-plus { position: fixed; z-index: 61; transform: translate(-50%, -50%); pointer-events: none; font: 800 15px Inter, sans-serif; color: #a5f3fc; text-shadow: 0 0 10px #22d3ee; }
+.fx-dark { position: fixed; inset: 0; z-index: 50; pointer-events: none; background: rgba(2, 6, 14, .78); }
+.fx-wafer { width: 112px; height: 112px; margin: 2px auto 10px; }
+.fx-wafer svg { width: 100%; height: 100%; display: block; }
+.fx-wafer circle { fill: rgba(34, 211, 238, .05); stroke: rgba(34, 211, 238, .5); stroke-width: 1.2; }
+.fx-wafer rect { fill: rgba(34, 211, 238, .1); transition: fill .15s; }
+.fx-wafer rect.on { fill: #22d3ee; }
+.fx-wafer rect.on:nth-child(3n) { fill: #34d399; }
+.wbr.fx-toggled { background: rgba(34, 211, 238, .12); }
+.fx-burst { position: fixed; inset: 0; z-index: 70; pointer-events: none; }
+.theme-handotai :is(.course, .mode, .btn, .opt, .op, .weak-link) { position: relative; overflow: hidden; }
+
+@property --fx-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* 34. 画面の切り替え */
+  .theme-handotai .fx-enter { animation: fx-enter .45s ease both; }
+  @keyframes fx-enter { from { opacity: 0; translate: 0 14px; } }
+  /* 5. スタート画面：コースとメニューが下から順に出る */
+  .theme-handotai #start:not([hidden]) :is(.course, .mode) { animation: fx-rise .55s cubic-bezier(.2, .8, .2, 1) both; }
+  .theme-handotai #start .course:nth-child(2), .theme-handotai #start .mode:nth-child(2) { animation-delay: .07s; }
+  .theme-handotai #start .course:nth-child(3) { animation-delay: .14s; }
+  .theme-handotai #start .course:nth-child(4) { animation-delay: .21s; }
+  @keyframes fx-rise { from { opacity: 0; translate: 0 22px; } }
+  /* 2. 見出しの文字に光が走る */
+  .theme-handotai .start h1 em { background-image: linear-gradient(100deg, transparent 38%, rgba(255, 255, 255, .85) 50%, transparent 62%), linear-gradient(90deg, #22d3ee, #34d399 55%, #a3e635);
+    background-size: 250% 100%, 100% 100%; background-repeat: no-repeat; animation: fx-shine 4.5s ease-in-out infinite; }
+  @keyframes fx-shine { 0%, 55% { background-position: 160% 0, 0 0; } 100% { background-position: -60% 0, 0 0; } }
+  /* 3. コースにマウスを乗せると、枠を光がなぞる。9. 打っている対象のカードも光が一周する */
+  .theme-handotai .course::after, .theme-handotai .es.on::before {
+    content: ""; position: absolute; inset: -2px; border-radius: inherit; padding: 2px; pointer-events: none;
+    background: conic-gradient(from var(--fx-a), transparent 0 62%, #22d3ee 78%, #34d399 88%, transparent 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+    opacity: 0; transition: opacity .25s; animation: fx-spin 1.8s linear infinite;
+  }
+  .theme-handotai .course:hover::after, .theme-handotai .es.on::before { opacity: 1; }
+  .theme-handotai .course::after { inset: 0; }
+  .theme-handotai .es.on::before { left: -3px; right: -3px; top: -3px; bottom: -3px; width: auto; border-radius: 10px; }
+  @keyframes fx-spin { to { --fx-a: 360deg; } }
+  /* 4. コースを選ぶと沈み込む */
+  .theme-handotai .course.fx-press { animation: fx-press .28s ease; }
+  @keyframes fx-press { 40% { scale: .95; } }
+  /* 6. カウントダウン：露光されるように浮かび上がる */
+  .theme-handotai .countdown.fx-expose { animation: fx-expose .55s ease-out; }
+  @keyframes fx-expose { from { filter: blur(10px) brightness(2.5); opacity: 0; scale: 1.5; } }
+  .theme-handotai .countdown.fx-expose::before { animation: fx-ring .55s ease-out; }
+  @keyframes fx-ring { from { opacity: 0; scale: .6; } }
+  /* 7. スタートの瞬間のスキャンライン */
+  .theme-handotai .stage.fx-scan::after { content: ""; position: absolute; left: 0; right: 0; top: -140px; height: 140px; z-index: 7; pointer-events: none;
+    background: linear-gradient(transparent, rgba(34, 211, 238, .38), transparent); animation: fx-scan .9s ease-out forwards; }
+  @keyframes fx-scan { to { top: 100%; } }
+  /* 8. カードが上から降りてベルトに乗る */
+  .theme-handotai .es.fx-drop { animation: fx-drop .5s cubic-bezier(.2, .9, .3, 1.25) both; }
+  @keyframes fx-drop { from { translate: 0 -170px; opacity: 0; } 70% { translate: 0 8px; opacity: 1; } }
+  /* 10. 打つたびにカードの絵が脈打つ */
+  .theme-handotai .es .il.fx-pulse { animation: fx-pulse .22s ease; }
+  @keyframes fx-pulse { 50% { scale: 1.28; filter: drop-shadow(0 0 8px #22d3ee); } }
+  /* 12. 右端に近づいたカードの点滅 */
+  .theme-handotai .es.fx-danger:not(.done) { animation: fx-danger .45s ease-in-out infinite alternate; }
+  @keyframes fx-danger { to { box-shadow: 0 0 26px rgba(248, 113, 113, .7); } }
+  /* 13. 正解したカードの光と火花 */
+  .fx-ghost { position: fixed; z-index: 60; pointer-events: none; white-space: nowrap; font: 900 28px "Zen Kaku Gothic New", sans-serif; color: #e6f1ff; text-shadow: 0 0 18px #22d3ee, 0 0 4px #fff; transform: translate(-50%, -50%); }
+  .fx-spark { position: fixed; z-index: 60; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #a5f3fc; box-shadow: 0 0 10px #22d3ee; pointer-events: none; }
+  /* 14. 吸い込まれた工程が光り、＋1 が浮かぶ */
+  .theme-handotai .proc li.fx-hit, .theme-handotai .proc.fx-hit { animation: fx-hit .7s ease-out; }
+  @keyframes fx-hit { 0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, .8); } 100% { box-shadow: 0 0 0 16px rgba(34, 211, 238, 0); } }
+  .fx-plus { animation: fx-plus .9s ease-out forwards; }
+  @keyframes fx-plus { to { opacity: 0; translate: 0 -26px; } }
+  /* 15. 「済」のスタンプをドンと押す */
+  .theme-handotai .stamp { animation: fx-stamp .38s cubic-bezier(.2, 1.6, .4, 1); }
+  @keyframes fx-stamp { from { scale: 2.6; opacity: 0; } 60% { scale: .9; opacity: 1; } }
+  /* 16. 点数が増えるたびに弾む */
+  .theme-handotai .fx-pop { display: inline-block; animation: fx-pop .2s ease; }
+  @keyframes fx-pop { 50% { scale: 1.18; color: #a5f3fc; } }
+  /* 17. ミスした文字が震える。18. ステージにノイズ */
+  .theme-handotai .focus .r.fx-miss .cu { animation: fx-misscu .3s ease; }
+  @keyframes fx-misscu { 25% { translate: -3px 0; } 75% { translate: 3px 0; } }
+  .theme-handotai .stage.fx-glitch::before { content: ""; position: absolute; inset: 0; z-index: 8; pointer-events: none; opacity: 0;
+    background: repeating-linear-gradient(0deg, transparent 0 5px, rgba(248, 113, 113, .16) 5px 7px); animation: fx-glitch .3s steps(3); }
+  @keyframes fx-glitch { 0%, 66% { opacity: 1; translate: 6px 0; } 33% { translate: -6px 0; } }
+  /* 19. コンボの一言（光の線が横切る） */
+  .fx-banner { animation: fx-banner 1.6s ease forwards; }
+  @keyframes fx-banner { 0% { opacity: 0; scale: .6; } 14% { opacity: 1; scale: 1.06; } 24% { scale: 1; } 80% { opacity: 1; } 100% { opacity: 0; translate: 0 -18px; } }
+  .fx-banner::after { content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: -40%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .45), transparent); animation: fx-sweep 1s .15s ease-out forwards; }
+  @keyframes fx-sweep { to { left: 120%; } }
+  /* 22. 範囲の言葉は、流れ図を左から順に光が走る */
+  .theme-handotai .proc li.on { animation: fx-lit .45s ease both; }
+  .theme-handotai .proc.fx-sweep li.on { animation-delay: calc(var(--i) * 45ms); }
+  @keyframes fx-lit { from { opacity: .45; background: transparent; box-shadow: none; } }
+  /* 21. 工程を移る光の点 */
+  .fx-dot { position: fixed; z-index: 30; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #e0fbff; box-shadow: 0 0 14px #22d3ee, 0 0 4px #fff; pointer-events: none; }
+  /* 24. 時間切れで照明が落ちる */
+  .fx-dark { animation: fx-dark .85s ease-in both; }
+  @keyframes fx-dark { from { background: rgba(2, 6, 14, 0); } }
+  /* 26. 称号のラベルが裏返って現れる */
+  .theme-handotai #rank.fx-flip { animation: fx-flip .7s cubic-bezier(.2, .8, .2, 1) both; }
+  @keyframes fx-flip { from { transform: perspective(300px) rotateY(100deg); opacity: 0; } }
+  /* 28. 答え：正解は弾む、不正解は震える */
+  .theme-handotai :is(.opt, .two .op).right { animation: fx-right .45s cubic-bezier(.2, 1.6, .4, 1); }
+  @keyframes fx-right { 40% { scale: 1.04; } }
+  .theme-handotai :is(.opt, .two .op).wrong { animation: fx-wrong .35s ease; }
+  @keyframes fx-wrong { 25% { translate: -6px 0; } 75% { translate: 6px 0; } }
+  .theme-handotai .choice .card.fx-combo { animation: fx-right .5s ease; box-shadow: 0 0 34px rgba(52, 211, 153, .45); }
+  /* 29. 次の問題がスライドして入れ替わる */
+  .theme-handotai .fx-slide { animation: fx-slide .35s ease both; }
+  @keyframes fx-slide { from { opacity: 0; translate: 28px 0; } }
+  /* 30. 波紋 */
+  .fx-ripple { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: rgba(34, 211, 238, .45); pointer-events: none; animation: fx-ripple .6s ease-out forwards; }
+  @keyframes fx-ripple { to { transform: scale(28); opacity: 0; } }
+  /* 31. 単語一覧・単語帳の行が順に出る */
+  .wl .it.fx-hide { opacity: 0; translate: 0 14px; }
+  .wl .it.fx-show { opacity: 1; translate: 0 0; transition: opacity .5s ease, translate .5s ease; }
+  #wbList.fx-reveal .wbr { animation: fx-rise .4s ease both; animation-delay: calc(var(--n, 0) * 18ms); }
+  /* 32. 単語帳で切り替えた行が光る */
+  .wbr.fx-toggled { animation: fx-toggle .6s ease; }
+  @keyframes fx-toggle { from { background: rgba(34, 211, 238, .28); } to { background: transparent; } }
+}
+
+/* 白い面のまま残っていたところ：単語帳の「もう出さない」・まとめて外すボタン・スマホの例文・2 択の補足 */
+.theme-handotai :is(.hide, .bulk) { background: rgba(255, 255, 255, .06); color: var(--sub); border-color: var(--line); }
+.theme-handotai :is(.hide, .bulk):hover { color: var(--ink); border-color: rgba(34, 211, 238, .5); }
+.theme-handotai .choice .card .exs { background: rgba(255, 255, 255, .05); color: var(--sub); }
+.theme-handotai .qz .q small { background: rgba(255, 255, 255, .06); color: var(--sub); }
+
+/* スマホのカードの絵も分類ごとに（上の .choice .card .il の指定より強くする） */
+.theme-handotai .choice .card[data-st="design"] .il { background-image: var(--st-design); }
+.theme-handotai .choice .card[data-st="wafer"] .il { background-image: var(--st-wafer); }
+.theme-handotai .choice .card[data-st="film"] .il { background-image: var(--st-film); }
+.theme-handotai .choice .card[data-st="litho"] .il { background-image: var(--st-litho); }
+.theme-handotai .choice .card[data-st="etch"] .il { background-image: var(--st-etch); }
+.theme-handotai .choice .card[data-st="dope"] .il { background-image: var(--st-dope); }
+.theme-handotai .choice .card[data-st="flat"] .il { background-image: var(--st-flat); }
+.theme-handotai .choice .card[data-st="wire"] .il { background-image: var(--st-wire); }
+.theme-handotai .choice .card[data-st="cut"] .il { background-image: var(--st-cut); }
+.theme-handotai .choice .card[data-st="pkg"] .il { background-image: var(--st-pkg); }
+.theme-handotai .choice .card[data-st="check"] .il { background-image: var(--st-check); }
+.theme-handotai .choice .card[data-st="device"] .il { background-image: var(--st-device); }
+.theme-handotai .choice .card[data-st="biz"] .il { background-image: var(--st-biz); }
+.theme-handotai .choice .card[data-st="front"] .il { background-image: var(--st-front); }
+.theme-handotai .choice .card[data-st="all"] .il { background-image: var(--st-all); }
+.theme-handotai .choice .card .exs mark { background: rgba(52, 211, 153, .28); color: var(--ink); }

@@ -162,6 +162,13 @@ const themeCss = (g) => {
   const v = createHash('sha1').update(fs.readFileSync(file)).digest('hex').slice(0, 8);
   return `<link rel="stylesheet" href="/game/themes/${g.cfg.theme}.css?v=${v}" />`;
 };
+/** テーマの演出（site/game/themes/<theme>.js）。あるときだけ読み込む */
+const themeJs = (g) => {
+  const file = g.cfg.theme && path.join(siteGame, 'themes', `${g.cfg.theme}.js`);
+  if (!file || !fs.existsSync(file)) return '';
+  const v = createHash('sha1').update(fs.readFileSync(file)).digest('hex').slice(0, 8);
+  return `<script src="/game/themes/${g.cfg.theme}.js?v=${v}"></script>`;
+};
 const themeClass = (g) => (g.cfg.theme ? ` class="theme-${g.cfg.theme}"` : '');
 const HUB_LINK = '<a class="link" href="/game">SPI 用語集</a>';
 /** パンくずの「SPI 用語集」。standalone のゲームは SPI 用語集の下に置かない */
@@ -223,6 +230,7 @@ for (const g of games) {
     .replaceAll('{{hubLink}}', () => (g.cfg.standalone ? '' : HUB_LINK))
     .replaceAll('{{themeCss}}', () => themeCss(g))
     .replaceAll('{{themeClass}}', () => themeClass(g))
+    .replaceAll('{{themeJs}}', () => themeJs(g))
     .replaceAll('{{description}}', () => esc(g.cfg.description))
     .replaceAll('{{url}}', () => url)
     .replaceAll('{{ogImage}}', () => gameOg)
@@ -320,6 +328,7 @@ for (const g of games) {
     .replaceAll('{{hubLink}}', () => (g.cfg.standalone ? '' : HUB_LINK))
     .replaceAll('{{themeCss}}', () => themeCss(g))
     .replaceAll('{{themeClass}}', () => themeClass(g))
+    .replaceAll('{{themeJs}}', () => themeJs(g))
     .replaceAll('{{hubCrumb}}', () => (g.cfg.standalone ? '' : '<li><a href="/game">SPI 用語集</a></li>'))
     .replaceAll('{{hubFoot}}', () => (g.cfg.standalone ? '' : '<a href="/game">SPI 用語集</a> ・ '))
     .replaceAll('{{ogImage}}', () => gameOg)
