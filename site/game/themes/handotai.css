@@ -1,6 +1,6 @@
 /* 半導体用語タイピングのテーマ：クリーンルームと回路。濃紺の地にシアンと緑、カードは IC チップの形 */
 .theme-handotai {
-  --ink: #e6f1ff; --sub: #9fb3cc; --mute: #6f84a0; --line: rgba(120, 200, 255, .16); --paper: #0b1424;
+  --ink: #e6f1ff; --sub: #aec0d6; --mute: #8fa3bd; --line: rgba(120, 200, 255, .16); --paper: #0b1424;
   --accent: #22d3ee; --stamp: #34d399; --ok: #34d399;
   --panel: rgba(17, 28, 48, .82); --panel-2: #13213a;
   --chip-ink: #e6f1ff;
@@ -341,3 +341,11 @@
 .theme-handotai .hide.on { background: rgba(34, 211, 238, .18); border-color: #22d3ee; color: #a5f3fc; }
 .theme-handotai .bulk { background: transparent; color: #cfe3f7; border: 1px solid rgba(159, 179, 204, .45); }
 .theme-handotai .bulk .o { background: rgba(52, 211, 153, .2); color: #34d399; }
+
+/* 見えにくかったところ：2 択の F・J のキー、光っていない工程の名前、打ち終わった文字 */
+.theme-handotai .two kbd { background: #1b2a44; color: #e6f1ff; border-color: rgba(159, 179, 204, .5); box-shadow: 0 3px 0 rgba(159, 179, 204, .35); }
+.theme-handotai .two kbd::after { background: #8fa3bd; }
+.theme-handotai .proc li { opacity: .75; }
+.theme-handotai .proc.other li { opacity: .6; }
+.theme-handotai .proc li span { color: #aec0d6; }
+.theme-handotai .focus .y .dn, .theme-handotai .focus .r .dn { color: #6f86a6; }
