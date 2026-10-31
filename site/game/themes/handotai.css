@@ -349,3 +349,12 @@
 .theme-handotai .proc.other li { opacity: .6; }
 .theme-handotai .proc li span { color: #aec0d6; }
 .theme-handotai .focus .y .dn, .theme-handotai .focus .r .dn { color: #6f86a6; }
+
+/* 結果の単語帳：読み（ひらがな）と例文は出さず、言葉と意味だけにする。言葉の欄は長い言葉も 1 行で入る幅に */
+.theme-handotai .wrow .y, .theme-handotai .wrow .ex { display: none; }
+.theme-handotai .wrow { grid-template-columns: 22px minmax(150px, max-content) minmax(0, 1fr) auto; }
+.theme-handotai .wrow b { white-space: nowrap; font-size: 17px; }
+@media (max-width: 820px) {
+  .theme-handotai .wrow { grid-template-columns: 22px minmax(0, max-content) minmax(0, 1fr) auto; }
+  .theme-handotai .wrow b { font-size: 15px; }
+}
